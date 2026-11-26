@@ -1612,10 +1612,16 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW28"><span class="n">LW-28</span>看门的拆成 miyu-watchdog、共用一个<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW29"><span class="n">LW-29</span>每个连接的页缓存闲时都放<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW30"><span class="n">LW-30</span>录清单的剧本照真实使用补全<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW31"><span class="n">LW-31</span>分配器的测试另起进程量<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW32"><span class="n">LW-32</span>录清单的界面语言定成中文<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO1"><span class="n">MO-1</span>macOS 排函数：页探针进仓库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO2"><span class="n">MO-2</span>macOS 排函数：量尺带探针录清单<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO3"><span class="n">MO-3</span>macOS 排函数：发行包照起点清单排<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO4"><span class="n">MO-4</span>macOS 排函数：打包时带探针跑一轮<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sBO1"><span class="n">BO-1</span>卸包时删掉它的下载文件<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sBO2"><span class="n">BO-2</span>直接敲 miyu 不搭命令行树<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sBO3"><span class="n">BO-3</span>一轮任务当中不合写前日志<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sBO4"><span class="n">BO-4</span>工具结果不和落盘同步撞车<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD8"><span class="n">WD-8</span>安装脚本只认新版本号<span class="st">…</span></a></li>
         <li><a class="step review" href="#sWD9"><span class="n">WD-9</span>/undo 统一叫「撤回」<span class="st">…</span></a></li>
         <li><a class="step review" href="#sHLP1"><span class="n">HLP-1</span>每个子命令的 -h 都印自己的帮助页<span class="st">…</span></a></li>
@@ -63320,6 +63326,103 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
     </div>
   </div>
 </section>
+<section class="sheet" id="sLW31" aria-labelledby="h-sLW31">
+  <div class="sheet-head"><h2 id="h-sLW31"><span class="no">LW-31</span>线程分配区还得回去的测试另起一个只跑自己的进程</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">查「调好分配器以后线程的分配区顶上还得回去」的那条测试，量的是整个进程所有分配区的合计。同一个测试程序里别的测试不拿这把锁，它们同时分配、释放，把这个合计撑大，这条测试在 CI 上偶尔失败。本机四核十二线程连跑 300 次，失败 11 次。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-heap/src/tests.rs</span><span class="dir-note">LW-31</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>这条测试改成另起一个只跑它自己的测试进程（照名字精确挑、单线程），外面只看退出码和「通过 1 条」</li>
+              <li>里面量的东西和判的线不变</li>
+              <li>产品代码不改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">量整个进程的数的测试，放在只跑它自己的进程里</span><span class="rl">internal/blueprint/heap.md「守着它的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-31</dd></div>
+        <div><dt>名称</dt><dd>线程分配区还得回去的测试另起一个只跑自己的进程</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-31</dd></div>
+        <div><dt>验收</dt><dd>改前连跑 300 次失败 11 次；改后连跑 1200 次没有失败</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前连跑 300 次失败 11 次；改后连跑 1200 次没有失败</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-31-分配区的测试另起进程量.md</code>；蓝图 <code>heap.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW32" aria-labelledby="h-sLW32">
+  <div class="sheet-head"><h2 id="h-sLW32"><span class="no">LW-32</span>录清单时给终端界面的语言一律定成中文</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">发版时要配着真的终端界面再录一遍清单：量尺开着终端界面逛一圈，每一步等界面上出现某一段中文字。终端界面的语言跟随系统。MO-4 只在 macOS 带探针的那一路上把语言定成中文；发版的 Linux 机器是英文环境，画出来的是英文，等不到要等的字，Linux 的发行包打不出来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-perf/src/order/head.rs</span><span class="dir-note">LW-32</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>量尺给主程序、终端界面的环境里，宿主的 LC_ALL、LC_MESSAGES、LANG 一个不接，换成 LANG=zh_CN.UTF-8</li>
+              <li>不分系统、不看宿主是什么语言；PATH 和别的 LC_* 照旧接</li>
+              <li>产品代码不改</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">录清单时界面的语言由量尺定死成中文，不跟宿主</span><span class="rl">internal/blueprint/perf.md「排函数」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-32</dd></div>
+        <div><dt>名称</dt><dd>录清单时给终端界面的语言一律定成中文</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-23</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-32</dd></div>
+        <div><dt>验收</dt><dd>在另一台测试机上把环境设成英文从头打包，逛一圈每一步都等到了</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>宿主是英文、没设语言、中文三种环境，量尺交给界面的环境是同一份</span></li>
+        <li><span class="ok">✓</span><span>在另一台测试机上把环境设成英文（LANG、LC_ALL 都是 C.UTF-8）从头打包通过</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-32-录清单的界面语言定成中文.md</code>；蓝图 <code>perf.md</code>「排函数」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
 <section class="sheet" id="sMO1" aria-labelledby="h-sMO1">
   <div class="sheet-head"><h2 id="h-sMO1"><span class="no">MO-1</span>macOS 排函数第一步：页探针的源码进仓库，量尺和核对认苹果的符号表</h2><span class="pill done">已完成</span></div>
   <p class="purpose">MO 这一组让 macOS 的发行包也照执行的先后排函数：在一台 M1 MacBook 上做的原型里，核心加终端界面在内存里的代码空闲时少 10 MB。macOS 上没有能录执行轨迹的用户态模拟器，改用一个插进被测进程的页探针。这一步只放基础，还什么都不排。</p>
@@ -63514,6 +63617,207 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>总施工单 <code>internal/construction/MO-macOS的发行包排函数.md</code>；设计 <code>59-发版.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sBO1" aria-labelledby="h-sBO1">
+  <div class="sheet-head"><h2 id="h-sBO1"><span class="no">BO-1</span>卸包时删掉它装着的那一版的包文件</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">从软件源装包时下载的包文件照 pacman 留在缓存里，只有 miyu pkg clean 才删。2026-11-27 的基准测试量到：卸掉语义模型以后数据目录是 66 MiB，其中 59 MB 是它的包文件。卸掉的包留着包文件没有用处，项目主人定：卸一个包的时候把它的下载文件一起删。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-endpoint/src/packages/remove.rs、packages/source/clean.rs</span><span class="dir-note">BO-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>package.remove 卸成以后，把下载缓存里这个包装着的那一版的包文件一起删（不分系统的、带系统的两种文件名）</li>
+              <li>认文件名的规则和 package.clean 共用一个函数</li>
+              <li>别的包、它别的版本、下了一半的照旧留到 clean；出厂的、系统加装的、从本机文件装的没有下过，什么都不删</li>
+              <li>回应的形状不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">卸一个包，它装着的那一版的包文件一起删；卸了再装同一版要重新下载，降级、升级不受影响</span><span class="rl">internal/designs/37-软件源.md 第四节第 5 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">BO-1</dd></div>
+        <div><dt>名称</dt><dd>卸包时删掉它装着的那一版的包文件</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">BO-1</dd></div>
+        <div><dt>验收</dt><dd>卸了以后包文件没了，还装着的依赖的留着；编号是它前缀的包不受影响</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>只删这一版：别的版本、别的包、编号是它前缀的包、下了一半的都留着</span></li>
+        <li><span class="ok">✓</span><span>从软件源装了再卸：它的包文件没了，还装着的依赖的留着；缓存里有的照旧不再下</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/BO-1-卸包时删掉它的下载文件.md</code>；蓝图 <code>packages.md</code>「装卸」第 7 条、<code>protocol.md</code>、<code>cli/pkg.md</code>；设计 <code>37-软件源.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sBO2" aria-labelledby="h-sBO2">
+  <div class="sheet-head"><h2 id="h-sBO2"><span class="no">BO-2</span>直接敲 miyu 打开界面时不读软件包清单、不搭命令行树</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">基准测试里核心已经在运行时打开终端界面，到能打字的时间有四成花在启动器上：它先把三十几份软件包清单读、解析一遍找软件包加的子命令，再搭整棵命令行树、拼帮助页，解析出「没写子命令」以后才去打开界面。直接敲 miyu 没有第一个词，这些结果一样都用不上。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu/src/main.rs</span><span class="dir-note">BO-2</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>一个参数都没有、标准输入和标准输出都是终端的，主程序一起来就走打开界面的那一步</li>
+              <li>打开界面的那一步原封不动，照命令行树解析出「没写子命令」的也走同一个函数</li>
+              <li>不在终端里的照旧走命令行树，印帮助、退出码 2</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">直接敲 miyu 是一条快路，做的事和「没写子命令」是同一个函数</span><span class="rl">internal/blueprint/cli/main.md「怎么走」第 3 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">BO-2</dd></div>
+        <div><dt>名称</dt><dd>直接敲 miyu 打开界面时不读软件包清单、不搭命令行树</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">BO-2</dd></div>
+        <div><dt>验收</dt><dd>到第一块输出 8.43 → 6.72 毫秒，到能打字 14.05 → 12.45 毫秒</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>同一个发行包里交替量（各 4 组、每组 20 次）：到第一块输出 8.43 → 6.72 毫秒，到能打字 14.05 → 12.45 毫秒</span></li>
+        <li><span class="ok">✓</span><span>界面一侧的 CPU 14.39 → 12.72 毫秒，核心的 CPU 不变</span></li>
+        <li><span class="ok">✓</span><span>行为由现成的伪终端测试守着</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/BO-2-直接敲miyu不搭命令行树.md</code>；蓝图 <code>cli/main.md</code>「怎么走」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sBO3" aria-labelledby="h-sBO3">
+  <div class="sheet-head"><h2 id="h-sBO3"><span class="no">BO-3</span>一轮任务当中不合库的写前日志</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">基准测试里运行命令的步有 7.8% 在回答到了以后多等约 10 毫秒命令才开始。原因是库安静满 2 秒就合回写前日志（施工 V-28）：合完以后下一次提交要先写新的日志头、同步一次，会话每写一批又接连提交索引、用量两个库，命令等这一批写完才开始跑。真模型答一步通常是几秒到二十几秒，实际使用时几乎每一步都这样。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-core/src/wal.rs、crates/miyu-store/src/sqlite/idle.rs</span><span class="dir-note">BO-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>合和放页缓存分开等：放页缓存不碰磁盘，照旧在库安静满 2 秒时做</li>
+              <li>合回、截短改成库安静满 30 秒才做，这期间又有提交或者读的回去重新等</li>
+              <li>合完再放一遍合的时候读进来的页</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">闲时合写前日志要等库安静满 30 秒；被杀时留下的日志最多约 4 MB，下次开库合回</span><span class="rl">internal/blueprint/store.md「怎么走」第 14 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">BO-3</dd></div>
+        <div><dt>名称</dt><dd>一轮任务当中不合库的写前日志</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">BO-3</dd></div>
+        <div><dt>验收</dt><dd>每步之前隔 2.1 秒：回答到了以后到命令开始 57.7 → 2.5 毫秒</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>只放页缓存时写前日志原样留着；接着等的时候有过一次提交就不合</span></li>
+        <li><span class="ok">✓</span><span>每步之前隔 2.1、2.5、4 秒：回答到了以后到命令开始的中位数从 57.7、50.5、30.3 毫秒降到 2.5、3.2、4.4 毫秒（量的时候盘很忙）</span></li>
+        <li><span class="ok">✓</span><span>隔 1.9 秒以内的不变；内存回落的时刻不变</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/BO-3-一轮任务当中不合库的写前日志.md</code>；蓝图 <code>store.md</code>「怎么走」第 14 条、<code>heap.md</code>、<code>core.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sBO4" aria-labelledby="h-sBO4">
+  <div class="sheet-head"><h2 id="h-sBO4"><span class="no">BO-4</span>工具结果的写入不和落盘同步撞车</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">基准测试里读文件的一步是 9.4 毫秒，单进程的 LiteMiyu 是 1.6 毫秒。带工具调用的回复一写完，核心就在后台对会话日志做落盘同步；工具的结果是往同一个文件追加，btrfs 上同步的那一阵拿着文件的锁，追加要等它做完。读文件、找文件不到 1 毫秒就出结果，写结果的那一下正撞在同步上，而盘闲了一会儿以后的头一次同步特别慢。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-session/src/actor/durable/later.rs、actor/store.rs</span><span class="dir-note">BO-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只因为带了工具调用才要同步的那一批，同步等这一条回复要的工具都出了结果、结果写进去了再做，一次盖住两批</li>
+              <li>最多等 100 毫秒，工具跑得更久的照旧在它跑着的时候同步</li>
+              <li>来了非同步不可的一批、有回应要等同步才能交、会话要停下的，马上做</li>
+              <li>账只数最近那一条回复的调用；同步的次数不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">带工具调用的那一批晚一点同步，最多晚 100 毫秒</span><span class="rl">internal/blueprint/session/actor.md 第 5 条第 9 款</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">BO-4</dd></div>
+        <div><dt>名称</dt><dd>工具结果的写入不和落盘同步撞车</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">BO-4</dd></div>
+        <div><dt>验收</dt><dd>三步合起来，每步之前隔 2.5 秒：读文件的一步 29.6 → 3.5 毫秒，运行命令的一步 19.8 → 5.5 毫秒</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>每步之前隔 0.3 秒：读文件的一步从 4.3、4.5 毫秒降到 2.8、2.4 毫秒，回到连着跑的水平</span></li>
+        <li><span class="ok">✓</span><span>和 BO-2、BO-3 合起来对改之前，每步之前隔 2.5 秒：读文件的一步 29.6、16.7 → 3.5、3.0 毫秒，运行命令的一步 19.8、17.5 → 5.5、4.5 毫秒</span></li>
+        <li><span class="ok">✓</span><span>带工具调用的回复等到结果都写进去才同步；非同步不可的一批、扣着的回应、停下会把它叫起来</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/BO-4-工具结果不和落盘同步撞车.md</code>；蓝图 <code>session/actor.md</code> 第 5 条第 9 款。</li>
       </ul>
     </div>
   </div>
