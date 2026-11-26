@@ -362,6 +362,7 @@ impl Keys<'_> {
             Ok(Ok(result)) => {
                 let replaced = result["replaced"] == json!(true);
                 self.gray(language.key_saved(&name, replaced));
+                self.link(&name).await;
                 exit::OK
             }
             Ok(Err((_, message))) => {
@@ -369,6 +370,32 @@ impl Keys<'_> {
                 exit::ERROR
             }
             Err(code) => code,
+        }
+    }
+
+    /// 系统配置里自己写了这家供应商（`providers.<名字>.` 下有项）、又没写 `key` 的，顺手写上 `key = { secret = "<名字>" }`
+    /// 并说一句（施工 PL-1，项目主人 2026-11-26 定：原来存了密钥还要自己再写引用，不写请求就不带认证头）。软件包带的
+    /// 供应商不在系统配置里，不碰；问不到、写不进的不提，密钥已经存好了。
+    async fn link(&mut self, name: &str) {
+        let Ok(Ok(got)) = self.request("config.get", json!({})).await else {
+            return;
+        };
+        let prefix = format!("providers.{name}.");
+        let key = format!("{prefix}key");
+        let Some(items) = got["items"].as_object() else {
+            return;
+        };
+        let own = items
+            .iter()
+            .any(|(item, entry)| item.starts_with(&prefix) && entry["origin"]["layer"] == "system");
+        if !own || items.contains_key(&key) {
+            return;
+        }
+        let input = format!("{{ secret = \"{name}\" }}");
+        let params = json!({"layer": "system", "changes": [{"key": key, "input": input}]});
+        if let Ok(Ok(_)) = self.request("config.set", params).await {
+            let line = self.plan.language.key_linked(name);
+            self.gray(line);
         }
     }
 

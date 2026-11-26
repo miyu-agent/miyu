@@ -100,7 +100,7 @@ Use `miyu provider` to store, view and remove secrets:
 | `miyu provider list [--format text\|json]` | Lists the stored secrets, and the ones used in the config but not yet stored (shown in grey), along with who uses them. The keys themselves are not shown |
 | `miyu provider logout [<name>]` | Removes one secret. If you leave out the name, you can choose from the stored ones |
 
-A name starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters. `login` only stores the key; the config still needs a line that refers to it. For example:
+A name starts with a lowercase letter, contains only lowercase letters, digits, `-` and `_`, and is at most 64 characters. After `login` stores the key, if the system config already has this provider (there are settings under `providers.<name>`) but no `key` yet, it also adds the line that refers to the key, `key = { secret = "<name>" }`, and tells you so; if the config doesn't have this provider yet, it only stores the key and you write the reference yourself. For example:
 
 ```bash
 echo "$KEY" | miyu provider login acme

@@ -100,6 +100,18 @@ impl Language {
         }
     }
 
+    /// 存了密钥、顺手在系统配置里写上了引用（施工 PL-1）。
+    pub(crate) fn key_linked(&self, name: &str) -> String {
+        match self {
+            Language::Chinese => {
+                format!("已在配置里写上 providers.{name}.key = {{ secret = \"{name}\" }}")
+            }
+            Language::English => {
+                format!("added providers.{name}.key = {{ secret = \"{name}\" }} to the config")
+            }
+        }
+    }
+
     /// 设没设。
     pub(crate) fn key_state(&self, set: bool) -> &'static str {
         match (self, set) {

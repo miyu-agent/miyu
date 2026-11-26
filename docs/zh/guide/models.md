@@ -100,7 +100,7 @@ miyu setup --provider deepseek --env DEEPSEEK_API_KEY
 | `miyu provider list [--format text\|json]` | 列出已经保存的密钥，以及配置里用到了但还没有保存的密钥（灰色显示），同时显示谁在使用它们。不会显示密钥本身 |
 | `miyu provider logout [<名字>]` | 删除一个密钥。如果不写名字，可以从已经保存的密钥里选择 |
 
-名字以小写字母开头，只包含小写字母、数字、`-`、`_`，最长 64 个字符。`login` 只负责保存密钥，配置里还需要有引用它的那一行。例如：
+名字以小写字母开头，只包含小写字母、数字、`-`、`_`，最长 64 个字符。`login` 保存密钥以后，如果系统配置里已经写了这家供应商（`providers.<名字>` 下有设置）、还没写 `key`，会顺手写上引用它的那一行 `key = { secret = "<名字>" }`，并告诉你一声；配置里还没有这家供应商时，只保存密钥，引用要你自己写。例如：
 
 ```bash
 echo "$KEY" | miyu provider login acme

@@ -460,3 +460,26 @@ async fn logout_deletes_by_name_or_pick() {
     );
     assert!(!secrets(&home).contains("sk-FAKE"));
 }
+
+#[tokio::test]
+async fn a_provider_written_in_the_config_gets_its_key_reference_once() {
+    // 施工 PL-1：自己写的供应商顺手写上引用；写过的不再写，配置里没写的（deepseek）不碰。
+    let config =
+        "[providers.magpie]\ndriver = \"openai-chat\"\nbase_url = \"https://magpie.invalid/v1\"\n";
+    let home = Home::configured(Arc::new(Script::new([])), config);
+    let file = home.root.path().join("etc/config.toml");
+    let zh = Language::Chinese;
+    let asked = run(&home, zh, login("magpie"), &mut piping(FAKE)).await;
+    let linked = "已在配置里写上 providers.magpie.key = { secret = \"magpie\" }\n";
+    assert_eq!(asked.err, format!("已保存 magpie 的密钥\n{linked}"));
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(
+        written.contains("key = { secret = \"magpie\" }"),
+        "{written}"
+    );
+    let asked = run(&home, zh, login("magpie"), &mut piping(FAKE_2)).await;
+    assert_eq!(asked.err, "已替换 magpie 的密钥\n", "写过引用的不再写");
+    let asked = run(&home, zh, login("deepseek"), &mut piping(FAKE)).await;
+    assert_eq!(asked.err, "已保存 deepseek 的密钥\n", "没写这家的不碰");
+    assert!(!std::fs::read_to_string(&file).unwrap().contains("deepseek"));
+}
