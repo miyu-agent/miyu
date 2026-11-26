@@ -14,7 +14,7 @@ use std::process::{Command, ExitCode};
 use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::knowledge::Knowledge;
 use miyu_store::layers::valid;
@@ -27,6 +27,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::say;
+use crate::startup::connect_or_start;
 
 /// `miyu kb` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。选项写在子命令前后都行。
 #[derive(Debug, Clone, Args)]

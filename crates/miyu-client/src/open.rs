@@ -7,7 +7,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, ReadHalf, WriteHalf};
 
-use miyu_ipc::Connection;
+use miyu_ipc::{Connection, Patience, Slow};
 use miyu_store::root::DataRoot;
 
 use crate::CoreCommand;
@@ -22,6 +22,9 @@ pub trait Browser {
     /// 打开 `url`。
     fn open(&self, url: &str) -> bool;
 }
+
+/// 不叫「慢了」。
+const QUIET: Slow<'static> = &|| {};
 
 /// 交给系统以后最多等多久看它是不是当场失败（施工 WB-1）。
 const HAND_OVER: Duration = Duration::from_secs(3);
@@ -129,10 +132,25 @@ impl Core {
     ///
     /// 连不上、拉不起来，握手被拒、没回：[`Refused`]。
     pub async fn connect(root: &DataRoot, core: &CoreCommand, kind: &str) -> Result<Core, Refused> {
-        let (connection, token) = miyu_ipc::connect_or_start(root, || core())
+        Core::connect_waiting(root, core, kind, QUIET).await
+    }
+
+    /// 同 [`Core::connect`]，慢了叫 `slow`（施工 CS-6）：拉起核心、等握手的回应，哪一段过了 3 秒还没好叫一次（两段各最多一次），
+    /// 网页照它让页面显示「核心还在启动」。各段最多等 10 分钟（`miyu_ipc::Patience`）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Core::connect`]；握手等过了上限是 `no_answer`。
+    pub async fn connect_waiting(
+        root: &DataRoot,
+        core: &CoreCommand,
+        kind: &str,
+        slow: Slow<'_>,
+    ) -> Result<Core, Refused> {
+        let (connection, token) = miyu_ipc::connect_or_start_waiting(root, || core(), slow)
             .await
             .map_err(not_started)?;
-        Core::shake(connection, &[("token", &token)], kind)
+        Core::shake(connection, &[("token", &token)], kind, slow)
             .await
             .map(|(core, _)| core)
     }
@@ -149,10 +167,24 @@ impl Core {
         core: &CoreCommand,
         kind: &str,
     ) -> Result<Core, Refused> {
-        let (connection, token) = miyu_ipc::reconnect_or_start(root, || core())
+        Core::reconnect_waiting(root, core, kind, QUIET).await
+    }
+
+    /// 同 [`Core::reconnect`]，慢了叫 `slow`（施工 CS-6，同 [`Core::connect_waiting`]）。
+    ///
+    /// # Errors
+    ///
+    /// 同 [`Core::reconnect`]；握手等过了上限是 `no_answer`。
+    pub async fn reconnect_waiting(
+        root: &DataRoot,
+        core: &CoreCommand,
+        kind: &str,
+        slow: Slow<'_>,
+    ) -> Result<Core, Refused> {
+        let (connection, token) = miyu_ipc::reconnect_or_start_waiting(root, || core(), slow)
             .await
             .map_err(not_started)?;
-        Core::shake(connection, &[("token", &token)], kind)
+        Core::shake(connection, &[("token", &token)], kind, slow)
             .await
             .map(|(core, _)| core)
     }
@@ -167,7 +199,7 @@ impl Core {
         let (connection, token) = miyu_ipc::connect(root)
             .await
             .map_err(|error| unreachable(error.said(), error))?;
-        Core::shake(connection, &[("token", &token)], kind)
+        Core::shake(connection, &[("token", &token)], kind, QUIET)
             .await
             .map(|(core, _)| core)
     }
@@ -182,7 +214,7 @@ impl Core {
         let connection = miyu_ipc::connect_bare(root)
             .await
             .map_err(|error| unreachable(error.said(), error))?;
-        Core::shake(connection, &[("login", login)], kind)
+        Core::shake(connection, &[("login", login)], kind, QUIET)
             .await
             .map(|(core, _)| core)
     }
@@ -202,7 +234,8 @@ impl Core {
         let connection = miyu_ipc::connect_bare(root)
             .await
             .map_err(|error| unreachable(error.said(), error))?;
-        let (core, shaken) = Core::shake(connection, &[("password", password)], kind).await?;
+        let (core, shaken) =
+            Core::shake(connection, &[("password", password)], kind, QUIET).await?;
         let login = Login {
             token: shaken["login"]["token"]
                 .as_str()
@@ -217,11 +250,13 @@ impl Core {
     }
 
     /// 在连上的 `connection` 上出示凭据 `credentials`（`token` 本机令牌、`login` 设备令牌、`password` 访问密码）握手，报自己
-    /// 是 `kind`。交回连上的核心和握手的回应。
+    /// 是 `kind`。交回连上的核心和握手的回应。回应照 `miyu_ipc::Patience` 等（施工 CS-6，原来 30 秒）：过了 3 秒叫一次 `slow`，最多
+    /// 10 分钟，过了是 `no_answer`。
     async fn shake(
         connection: Connection,
         credentials: &[(&str, &str)],
         kind: &str,
+        slow: Slow<'_>,
     ) -> Result<(Core, Value), Refused> {
         let (read, write) = tokio::io::split(connection);
         let mut core = Core {
@@ -237,7 +272,11 @@ impl Core {
         for (key, value) in credentials {
             hello[*key] = json!(value);
         }
-        let shaken = core.call("hello", "hello", hello).await?;
+        let patience = Patience::current();
+        let asked = core.call_waiting("hello", "hello", hello, patience.limit);
+        let shaken = miyu_ipc::patiently(asked, patience, slow)
+            .await
+            .unwrap_or_else(|| Err(Refused::local("no_answer", "no answer")))?;
         core.language = shaken["language"].as_str().map(str::to_string);
         Ok((core, shaken))
     }

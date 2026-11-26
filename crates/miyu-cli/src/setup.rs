@@ -21,7 +21,7 @@ use std::sync::Arc;
 
 use clap::Args;
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
@@ -32,6 +32,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{self, say};
+use crate::startup::connect_or_start;
 use flow::Flow;
 
 /// 参数不对（`cli/main.md`「参数写错时」）。

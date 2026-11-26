@@ -6,6 +6,9 @@
 //!
 //! 「没在跑」要先确认（施工 CS-3）：照 `run/socket` 连不上时再看锁和算出来的位置（`miyu_ipc::running_unreachable`）。核心跑着时
 //! `run/` 被删了，令牌、位置都没了，它还开着：原来当它没在跑、退 0，现在说连不上它、怎么收掉，退 1。不另想办法结束它。
+//!
+//! 锁被拿着、令牌还在、`run/socket` 却连不上的（施工 CS-6）：核心正在起来（还没开始接连接）或者正在收尾（不再接连接了）。每 50
+//! 毫秒再看一次：连上了照常停它；锁放了就是停了，退 0；等了 [`WAIT`] 还是这样的照连不上说。
 
 use std::io::Write;
 use std::process::ExitCode;
@@ -26,6 +29,9 @@ use crate::rpc::Rpc;
 /// 回了以后最多等核心退多久：放下进行中的回合、写完盘一般几秒，等不到的说一声。
 const WAIT: Duration = Duration::from_secs(60);
 
+/// 核心正在起来、正在收尾时，每次歇多久再看（施工 CS-6）。
+const PAUSE: Duration = Duration::from_millis(50);
+
 /// 跑一次 `miyu core stop`，交回退出码。
 pub fn core_stop() -> ExitCode {
     let runtime = match tokio::runtime::Builder::new_current_thread()
@@ -45,16 +51,26 @@ pub fn core_stop() -> ExitCode {
 
 /// 同 [`core_stop`]：数据根 `root`，出错照 `language` 说在 `err` 上。
 pub async fn core_stop_on(root: &DataRoot, language: Language, err: &mut dyn Write) -> u8 {
-    let (connection, token) = match miyu_ipc::connect(root).await {
-        Ok(connected) => connected,
-        Err(ConnectError::NotRunning) => {
-            return match miyu_ipc::running_unreachable(root).await {
-                Ok(false) => exit::OK,
-                Ok(true) => said(err, language, &unreachable(root, language)),
-                Err(error) => said(err, language, &Problem::new(error.to_string())),
-            };
+    let until = tokio::time::Instant::now() + WAIT;
+    let (connection, token) = loop {
+        match miyu_ipc::connect(root).await {
+            Ok(connected) => break connected,
+            Err(ConnectError::NotRunning) => match miyu_ipc::running_unreachable(root).await {
+                Ok(false) => return exit::OK,
+                // 正在起来、正在收尾的：令牌还在。等它连得上或者走了（施工 CS-6）。
+                Ok(true)
+                    if root.run().join("token").is_file()
+                        && tokio::time::Instant::now() < until =>
+                {
+                    tokio::time::sleep(PAUSE).await;
+                }
+                Ok(true) => return said(err, language, &unreachable(root, language)),
+                Err(error) => return said(err, language, &Problem::new(error.to_string())),
+            },
+            Err(error) => {
+                return said(err, language, &Problem::new(crate::startup::spoken(&error)));
+            }
         }
-        Err(error) => return said(err, language, &Problem::new(crate::startup::spoken(&error))),
     };
     let mut rpc = Rpc::new(connection, "core-stop");
     if let Err(code) = link::hello(&mut rpc, &token, &language, false, err).await {
@@ -70,13 +86,9 @@ pub async fn core_stop_on(root: &DataRoot, language: Language, err: &mut dyn Wri
         Err(error) => return said(err, language, &Problem::new(error.to_string())),
     }
     drop(rpc);
-    let waiting = {
-        let root = root.clone();
-        tokio::task::spawn_blocking(move || miyu_ipc::wait_released(&root))
-    };
-    match tokio::time::timeout(WAIT, waiting).await {
-        Ok(Ok(Ok(()))) => exit::OK,
-        Ok(Ok(Err(error))) => said(err, language, &Problem::new(error.to_string())),
+    // 等锁放开能当场放下（施工 CS-6）：原来在阻塞线程池里等，时限到了说完「没有退出」，还要等核心真退了才退得了。
+    match tokio::time::timeout(WAIT, miyu_ipc::released(root)).await {
+        Ok(Ok(())) => exit::OK,
         Ok(Err(error)) => said(err, language, &Problem::new(error.to_string())),
         Err(_) => said(err, language, &not_stopped(language)),
     }

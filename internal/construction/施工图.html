@@ -1667,6 +1667,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sFL10"><span class="n">FL-10、11</span>两条偶发测试<span class="st">…</span></a></li>
         <li><a class="step review" href="#sRO4B"><span class="n">RO-4补</span>挪走只管数据根<span class="st">…</span></a></li>
         <li><a class="step review" href="#sAUP1"><span class="n">AU-P1</span>外部审计中低危核实<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCS6"><span class="n">CS-6</span>等核心和停核心<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66214,6 +66215,58 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>蓝图 <code>sandbox/linux.md</code>、<code>tools/shell.md</code>、<code>cli/call.md</code>、<code>mcp.md</code>、<code>drivers/openai-chat.md</code>、<code>view.md</code>、<code>fs.md</code>、<code>store.md</code>、<code>protocol.md</code>，施工单 <code>internal/construction/AU-P1-审计中危.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sCS6" aria-labelledby="h-sCS6">
+  <div class="sheet-head"><h2 id="h-sCS6"><span class="no">CS-6</span>等核心和停核心</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">核心起得慢先说一声、接着等，退了当场结束；连上了就有人回；第二次停的信号当场强退，收尾有总时限。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-ipc · miyu-core · miyu-endpoint · miyu-cli · miyu-client · miyu-log</span><span class="dir-note">CS-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>读那一行能当场放下：Unix 异步读管道，Windows 另起线程</li>
+              <li><code>Patience</code>：3 秒叫 <code>Slow</code>，最多 10 分钟；看管道、进程、锁</li>
+              <li>核心开始接连接的前一刻才写 <code>run/socket</code>、说 <code>ready</code></li>
+              <li>定下要停就关监听，锁到收尾做完才放</li>
+              <li>停的信号起来时就装，第二次强退，收尾 30 秒</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">慢了接着等</span><span class="rl">项目主人 11-27 定：3 秒提示「核心还在启动…」，上限 10 分钟</span></div>
+          <div class="tile new"><span class="nm">第二次就强退</span><span class="rl">项目主人 11-27 定：第一次照常收尾</span></div>
+          <div class="tile new"><span class="nm">先开界面排到以后</span><span class="rl">正式版以后做，记进「还没有的」</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CS-6</dd></div>
+        <div><dt>名称</dt><dd>等核心和停核心</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">CS-6</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：端到端九条里七条红，单元四条退回改动就红</span></li>
+        <li><span class="ok">✓</span><span>沙箱实测：卡在读配置时 3 秒说「核心还在启动…」，<code>SIGSTOP</code> 时说「核心还没有回应」</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/CS-6-等核心和停核心.md</code>；蓝图 <code>ipc.md</code>「等多久」、<code>core.md</code>「停下」、<code>client.md</code>、<code>cli/main.md</code>、<code>cli/acp.md</code>；设计 12 第二节。</li>
       </ul>
     </div>
   </div>

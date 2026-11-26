@@ -101,6 +101,11 @@ pub(crate) fn fail(reason: impl Into<String>) -> u8 {
     exit::ERROR
 }
 
+/// 往 `to` 上印一句进展（施工 CS-6，「核心还在启动…」这类）：同报错 `miyu: ` 打头，不是错、不带建议，照样收拾。
+pub(crate) fn note(to: &mut dyn Write, what: &str) {
+    say(to, &format!("{PROGRAM}: {}", tidy(what)));
+}
+
 /// 收拾一句话：去掉两头的空白和句末的句号，开头是首字母大写的英文词的改成小写。
 fn tidy(text: &str) -> String {
     let text = text.trim().trim_end_matches(['。', '.']).trim_end();

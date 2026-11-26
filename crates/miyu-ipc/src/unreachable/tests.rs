@@ -2,14 +2,16 @@ use super::*;
 use crate::test_support::Scratch;
 use crate::{Lock, open_locked};
 
-/// 起一个核心的样子：拿锁、照这台机器的位置在套接字上等着。
+/// 起一个核心的样子：拿锁、照这台机器的位置在套接字上等着，写好 `run/socket`（施工 CS-6 起开始接连接时才写）。
 fn listening(root: &DataRoot) -> crate::Opened {
-    open_locked(
+    let opened = open_locked(
         root,
         &Dirs::current(),
         Lock::acquire(root).expect("拿得到锁"),
     )
-    .expect("开得了")
+    .expect("开得了");
+    opened.listener.publish().expect("写得进");
+    opened
 }
 
 /// 位置、令牌被删了，锁还拿着：算在跑。放了以后不算。

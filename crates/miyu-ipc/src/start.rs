@@ -6,37 +6,35 @@
 //!
 //! 拉起分两种（施工 CS-5）：人要用的（命令行的命令、头上的「启动」、头刚打开）照 [`connect_or_start`] 拉；头断线以后自己重连
 //! 照 [`reconnect_or_start`]，人停的核心（`run/stopped`，[`crate::mark_stopped`]）不拉，交回 [`StartError::StoppedByUser`]。
+//!
+//! 等多久照 [`Patience`]（施工 CS-6）：过了 3 秒叫一声「慢了」（`_waiting` 的几个交给调用方的 [`Slow`]），最多 10 分钟；拉起的核心退了、
+//! 说了起不来的当场结束。锁在别的核心手里、照 `run/socket` 又连不上的，是它正在起来（还没开始接连接）或者正在收尾：等它能连上，
+//! 或者走了、放了锁再拉。
 
 use std::fs::{File, OpenOptions, TryLockError};
-use std::io::{self, BufRead, BufReader, PipeReader, Read};
-use std::path::Path;
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use std::process::Command;
 
 use miyu_store::root::DataRoot;
 
 use crate::error::{ConnectError, StartError};
 use crate::listener::Connection;
+use crate::patience::{Clock, Patience, Slow};
 use crate::ready::Ready;
-use crate::{connect, connect_bare, sys};
+use crate::{connect, connect_bare, lock};
+
+mod spawn;
+pub use spawn::{spawn_detached, spawn_detached_waiting};
 
 /// 拉起锁的名字，在 `run/` 里。
 const SPAWN_LOCK: &str = "spawn.lock";
 
-/// 等拉起锁、等核心说好了，各最多等多久（施工 CS-1 从 10 秒放宽：几个核心同时冷启动、硬盘忙时，核心起来那几步要等落盘，
-/// 2026-10-31 Terminal-Bench 里量到过卡 24 秒）。
-const WAIT: Duration = Duration::from_secs(60);
-
-/// 等拉起锁、等已经在跑的核心能连上，每次歇多久。
-const PAUSE: Duration = Duration::from_millis(50);
-
-/// 核心那一行最长多少字节：原因写得再长也只读这么多。
-const LINE_LIMIT: u64 = 4096;
+/// 不叫「慢了」。
+const QUIET: Slow<'static> = &|| {};
 
 /// 连核心，没在跑就拉起来。数据根要已经建好骨架。`start` 给出启动核心的命令，例如主程序自己加上 `core`；
-/// 标准输入输出、跟终端脱开，都由这里接。
+/// 标准输入输出、跟终端脱开，都由这里接。慢了不叫谁：要叫的照 [`connect_or_start_waiting`]。
 ///
-/// 要在 tokio 运行时里调。
+/// 要在 tokio 运行时里调（要开着 IO 和时钟）。
 ///
 /// # Errors
 ///
@@ -45,7 +43,21 @@ pub async fn connect_or_start(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<(Connection, String), StartError> {
-    start_with(root, Starting::Asked, start, connect).await
+    connect_or_start_waiting(root, start, QUIET).await
+}
+
+/// 同 [`connect_or_start`]，慢了（过了 [`Patience::slow`] 还没连上）叫一次 `slow`（施工 CS-6）。
+///
+/// # Errors
+///
+/// 同 [`connect_or_start`]。
+pub async fn connect_or_start_waiting(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+    slow: Slow<'_>,
+) -> Result<(Connection, String), StartError> {
+    let clock = Clock::new(Patience::current(), slow);
+    start_with(root, Starting::Asked, start, connect, &clock).await
 }
 
 /// 同 [`connect_or_start`]，只是头断线以后自己重连用（施工 CS-5）：核心是人停的（`run/stopped`）就不拉，交回
@@ -58,7 +70,21 @@ pub async fn reconnect_or_start(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<(Connection, String), StartError> {
-    start_with(root, Starting::Auto, start, connect).await
+    reconnect_or_start_waiting(root, start, QUIET).await
+}
+
+/// 同 [`reconnect_or_start`]，慢了叫一次 `slow`（施工 CS-6）。
+///
+/// # Errors
+///
+/// 同 [`reconnect_or_start`]。
+pub async fn reconnect_or_start_waiting(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+    slow: Slow<'_>,
+) -> Result<(Connection, String), StartError> {
+    let clock = Clock::new(Patience::current(), slow);
+    start_with(root, Starting::Auto, start, connect, &clock).await
 }
 
 /// 同 [`connect_or_start`]，只是不读本机令牌（施工 W-8，[`connect_bare`]）：网页软件转发浏览器的连接用它。
@@ -70,7 +96,21 @@ pub async fn connect_or_start_bare(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<Connection, StartError> {
-    start_with(root, Starting::Asked, start, connect_bare).await
+    connect_or_start_bare_waiting(root, start, QUIET).await
+}
+
+/// 同 [`connect_or_start_bare`]，慢了叫一次 `slow`（施工 CS-6）：网页软件照它给页面「核心还在启动」的状态。
+///
+/// # Errors
+///
+/// 同 [`connect_or_start`]。
+pub async fn connect_or_start_bare_waiting(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+    slow: Slow<'_>,
+) -> Result<Connection, StartError> {
+    let clock = Clock::new(Patience::current(), slow);
+    start_with(root, Starting::Asked, start, connect_bare, &clock).await
 }
 
 /// 同 [`reconnect_or_start`]，只是不读本机令牌（[`connect_bare`]）：网页软件断线以后替浏览器重连用。
@@ -82,7 +122,21 @@ pub async fn reconnect_or_start_bare(
     root: &DataRoot,
     start: impl FnOnce() -> Command,
 ) -> Result<Connection, StartError> {
-    start_with(root, Starting::Auto, start, connect_bare).await
+    reconnect_or_start_bare_waiting(root, start, QUIET).await
+}
+
+/// 同 [`reconnect_or_start_bare`]，慢了叫一次 `slow`（施工 CS-6）。
+///
+/// # Errors
+///
+/// 同 [`reconnect_or_start`]。
+pub async fn reconnect_or_start_bare_waiting(
+    root: &DataRoot,
+    start: impl FnOnce() -> Command,
+    slow: Slow<'_>,
+) -> Result<Connection, StartError> {
+    let clock = Clock::new(Patience::current(), slow);
+    start_with(root, Starting::Auto, start, connect_bare, &clock).await
 }
 
 /// 为什么拉起（施工 CS-5）。
@@ -94,12 +148,13 @@ enum Starting {
     Auto,
 }
 
-/// 照 `connect` 连（读不读本机令牌由它定），没在跑就拉起来；`starting` 是自己重连、核心是人停的不拉。
+/// 照 `connect` 连（读不读本机令牌由它定），没在跑就拉起来；`starting` 是自己重连、核心是人停的不拉。几段等共用 `clock`。
 async fn start_with<'a, T, F, Fut>(
     root: &'a DataRoot,
     starting: Starting,
     start: impl FnOnce() -> Command,
     connect: F,
+    clock: &Clock<'_>,
 ) -> Result<T, StartError>
 where
     F: Fn(&'a DataRoot) -> Fut,
@@ -112,17 +167,27 @@ where
     if held_back() {
         return Err(StartError::StoppedByUser);
     }
-    let _spawning = spawn_lock(root).await?;
+    let _spawning = match spawn_lock(root, &connect, clock).await? {
+        Locked::Mine(file) => file,
+        Locked::Reached(connected) => return Ok(connected),
+    };
     if let Some(connected) = connected(connect(root).await)? {
         return Ok(connected);
     }
-    // 等拉起锁的时候别的头可能刚停了它（人停的），拿到锁以后再看一眼。
+    // 锁在别的核心手里：它正在起来或者正在收尾，等它能连上、或者走了再拉（施工 CS-6）。
+    if let Some(connected) = settle(root, &connect, clock).await? {
+        return Ok(connected);
+    }
+    // 等拉起锁、等收尾的时候别的头可能刚停了它（人停的），拉以前再看一眼。
     if held_back() {
         return Err(StartError::StoppedByUser);
     }
-    match launch(start(), root).await? {
+    match spawn::launch(start(), root.path(), clock).await? {
         Ready::Ready => connect(root).await.map_err(StartError::Connect),
-        Ready::Running => until_connected(root, connect).await,
+        // 拉起的那一个说已经有一个在跑：刚好有别的程序（服务管理器）抢先起了一个，等它能连上；它也走了的照没在跑说。
+        Ready::Running => settle(root, &connect, clock)
+            .await?
+            .ok_or(StartError::Connect(ConnectError::NotRunning)),
         Ready::Failed { code, reason } => Err(StartError::Refused { code, reason }),
     }
 }
@@ -136,90 +201,70 @@ fn connected<T>(result: Result<T, ConnectError>) -> Result<Option<T>, StartError
     }
 }
 
-/// 拿拉起锁，最多等 [`WAIT`]：别的头在拉，等它拉完。
-async fn spawn_lock(root: &DataRoot) -> Result<File, StartError> {
+/// 拿拉起锁的结果。
+enum Locked<T> {
+    /// 拿到了。
+    Mine(File),
+    /// 等的时候别的头拉起来了，连上了。
+    Reached(T),
+}
+
+/// 拿拉起锁：别的头在拉，等它拉完，每歇一下连一次，连上了就不要锁了。慢了叫一声，过了上限是 [`StartError::Busy`]。
+async fn spawn_lock<'a, T, F, Fut>(
+    root: &'a DataRoot,
+    connect: &F,
+    clock: &Clock<'_>,
+) -> Result<Locked<T>, StartError>
+where
+    F: Fn(&'a DataRoot) -> Fut,
+    Fut: Future<Output = Result<T, ConnectError>>,
+{
     let file = OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
         .truncate(false)
         .open(root.run().join(SPAWN_LOCK))?;
-    let deadline = Instant::now() + WAIT;
     loop {
         match file.try_lock() {
-            Ok(()) => return Ok(file),
-            Err(TryLockError::WouldBlock) if Instant::now() < deadline => {
-                tokio::time::sleep(PAUSE).await;
+            Ok(()) => return Ok(Locked::Mine(file)),
+            Err(TryLockError::WouldBlock) => {
+                if let Some(connected) = connected(connect(root).await)? {
+                    return Ok(Locked::Reached(connected));
+                }
+                if clock.expired() {
+                    return Err(StartError::Busy);
+                }
+                clock.pause().await;
             }
-            Err(TryLockError::WouldBlock) => return Err(StartError::Busy),
             Err(TryLockError::Error(error)) => return Err(StartError::Io(error)),
         }
     }
 }
 
-/// 拉起核心，等它写来的那一行。拉起来的核心跟终端脱开：标准输入、标准错误接空，标准输出是那根管道；
-/// 工作目录是数据根，不占着头的当前目录（施工 3-9 下的真机验收里查出这一条原先没做：核心一直占着敲
-/// `miyu ask` 时所在的目录，那是一块移动硬盘的话就卸不下来）。头不等它退出，另起一个线程替它收尸。
-async fn launch(command: Command, root: &DataRoot) -> Result<Ready, StartError> {
-    spawn_detached(command, root.path()).await
-}
-
-/// 拉起 `command`、跟终端脱开，工作目录是 `dir`，等它往标准输出写来的那一行（[`Ready`]），最多 60 秒（施工 CS-1）。核心照它拉起，
-/// 网页软件的 `open` 也照它拉起 `serve`（施工 W-9，`web-module.md`「怎么走」第十一条第 2 款）。
-///
-/// # Errors
-///
-/// 拉不起来；什么都没写就退了；等太久。
-pub async fn spawn_detached(mut command: Command, dir: &Path) -> Result<Ready, StartError> {
-    let (reader, writer) = io::pipe()?;
-    command
-        .current_dir(dir)
-        .stdin(Stdio::null())
-        .stdout(writer)
-        .stderr(Stdio::null());
-    sys::detach(&mut command);
-    let mut child = command.spawn()?;
-    // 命令里还攥着写端的这一份：不放下，核心没说话就退了，这边也读不到头。
-    drop(command);
-    std::thread::spawn(move || {
-        if let Err(error) = child.wait() {
-            tracing::debug!(target: "miyu::ipc", error = %error, "core not reaped");
-        }
-    });
-    hear(reader, WAIT).await
-}
-
-/// 等核心写来的那一行，最多等 `wait`。
-async fn hear(reader: PipeReader, wait: Duration) -> Result<Ready, StartError> {
-    let read = tokio::task::spawn_blocking(move || {
-        let mut line = String::new();
-        let read = BufReader::new(reader.take(LINE_LIMIT)).read_line(&mut line)?;
-        Ok::<_, io::Error>((read > 0).then_some(line))
-    });
-    match tokio::time::timeout(wait, read).await {
-        Err(_) => Err(StartError::Timeout),
-        Ok(Err(joined)) => Err(StartError::Io(io::Error::other(joined))),
-        Ok(Ok(Err(error))) => Err(StartError::Io(error)),
-        Ok(Ok(Ok(None))) => Err(StartError::Silent),
-        Ok(Ok(Ok(Some(line)))) => Ok(Ready::parse(&line)),
-    }
-}
-
-/// 已经有一个核心在跑：它可能还没开始等连接（刚拿到锁），连上为止，最多等 [`WAIT`]。
-async fn until_connected<'a, T, F, Fut>(root: &'a DataRoot, connect: F) -> Result<T, StartError>
+/// 核心的锁被拿着、却连不上：它正在起来（套接字绑好了、还没开始接连接，`run/socket` 还没写）或者正在收尾（不再接连接了）。
+/// 每歇一下连一次，连上了交回；锁放了（它走了）交回 `None`；慢了叫一声，过了上限是 [`StartError::Timeout`]。锁没人拿着的当场交回
+/// `None`。
+async fn settle<'a, T, F, Fut>(
+    root: &'a DataRoot,
+    connect: &F,
+    clock: &Clock<'_>,
+) -> Result<Option<T>, StartError>
 where
     F: Fn(&'a DataRoot) -> Fut,
     Fut: Future<Output = Result<T, ConnectError>>,
 {
-    let deadline = Instant::now() + WAIT;
     loop {
-        match connect(root).await {
-            Ok(connected) => return Ok(connected),
-            Err(ConnectError::NotRunning) if Instant::now() < deadline => {
-                tokio::time::sleep(PAUSE).await;
-            }
-            Err(error) => return Err(StartError::Connect(error)),
+        if !lock::held(root)? {
+            return Ok(None);
         }
+        if let Some(connected) = connected(connect(root).await)? {
+            return Ok(Some(connected));
+        }
+        if clock.expired() {
+            return Err(StartError::Timeout);
+        }
+        clock.pause().await;
     }
 }
 

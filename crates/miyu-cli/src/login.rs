@@ -22,7 +22,7 @@ use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 
 use miyu_config::secret::valid_name;
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
@@ -34,6 +34,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{self, Line, say, write};
+use crate::startup::connect_or_start;
 
 /// 参数不对（`cli/main.md`「参数写错时」）。
 const MISUSE: u8 = 2;

@@ -6,8 +6,11 @@
 //! 1. 拿 `run/core.lock` 的锁：一个数据根上只跑一个核心，拿不到就是已经有一个在跑；
 //! 2. 算出套接字放哪：一个数据根一个位置，名字里带数据根的指纹，几个数据根不撞；
 //! 3. 换一个本机令牌，写进 `run/token`：本机的头握手时出示它；
-//! 4. 在套接字上等连接：套接字放在只有自己能进的目录里，上一个核心崩了留下的旧套接字文件删掉；
-//! 5. 实际位置写进 `run/socket`。
+//! 4. 在套接字上等连接：套接字放在只有自己能进的目录里，上一个核心崩了留下的旧套接字文件删掉；上一个留下的 `run/socket`
+//!    先删掉（施工 CS-6）；
+//! 5. 开始接连接的前一刻（[`Listener::publish`]）才把实际位置写进 `run/socket`：头照它连上就有人回（施工 CS-6）。
+//!
+//! 等核心等多久照 [`Patience`]（施工 CS-6）：过了 3 秒叫一声「慢了」，最多 10 分钟，核心退了、说了起不来的当场结束。
 //!
 //! 头（[`connect`]）读 `run/socket`，核对套接字所在的目录只有自己能进，连过去，再现读本机令牌。核心没在跑，
 //! 头用 [`connect_or_start`] 把它拉起来，等它写来 [`Ready`] 那一行再连（施工 3-9 上）；头断线以后自己重连用
@@ -20,9 +23,11 @@
 
 mod error;
 mod files;
+mod heard;
 mod listener;
 mod lock;
 pub mod open_files;
+mod patience;
 mod place;
 mod ready;
 mod start;
@@ -42,12 +47,15 @@ use windows as sys;
 
 pub use error::{ConnectError, OpenError, StartError};
 pub use listener::{Connection, Listener};
-pub use lock::{Held, Lock, wait_released};
+pub use lock::{Held, Lock, released, wait_released};
+pub use patience::{Patience, Slow, patiently};
 pub use place::{Dirs, fingerprint};
 pub use ready::Ready;
 pub use start::{
-    connect_or_start, connect_or_start_bare, reconnect_or_start, reconnect_or_start_bare,
-    spawn_detached,
+    connect_or_start, connect_or_start_bare, connect_or_start_bare_waiting,
+    connect_or_start_waiting, reconnect_or_start, reconnect_or_start_bare,
+    reconnect_or_start_bare_waiting, reconnect_or_start_waiting, spawn_detached,
+    spawn_detached_waiting,
 };
 pub use stopped::mark_stopped;
 pub use unreachable::running_unreachable;
@@ -74,8 +82,8 @@ impl fmt::Debug for Opened {
     }
 }
 
-/// 核心起来：拿锁，算出套接字放哪，换本机令牌，在套接字上等连接，把实际位置写进 `run/socket`。
-/// 数据根要已经建好骨架。
+/// 核心起来：拿锁，算出套接字放哪，换本机令牌，在套接字上等连接，把实际位置写进 `run/socket`（马上就能连：测试、只等连接的
+/// 用它）。数据根要已经建好骨架。
 ///
 /// 要在 tokio 运行时里调：套接字要登记到它上面。
 ///
@@ -88,10 +96,13 @@ impl fmt::Debug for Opened {
 ///
 /// 不在 tokio 运行时里。
 pub fn open(root: &DataRoot, dirs: &Dirs) -> Result<Opened, OpenError> {
-    open_locked(root, dirs, Lock::acquire(root)?)
+    let opened = open_locked(root, dirs, Lock::acquire(root)?)?;
+    opened.listener.publish()?;
+    Ok(opened)
 }
 
-/// 锁已经拿到了，接着起来：核心进程先拿锁、再装运行日志，免得两个核心写同一份日志（施工 3-9 上）。
+/// 锁已经拿到了，接着起来：核心进程先拿锁、再装运行日志，免得两个核心写同一份日志（施工 3-9 上）。同 [`open`]，只是不写
+/// `run/socket`（施工 CS-6）：核心走到开始接连接的前一刻才 [`Listener::publish`]，上一个留下的这里先删掉。
 ///
 /// 要在 tokio 运行时里调。
 ///
@@ -104,12 +115,11 @@ pub fn open(root: &DataRoot, dirs: &Dirs) -> Result<Opened, OpenError> {
 /// 不在 tokio 运行时里。
 pub fn open_locked(root: &DataRoot, dirs: &Dirs, lock: Lock) -> Result<Opened, OpenError> {
     stopped::clear(root)?;
+    files::forget_location(root)?;
     let path = place::locate(root, dirs)?;
     let token = files::renew_token(root)?;
     let own_dir = place::own_dir(&path, dirs);
-    let listener = Listener::new(sys::bind(&path)?, path, own_dir, lock);
-    files::write_location(root, listener.path())?;
-    tracing::info!(target: "miyu::ipc", socket = %listener.path().display(), "listening");
+    let listener = Listener::new(sys::bind(&path)?, (path, own_dir), root.clone(), lock);
     Ok(Opened { listener, token })
 }
 

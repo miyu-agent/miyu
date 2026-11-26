@@ -14,7 +14,7 @@ use clap::{Args, Subcommand};
 use serde_json::{Map, Value, json};
 use tokio::sync::mpsc;
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_kernel::time::UtcOffset;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
@@ -26,6 +26,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{offset, say};
+use crate::startup::connect_or_start;
 
 /// 出厂认识的几类（`memory.md` 的记忆日志；`person` 是施工 E-1 上的认识的人）：`add --class` 只收它们，`list --class`
 /// 照它们挑。

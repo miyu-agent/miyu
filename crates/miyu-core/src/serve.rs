@@ -1,6 +1,6 @@
 //! 一个个接连接，空闲够久了、收到停的信号就停（`internal/designs/12-进程形态与分发.md` 第二节「按需运行」，
 //! 施工 3-9 上）。施工 Z-1 上起默认常驻：空闲退不退照系统配置的 `core.idle_exit`（[`CoreSettings`]，分钟，0 是不退），每次看空闲
-//! 时现取，改了当场算数。
+//! 时现取，改了当场算数。停的信号怎么装、收尾的总时限在 `stops.rs`（施工 CS-6）。
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -97,13 +97,34 @@ pub async fn serve_then(
     stop: impl Future<Output = ()>,
     closing: impl Future<Output = ()>,
 ) -> Stopped {
-    // 数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：监听器交出去以前拿好。
+    serve_watched(listener, core, idle, (stop, || {}), closing).await
+}
+
+/// 同 [`serve_then`]，定下要停的那一刻叫一次 `stopping`（施工 CS-6：核心照它给收尾起表，`stops.rs`）。
+///
+/// 定下要停以后先不再接新连接（施工 CS-6）：关掉监听、删掉套接字文件和 `run/socket`，头再连是「没在跑」，不会连上了却等不到回应；
+/// 已经连着的照常说话，到交回时才断。锁另外拿着，收尾做完、记下「停了」才放。
+pub(crate) async fn serve_watched(
+    mut listener: Listener,
+    core: Arc<Core>,
+    idle: impl Fn() -> Option<Duration>,
+    (stop, stopping): (impl Future<Output = ()>, impl FnOnce()),
+    closing: impl Future<Output = ()>,
+) -> Stopped {
+    // 数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：监听器交出去以前拿好。锁也拿出来：监听器先放（施工 CS-6）。
     let held = listener.held();
-    let running = miyu_endpoint::run(listener, Arc::clone(&core));
+    let lock = listener.take_lock();
+    let (close, closed) = tokio::sync::oneshot::channel::<()>();
+    // 放在堆上：交回以前先放下它（连接都断），再放锁。
+    let mut running = Box::pin(miyu_endpoint::run_until(
+        listener,
+        Arc::clone(&core),
+        closed,
+    ));
     let activity = core.activity();
     // 头叫停（施工 DT-4 下，`core.stop`）：同收到停的信号，只是原因不一样。
     let asked = activity.stop_requested();
-    tokio::pin!(running, stop, asked);
+    tokio::pin!(stop, asked);
     let mut changes = activity.subscribe();
     let every = idle().map_or(RELOOK, check);
     // 下一次看的时刻：定死了，有动静不往后推（一直有人来连一下就走的，照样到点看）。
@@ -117,14 +138,8 @@ pub async fn serve_then(
         }
         tokio::select! {
             never = &mut running => match never {},
-            () = &mut stop => {
-                miyu_kernel::apart::future(core.stop_sessions()).await;
-                break Stopped::Signal;
-            }
-            () = &mut asked => {
-                miyu_kernel::apart::future(core.stop_sessions()).await;
-                break Stopped::Request;
-            }
+            () = &mut stop => break Stopped::Signal,
+            () = &mut asked => break Stopped::Request,
             // 有动静了（连上、断开、来请求）：回到上面重新看。信号断不了（核心在它就在），断了也当没动静。
             Ok(()) = changes.changed() => continue,
             () = tokio::time::sleep_until(next), if !connected => {
@@ -133,7 +148,6 @@ pub async fn serve_then(
                 // 核心永远开着，新建的数据根上还能再起一个。
                 if !held.here() {
                     tracing::warn!(target: TARGET, "data root gone, stopping");
-                    miyu_kernel::apart::future(core.stop_sessions()).await;
                     break Stopped::Gone;
                 }
                 if !miyu_kernel::apart::future(core.idle()).await {
@@ -147,62 +161,40 @@ pub async fn serve_then(
             }
         }
     };
-    // 停下以后的收尾只走一次，单拎出去（施工 LW-8，`miyu_kernel::apart`）。
-    miyu_kernel::apart::future(async {
+    stopping();
+    // 不再接新连接（施工 CS-6）：接连接的那一头收到就关监听。
+    let _closed = close.send(());
+    // 停下以后的收尾只走一次，单拎出去（施工 LW-8，`miyu_kernel::apart`）。连着的头照常说话：收尾时也接着跑接连接的那一头。
+    let stopping_work = miyu_kernel::apart::future(async {
+        // 空闲退出的没有在跑的会话；别的先有计划地停下会话。
+        if stopped != Stopped::Idle {
+            core.stop_sessions().await;
+        }
         // 扩展随核心退出（施工 9-4 上）：关它们的标准输入，一起等，没退的杀掉。
         core.stop_extensions().await;
-        // 记忆在后台的读写做完（施工 TMP-1 补3）：空闲退出的没停会话，这里等；收到信号的停会话时等过了（`stop_sessions`）。
+        // 记忆在后台的读写做完（施工 TMP-1 补3）：空闲退出的没停会话，这里等；别的停会话时等过了（`stop_sessions`）。
         if stopped == Stopped::Idle {
             core.finish_writes().await;
         }
-    })
-    .await;
-    // 锁跟着 `running` 里的监听器，交回时才放：收尾在这之前。
-    closing.await;
+    });
+    // 收尾在放锁之前（施工 TMP-1 补2）。
+    let shutdown = async {
+        stopping_work.await;
+        closing.await;
+    };
+    tokio::select! {
+        never = &mut running => match never {},
+        () = shutdown => {}
+    }
     tracing::info!(target: TARGET, reason = stopped.as_str(), "stopped");
+    drop(running);
+    drop(lock);
     stopped
 }
 
 /// 多久看一次空不空闲：空闲时限的四分之一，最多 30 秒，最少 100 毫秒。不另起忙循环。
 fn check(idle: Duration) -> Duration {
     (idle / 4).clamp(Duration::from_millis(100), Duration::from_secs(30))
-}
-
-/// 停的信号：Ctrl+C（SIGINT），Unix 上还有 SIGTERM。拉起的核心自成一个进程组，终端里按 Ctrl+C 打不到它，
-/// 要停它得明着发。装不上的当不会来：Ctrl+C 装不上时照样等 SIGTERM（施工 4-9 再补三上，原来当成收到了，马上
-/// 停）。
-pub(crate) async fn signal() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{SignalKind, signal};
-        match signal(SignalKind::terminate()) {
-            Ok(mut terminate) => {
-                tokio::select! {
-                    () = interrupt() => {}
-                    _ = terminate.recv() => {}
-                }
-            }
-            Err(error) => {
-                tracing::warn!(target: TARGET, error = %error, "SIGTERM not watched");
-                interrupt().await;
-            }
-        }
-    }
-    #[cfg(not(unix))]
-    interrupt().await;
-}
-
-/// 等 Ctrl+C。装不上的一直等下去。
-async fn interrupt() {
-    watched(tokio::signal::ctrl_c()).await;
-}
-
-/// 等 Ctrl+C：`installed` 是装上它的 future。装不上（交回出错）的，记一条 `WARN`，当它不会来，一直等下去。
-async fn watched(installed: impl Future<Output = std::io::Result<()>>) {
-    if let Err(error) = installed.await {
-        tracing::warn!(target: TARGET, error = %error, "Ctrl+C not watched");
-        std::future::pending::<()>().await;
-    }
 }
 
 #[cfg(test)]

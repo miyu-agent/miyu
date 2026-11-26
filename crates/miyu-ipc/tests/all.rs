@@ -7,4 +7,5 @@ mod support;
 
 mod bare;
 mod pipe;
+mod published;
 mod socket;

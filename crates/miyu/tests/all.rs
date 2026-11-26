@@ -45,6 +45,10 @@ mod rename;
 mod rescue;
 mod settings;
 mod setup;
+#[cfg(unix)]
+mod stopping;
 mod tuned;
 mod undo;
+#[cfg(unix)]
+mod waiting;
 mod wal;

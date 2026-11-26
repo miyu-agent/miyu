@@ -8,13 +8,16 @@
 //! 4. 工作区，没有就建；资源目录；读配置、照 `log.level` 换运行日志的级别，照配置清单生成两份 JSON
 //!    Schema 和参考文件（[`settings`]，施工 8-1、8-2）；供应商的档案、认原厂的表，造会话的路由（[`models`]，施工 8-6、8-7）；开始监视配置文件，配置换了当场换级别、重写
 //!    生成的文件（施工 8-4）；
-//! 5. 换本机令牌、在套接字上等连接（施工 3-8 下）；找沙盒的助手、探一次，只记日志（施工 5-1）；照编进来的可选
+//! 5. 换本机令牌、绑好套接字（施工 3-8 下；还不写 `run/socket`，施工 CS-6）；找沙盒的助手、探一次，只记日志（施工 5-1）；照编进来的可选
 //!    软件包往查询表里登记（[`packages::register`]，cargo 开关 `mermaid`、`net`，施工 W-4、W-7），交给 `Core`；清掉
 //!    分块上传留下的暂存（[`packages::clear_uploads`]，施工 W-5）；
-//! 6. 往标准输出写一行 `ready`：拉起它的头等着这一行；接着照开关拉起开着的扩展（施工 9-4 上）；在后台更新 models.dev 的
+//! 6. 照开关拉起开着的扩展（施工 9-4 上，不等它们）；在后台更新 models.dev 的
 //!    目录（施工 8-7；读目录、用出来的在第 4 步造好路由就在阻塞线程里开始了，读完再答要它的，施工 V-2 下）；在后台清一次
 //!    回收处（施工 3-8 三补，`trash.rs`）；开始自己记内存账（施工 V-4，[`memlog`]）；一阵请求过去、安静下来以后还内存（施工
-//!    V-5 中，`settle.rs`）。
+//!    V-5 中，`settle.rs`）；
+//! 7. 开始接连接的前一刻写 `run/socket`、往标准输出写一行 `ready`（施工 CS-6）：拉起它的头等着这一行，连上就有人回。
+//!
+//! 停的信号起来时就装好（`stops.rs`，施工 CS-6）：第二次当场强退，收尾有 30 秒的总时限。
 //!
 //! 之后 [`serve()`] 一个个接连接：没有连接、也没有在跑的回合，空闲够久了就退出；收到停的信号，先让在跑的
 //! 会话有计划地停下再退出。起不来的，把原因写成那一行（`error …`）交给头。
@@ -36,6 +39,7 @@ mod serve;
 pub mod settings;
 mod settle;
 mod start;
+mod stops;
 mod trash;
 mod wal;
 mod workers;
@@ -357,7 +361,7 @@ struct Live {
 async fn run(
     env: Env,
     (root, resources, opened): (DataRoot, ResourceRoot, miyu_ipc::Opened),
-    options: Options,
+    (options, stops): (Options, stops::Stops),
     (config, live): (miyu_endpoint::config::Config, Live),
     catalog: models::Early,
 ) -> ExitCode {
@@ -434,10 +438,9 @@ async fn run(
     models::follow_recall(core.config_now(), Arc::clone(&model_data));
     // 监视配置文件（第七条）：拿着它一直到停，丢掉就不看了。
     let _watching = core.watch_config();
-    say(&Ready::Ready);
     // 包以前存的 blob 补登记给它（施工 BG-1补，只在还没有 `var/lib/blob-grants/` 时做）：要先于拉起扩展，它们起来就读图。
     core.backfill_blob_grants().await;
-    // 照开关拉起开着的扩展（施工 9-4 上）：写了 `ready` 以后，拉起它的头不等它们。
+    // 照开关拉起开着的扩展（施工 9-4 上）：拉起它的头不等它们。
     core.start_extensions();
     // 配置里的 MCP 服务跟着配置换（施工 F-9 下）：手改了配置，当场起停。
     let _home_mcp = core.follow_home_mcp();
@@ -476,6 +479,13 @@ async fn run(
     let idle = move || fixed.or_else(|| serve::idle_limit(&configured));
     // 走之前的收尾在放锁之前做完（施工 TMP-1 补2）。
     let closing = pending::closing(purging, sweeping);
-    serve_then(opened.listener, core, idle, serve::signal(), closing).await;
+    // 写 `run/socket`、说「好了」放在开始接连接的前一刻（施工 CS-6）：头照它连上就有人回。
+    if let Err(error) = opened.listener.publish() {
+        return failed("socket", Failure::new("socket_failed", error));
+    }
+    say(&Ready::Ready);
+    let (stop, begun) = stops.split();
+    let stopping = move || begun.now();
+    serve::serve_watched(opened.listener, core, idle, (stop, stopping), closing).await;
     ExitCode::SUCCESS
 }

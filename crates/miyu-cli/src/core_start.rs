@@ -8,13 +8,13 @@
 use std::io::Write;
 use std::process::{Command, ExitCode};
 
-use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::diagnostic::{self, Problem};
 use crate::exit;
 use crate::language::{self, Language};
+use crate::startup::connect_or_start;
 
 /// 跑一次 `miyu core start`，交回退出码。`start` 给出拉起核心的命令：主程序自己加上 `core`。
 pub fn core_start(start: impl FnOnce() -> Command) -> ExitCode {

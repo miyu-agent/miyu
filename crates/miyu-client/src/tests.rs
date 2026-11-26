@@ -8,6 +8,11 @@ use crate::{
         ConnectError, Connection, Ready, StartError, connect, connect_or_start,
         connect_or_start_bare, reconnect_or_start, reconnect_or_start_bare, spawn_detached,
     },
+    // 施工 CS-6：慢了叫一声的几个、等多久。
+    connect::{
+        Patience, Slow, connect_or_start_bare_waiting, connect_or_start_waiting, patiently,
+        reconnect_or_start_bare_waiting, reconnect_or_start_waiting, spawn_detached_waiting,
+    },
     // 施工 S-6 上：接入QQ 和群聊内核用到的几组。
     events::{Block, Body, By, Event, FormatError},
     heap::{Stats, Usage, resident, stats, trim, tune, usage},

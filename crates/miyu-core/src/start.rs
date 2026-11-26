@@ -1,4 +1,4 @@
-//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：开套接字，建工作区、读清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
+//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：装停的信号（施工 CS-6），开套接字，建工作区、读清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
 
 use std::process::ExitCode;
 
@@ -17,6 +17,8 @@ pub(super) async fn start(
     (level, log): (&miyu_log::Level, &miyu_log::Guard),
     catalog: models::Early,
 ) -> ExitCode {
+    // 停的信号最先装（施工 CS-6）：起来这一段收到的也有计划地停，第二次当场强退。
+    let stops = crate::stops::watch(log.flusher());
     let opened = match miyu_ipc::open_locked(&root, &Dirs::current(), lock) {
         Ok(opened) => opened,
         Err(error) => return failed("socket", Failure::socket(&error)),
@@ -73,7 +75,7 @@ pub(super) async fn start(
     run(
         env,
         (root, resources, opened),
-        options,
+        (options, stops),
         (config, live),
         catalog,
     )

@@ -25,8 +25,10 @@ miyu-core = { path = "../miyu-core" }
 [dev-dependencies]
 # 测试 `cargo xtask dev-home` 造的配置照清单读得进来（施工 8-6）。
 miyu-config = { path = "../miyu-config" }
-# 测试里拉起核心、连上它（施工 3-9 上）。
-miyu-ipc = { path = "../miyu-ipc" }
+# 测试里拉起核心、连上它（施工 3-9 上）。打开测试口子（施工 CS-6）：测试编出来的主程序照 `MIYU_TEST_WAIT_*` 等核心，不真等十分钟。
+miyu-ipc = { path = "../miyu-ipc", features = ["testkit"] }
+# 同上：测试编出来的核心照 `MIYU_TEST_STOP_LIMIT_MS` 算收尾的总时限（施工 CS-6）。
+miyu-core = { path = "../miyu-core", features = ["testkit"] }
 # 测试里照登录令牌连核心（接入通讯平台要的 `connect_login`、交接票）。
 miyu-client = { path = "../miyu-client" }
 # 测试里的假模型：本机回环上照剧本回的 HTTP 服务器（施工 7-8：核心崩了后台命令跟着没）。

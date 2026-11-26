@@ -42,6 +42,7 @@ fn fake_core(root: &DataRoot, version: &'static str) -> tokio::task::JoinHandle<
         Lock::acquire(root).expect("拿得到锁"),
     )
     .expect("开得了套接字");
+    opened.listener.publish().expect("写得进");
     tokio::spawn(async move {
         let mut listener = opened.listener;
         let connection = listener.accept().await.expect("连得上");
