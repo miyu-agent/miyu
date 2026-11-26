@@ -86,7 +86,8 @@ pub struct Anchor {
     pub model: Model,
     /// 那次请求有几条消息。它的回复是之后请求里的第 `messages` 条（从 0 数）。
     pub messages: u64,
-    /// 供应商报的 `uncached + cache_read + cache_write + output`。
+    /// 那次调用结束时上下文多大：驱动另报了上下文大小（`usage.context`，施工 ACP-1）的照它，没报的是供应商报的
+    /// `uncached + cache_read + cache_write + output`。
     pub reported: u64,
 }
 
@@ -122,11 +123,9 @@ pub fn anchor(history: &History) -> Option<Anchor> {
                     model: called.model.clone()?,
                 },
                 messages: called.messages,
-                reported: usage
-                    .uncached
-                    .saturating_add(usage.cache_read)
-                    .saturating_add(usage.cache_write)
-                    .saturating_add(usage.output),
+                // 一次调用里来回请求几次的扩展驱动，四项是几次加起来的，上下文只是最后一次那么大：照它另报的（施工
+                // ACP-1，设计 73 第三节；2026-11-23 Antigravity 加起来报、判满判错，主人的群会话停在 too_large）。
+                reported: usage.context.unwrap_or_else(|| usage.total()),
             })
         })
 }

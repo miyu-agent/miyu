@@ -246,5 +246,6 @@ pub fn usage(uncached: u64, cache_read: u64, cache_write: u64, output: u64) -> U
         cache_write,
         output,
         reasoning: None,
+        context: None,
     }
 }

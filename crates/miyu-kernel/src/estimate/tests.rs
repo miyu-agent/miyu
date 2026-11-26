@@ -107,6 +107,7 @@ impl Price for Pixels {
     }
 }
 
+mod context;
 #[test]
 fn text_is_utf8_bytes_over_four_rounded_up() {
     assert_eq!(message(&user(""), &FLAT), 0);

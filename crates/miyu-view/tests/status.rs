@@ -321,6 +321,7 @@ fn the_context_counts_all_three_inputs_and_the_output() {
             cache_write: 30,
             output: 5,
             reasoning: None,
+            context: None,
         }),
         ..Line::says("Hi.")
     }]);

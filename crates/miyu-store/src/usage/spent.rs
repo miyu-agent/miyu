@@ -106,6 +106,7 @@ pub(crate) const NO_USAGE: Usage = Usage {
     cache_write: 0,
     output: 0,
     reasoning: None,
+    context: None,
 };
 
 impl Spent {

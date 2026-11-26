@@ -214,6 +214,11 @@ pub struct Usage {
     /// （Anthropic 的思考算在输出里不另报）、以前的日志没有这一格；没有的不写，旧日志读进来再写出去一字不差。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<u64>,
+    /// 这一次调用结束时上下文一共多少 token（输入加这一次的输出），驱动另报的（施工 ACP-1，设计 73 第三节）。一次调用里来回
+    /// 请求几次的（借 agent CLI 的扩展驱动），四项是几次加起来的、记账照它，上下文却只是最后一次那么大：判满、估算照这一格
+    /// （[`crate::estimate::anchor`]）。内置驱动不报；没有的不写，旧日志读进来再写出去一字不差。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<u64>,
 }
 
 impl Usage {
@@ -241,6 +246,8 @@ impl Usage {
                 (None, None) => None,
                 (a, b) => Some(a.unwrap_or(0).saturating_add(b.unwrap_or(0))),
             },
+            // 上下文大小不能加：后一份报了的照后一份，没报的照前一份。
+            context: more.context.or(self.context),
         }
     }
 }

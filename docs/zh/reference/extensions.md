@@ -394,7 +394,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 **回应** `{"usage"?, "error"?, "sent"?}`，在这一次调用的所有 `driver.delta` 之后发送：
 
-- `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?}`；没有报告的项记成没有报告，不做估算。
+- `usage`：`{"uncached", "cache_read", "cache_write", "output", "reasoning"?, "context"?}`；没有报告的项记成没有报告，不做估算。`context` 是这一次调用结束时上下文一共多少 token（输入加这一次的输出）。你的驱动一次调用里会来回请求几次（借 agent 程序的驱动常常这样）时，前四项照实报几次加起来的，用来记账；`context` 报最后一次请求的大小，Miyu 判断上下文满没满、什么时候压缩照它。一次调用只请求一次的不用报。
 - `error`：`{"class", "message", "retry_after_ms"?}`，`class` 是 `retryable`、`stalled`（卡住了：一直没有动静，内核连续遇到两次就不再重试）、`rate_limited`、`context_too_long`、`auth`、`quota`、`content_policy`、`unclassified` 之一，无法识别的值当作 `unclassified`；`retry_after_ms` 只在 `rate_limited` 时生效；`message` 截到 500 个字符，只给人看。已经发送了一部分增量时，不要自己重试（否则回复会重复），Miyu 会按照分类重试、冷却、在池里换模型。
 - `sent`：这一次真正发送出去的字节的 SHA-256，写成 `sha256:<64 位十六进制>`，记进 `model.called`。同样的请求再发送一次（重试）时，如果报告的 `sent` 不一样，就说明编码看了参数以外的东西，缓存前缀无法命中，Miyu 会记录一行 `WARN`（每个驱动每次运行记录一次）。
 

@@ -28,6 +28,7 @@ fn the_drawing_round_trips() {
             cache_write: 0,
             output: 26,
             reasoning: None,
+            context: None,
         })
     );
     assert_eq!(called.first_difference, None);
