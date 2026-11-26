@@ -440,7 +440,7 @@ fn job_report_texts_go_in_and_older_snapshots_lack_them() {
     let snapshot = engineer();
     assert!(
         rendered(&snapshot)
-            .contains(r#"<command-ended job=\"j1\" title=\"跑测试\" reason=\"aborted\">"#)
+            .contains(r#"<command-ended title=\"跑测试\" job=\"j1\" reason=\"aborted\">"#)
     );
     let mut broken = snapshot.clone();
     if let Some(jobs) = broken.core.jobs.as_mut() {

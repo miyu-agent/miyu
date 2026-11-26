@@ -1,4 +1,4 @@
-<command-ended job="j1" title="跑全部测试" reason="undone">
+<command-ended title="跑全部测试" job="j1" reason="undone">
 Killed by signal 15.
 Ran for 4000 ms.
 Output: 96 characters, readable with jobs output.

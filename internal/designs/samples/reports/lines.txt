@@ -1,4 +1,4 @@
-<command-lines job="j1" title="跑全部测试">
+<command-lines title="跑全部测试" job="j1">
 FAIL tests::tmpdir (macOS)
 FAIL tests::symlink (macOS)
 </command-lines>

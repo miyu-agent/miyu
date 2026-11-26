@@ -411,13 +411,13 @@ fn the_reports_session_keeps_the_properties() {
     let opened = &texts[2];
     assert!(
         opened.last().is_some_and(|text| text.starts_with(
-            "<subagent-report job=\"j2\" title=\"查 CI 为什么红\" reason=\"done\">\n"
+            "<subagent-report title=\"查 CI 为什么红\" job=\"j2\" reason=\"done\">\n"
         )),
         "回报开的那一轮，最后一块是那条回报：{opened:?}"
     );
     let busy = &session.requests()[4].1;
     assert!(
-        matches!(busy.messages.last(), Some(Message::User { blocks }) if matches!(blocks.as_slice(), [Block::Text(Text { text })] if text.starts_with("<command-ended job=\"j1\""))),
+        matches!(busy.messages.last(), Some(Message::User { blocks }) if matches!(blocks.as_slice(), [Block::Text(Text { text })] if text.starts_with("<command-ended title=") && text.contains("job=\"j1\""))),
         "回合中途到的，单独一条 user 排在工具结果后面：{:?}",
         busy.messages.last()
     );

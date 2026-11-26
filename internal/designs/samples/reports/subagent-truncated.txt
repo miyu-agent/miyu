@@ -1,4 +1,4 @@
-<subagent-report job="j2" title="查 CI 为什么红" reason="done">
+<subagent-report title="查 CI 为什么红" job="j2" reason="done">
 The middle of this report was cut. jobs output has all of it.
 开头的几段。
 [... 1200 characters omitted ...]

@@ -1,1 +1,1 @@
-<command-lines job="{job}" title="{title}">
+<command-lines title="{title}" job="{job}">

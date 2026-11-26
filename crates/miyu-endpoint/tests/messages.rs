@@ -220,7 +220,7 @@ async fn the_middle_layer_answers_its_subagent_and_reports_the_whole_task_once()
     assert!(messaged, "给孙代理的留言报了 job.messaged");
     let tagged = brain.requests().iter().any(|request| {
         said(request).iter().any(|block| {
-            block.starts_with("<subagent-message job=\"j1.1\" title=\"查 B\">\n要改哪一个文件？\n")
+            block.starts_with("<subagent-message title=\"查 B\" job=\"j1.1\">\n要改哪一个文件？\n")
         })
     });
     assert!(tagged, "子代理的请求里注明了是哪个孙代理说的");

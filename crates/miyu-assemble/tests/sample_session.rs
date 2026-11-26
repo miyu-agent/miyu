@@ -225,11 +225,11 @@ fn only_the_result_of_a_question_reaches_the_request() {
 fn the_reports_reach_the_request_as_tagged_facts() {
     let whole = assembled_upto(u64::MAX);
     assert!(
-        whole.contains(r#"<command-ended job=\"j1\" title=\"跑全部测试\" reason=\"exited\">\nExit code 0.\nRan for 81234 ms.\n"#),
+        whole.contains(r#"<command-ended title=\"跑全部测试\" job=\"j1\" reason=\"exited\">\nExit code 0.\nRan for 81234 ms.\n"#),
         "{whole}"
     );
     assert!(
-        whole.contains(r#"<subagent-report job=\"j2\" title=\"查 CI 为什么红\" reason=\"done\">\nCI 红在 macOS"#),
+        whole.contains(r#"<subagent-report title=\"查 CI 为什么红\" job=\"j2\" reason=\"done\">\nCI 红在 macOS"#),
         "{whole}"
     );
 }

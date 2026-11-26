@@ -1,4 +1,4 @@
-<command-ended job="j1" title="跑全部测试" reason="exited">
+<command-ended title="跑全部测试" job="j1" reason="exited">
 Killed by signal 9.
 Ran for 1200 ms.
 Output: 0 characters, readable with jobs output.

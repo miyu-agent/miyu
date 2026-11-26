@@ -1,1 +1,1 @@
-<subagent-message job="{job}" title="{title}">
+<subagent-message title="{title}" job="{job}">

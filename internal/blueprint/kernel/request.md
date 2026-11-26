@@ -236,7 +236,7 @@
 
 1. **请求**：工具面空的，system 空的，一条 user、一个文本块：回顾的指令（`recap/instruction.txt`，最后一行是 `Conversation:`）接对话记录。`stable` 是 0，`continuation` 是假。
 2. **取什么**：照有效历史排好的先后，只取两样：人这边的话（`message.user`），和她每一轮最后一条有正文的回复（一轮里最后一条正文不空的 `message.assistant`，回合还在进行的就是到这时最后的那条）。只要字：一块块字连起来、去掉前后空白，是空的不要；附件、思考、工具调用不要。工具结果、事实、回报、检查点都不要。
-   - 人这边的话照主请求里的写法渲染：别的 harness 的话包着 `<agent-message from=…>`，别的会话的话包着 `<session-message from=…>`（施工 C-2），子代理的留言包着 `<subagent-message job=… title=…>`，看得出来处；派它的那一轮撤掉了的子代理的话不出；人、父会话的话原样。不另加标签（2026-10-01 主会话同意：已登记的外壳就说清了来处）。
+   - 人这边的话照主请求里的写法渲染：别的 harness 的话包着 `<agent-message from=…>`，别的会话的话包着 `<session-message from=…>`（施工 C-2），子代理的留言包着 `<subagent-message title=… job=…>`，看得出来处；派它的那一轮撤掉了的子代理的话不出；人、父会话的话原样。不另加标签（2026-10-01 主会话同意：已登记的外壳就说清了来处）。
 3. **一轮**：一段人这边的话，连同她接着的回答。从新往旧数：挨着的几段人这边的话并成一段，挨着的几段回答也是，中间空一行；数到答过的 `turns` 轮（出厂 8）为止，最新那一轮没答的也带上。最老那一轮只有回答、没有人这边的话的也留（codex 丢掉它：压缩以后留着的尾巴可以从她的回答开头）。她一个带正文的回复都没有的，组装不出来。
 4. **写法**：一段是标签接原话，人这边 `recap/user.txt`（`User: `），回答 `recap/assistant.txt`（`Assistant: `）；段与段、轮与轮之间空一行（`\n\n`，记录的格式，写在代码里）。不加 codex 的 `Pending user request` 标签：最后没有回答那一段，她看得出那句还没答（2026-10-01 主会话同意，非必要不加）。
 5. **照到的**：喂进去的最新那一条消息的序号（取的那几轮里序号最大的）。改标题、工具结果、`model.called` 这些都不是它，所以不算新内容（`kernel/session.md`「回顾」第 3 条）。
@@ -421,7 +421,7 @@
 
 | 文件 | 原文 | 什么时候 |
 |---|---|---|
-| `jobs/command-open.txt` | `<command-ended job="{job}" title="{title}" reason="{reason}">` | 后台命令结束，开头 |
+| `jobs/command-open.txt` | `<command-ended title="{title}" job="{job}" reason="{reason}">` | 后台命令结束，开头 |
 | `jobs/command-exit.txt` | `Exit code {code}.` | 有退出码 |
 | `jobs/command-signal.txt` | `Killed by signal {signal}.` | 被信号杀掉 |
 | `jobs/command-duration.txt` | `Ran for {ms} ms.` | 有用时 |
@@ -429,7 +429,7 @@
 | `jobs/command-tail.txt` | `Output:`，后面紧跟整份输出 | 回报带了整份输出（不超过 2000 个字，施工 7-13） |
 | `jobs/command-tail-cut.txt` | `Output, the last {shown} of {chars} characters (all of it in jobs output):`，后面紧跟最后一段 | 回报带了最后一段、整份比它长（施工 7-13） |
 | `jobs/command-close.txt` | `</command-ended>` | 收尾 |
-| `jobs/subagent-open.txt` | `<subagent-report job="{job}" title="{title}" reason="{reason}">` | 子代理的回报，开头 |
+| `jobs/subagent-open.txt` | `<subagent-report title="{title}" job="{job}" reason="{reason}">` | 子代理的回报，开头 |
 | `jobs/subagent-person.txt` | `The user also talked to this subagent during the task.` | 人插过话 |
 | `jobs/subagent-truncated.txt` | `The middle of this report was cut. jobs output has all of it.` | 正文截过 |
 | `jobs/subagent-silent.txt` | `The subagent ended without saying anything.` | 一个字都没说，代替正文 |
@@ -442,13 +442,13 @@
 
 | 文件 | 原文 | 什么时候 |
 |---|---|---|
-| `jobs/subagent-message-open.txt` | `<subagent-message job="{job}" title="{title}">` | 子代理发来的留言，开头 |
+| `jobs/subagent-message-open.txt` | `<subagent-message title="{title}" job="{job}">` | 子代理发来的留言，开头 |
 | `jobs/subagent-message-close.txt` | `</subagent-message>` | 收尾 |
 
 样本 `internal/designs/samples/reports/subagent-message.txt`（子代理中途问一句，`crates/miyu-assemble/src/jobs/tests/messages.rs` 逐字节比）：
 
 ```text
-<subagent-message job="j2" title="查 CI 为什么红">
+<subagent-message title="查 CI 为什么红" job="j2">
 macOS 上的临时目录要换成真实路径，还是只改测试？
 </subagent-message>
 ```
@@ -513,7 +513,7 @@ No notice came within 12 hours, so the request was dropped.
 样本 `internal/designs/samples/reports/command-exited.txt`（后台命令自己退出了）：
 
 ```text
-<command-ended job="j1" title="跑全部测试" reason="exited">
+<command-ended title="跑全部测试" job="j1" reason="exited">
 Exit code 0.
 Ran for 81234 ms.
 Output: 48213 characters, readable with jobs output.
@@ -523,7 +523,7 @@ Output: 48213 characters, readable with jobs output.
 样本 `internal/designs/samples/reports/command-tail.txt`（输出短，带整份，施工 7-13；输出没以换行结尾的补一个）：
 
 ```text
-<command-ended job="j1" title="跑全部测试" reason="exited">
+<command-ended title="跑全部测试" job="j1" reason="exited">
 Exit code 0.
 Ran for 1200 ms.
 Output:
@@ -534,7 +534,7 @@ test result: ok. 12 passed
 样本 `internal/designs/samples/reports/command-tail-cut.txt`（输出长，带最后一段，施工 7-13）：
 
 ```text
-<command-ended job="j1" title="跑全部测试" reason="exited">
+<command-ended title="跑全部测试" job="j1" reason="exited">
 Exit code 101.
 Ran for 81234 ms.
 Output, the last 51 of 48213 characters (all of it in jobs output):
@@ -545,7 +545,7 @@ test result: FAILED. 11 passed; 1 failed; 0 ignored
 样本 `internal/designs/samples/reports/subagent-person.txt`（子代理做完了，人插过话）：
 
 ```text
-<subagent-report job="j2" title="查 CI 为什么红" reason="done">
+<subagent-report title="查 CI 为什么红" job="j2" reason="done">
 The user also talked to this subagent during the task.
 按你说的，只查了 macOS。
 </subagent-report>
@@ -554,7 +554,7 @@ The user also talked to this subagent during the task.
 样本 `internal/designs/samples/reports/command-stopped-by-user.txt`（人停掉的后台命令，施工 7-2 补；停的那条路不带退出码、信号）：
 
 ```text
-<command-ended job="j1" title="跑全部测试" reason="stopped">
+<command-ended title="跑全部测试" job="j1" reason="stopped">
 The user stopped this.
 Ran for 300000 ms.
 Output: 5120 characters, readable with jobs output.

@@ -344,7 +344,7 @@ fn the_title_is_escaped_like_any_field() {
     let block = command(log.history(), &reported, &shipped()).unwrap();
     assert!(
         block.starts_with(
-            r#"<command-ended job="j1" title="a\u0022 b=\u0022\u003cx\u003e" reason="aborted">"#
+            r#"<command-ended title="a\u0022 b=\u0022\u003cx\u003e" job="j1" reason="aborted">"#
         ),
         "{block}"
     );

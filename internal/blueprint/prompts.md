@@ -4340,11 +4340,11 @@ Only the first {shown} of {total} bytes are shown.
 
 - 什么时候加进来：标签那一行，后台命令结束了（`job.reported`），派它的那一轮还在；闲着时是开这一轮的那条，正忙时排在那一步的工具结果后面，之后每次请求照原文带
 - token：19（字段按 `j1`、`跑全部测试`、`exited` 算）
-- 为什么加：标签带编号、标题、原因，她认得出是哪一个任务、怎么结束的（施工 7-2，`agents.md` 第九条第 1 条：回报必须渲染，标签的写法照 `turn-ended/` 的样子）
-- 指纹：`614609de`
+- 为什么加：标签带编号、标题、原因，她认得出是哪一个任务、怎么结束的（施工 7-2，`agents.md` 第九条第 1 条：回报必须渲染，标签的写法照 `turn-ended/` 的样子）；2026-11-26 标题挪到编号前（施工 JT-1，项目主人定：她跟人说只报编号，人不知道是哪个任务；只调顺序、不加字）
+- 指纹：`4c693f34`
 
 ```text
-<command-ended job="{job}" title="{title}" reason="{reason}">
+<command-ended title="{title}" job="{job}" reason="{reason}">
 ```
 
 #### `core/jobs/command-exit.txt`
@@ -4406,11 +4406,11 @@ Output: {chars} characters, readable with jobs output.
 
 - 什么时候加进来：标签那一行，子会话交来回报（`child.reported`），派它的那一轮还在；排法同 `command-open.txt`
 - token：21（字段按 `j2`、`查 CI 为什么红`、`done` 算）
-- 为什么加：标签带编号、标题、原因，正文是它最后的回答（施工 7-2，`agents.md` 第九条第 1 条，照 Claude Code、opencode：子代理的通知直接带最后的回复）
-- 指纹：`0033e3a4`
+- 为什么加：标签带编号、标题、原因，正文是它最后的回答（施工 7-2，`agents.md` 第九条第 1 条，照 Claude Code、opencode：子代理的通知直接带最后的回复）；2026-11-26 标题挪到编号前（施工 JT-1，项目主人定：她跟人说只报编号，人不知道是哪个任务；只调顺序、不加字）
+- 指纹：`907fe96d`
 
 ```text
-<subagent-report job="{job}" title="{title}" reason="{reason}">
+<subagent-report title="{title}" job="{job}" reason="{reason}">
 ```
 
 #### `core/jobs/subagent-person.txt`
@@ -4552,11 +4552,11 @@ You are an advisor to another AI agent. You see only the question it sends you, 
 
 - 什么时候加进来：标签那一行，这个会话派的子代理发来留言（`message.user`，`by` 是它的子会话），派它的那一轮还在；闲着时是开这一轮的那条，正忙时排在那一步的工具结果后面，之后每次请求照原文带
 - token：15（字段按 `j1`、`查导出` 算，2026-09-30 照项目主人给的端点、`deepseek-v4.1-flash` 量）
-- 为什么加：注明是哪个子代理（编号、标题）说的：不注明她会当成人说的话（`agents.md` 第九条第 5 条，施工 7-7）。写法照回报的标签
-- 指纹：`a83f7c08`
+- 为什么加：注明是哪个子代理（编号、标题）说的：不注明她会当成人说的话（`agents.md` 第九条第 5 条，施工 7-7）。写法照回报的标签；2026-11-26 标题挪到编号前（施工 JT-1，项目主人定：她跟人说只报编号，人不知道是哪个任务；只调顺序、不加字）
+- 指纹：`cfd8a7c4`
 
 ```text
-<subagent-message job="{job}" title="{title}">
+<subagent-message title="{title}" job="{job}">
 ```
 
 #### `core/jobs/subagent-message-close.txt`
@@ -4602,11 +4602,11 @@ You are an advisor to another AI agent. You see only the question it sends you, 
 
 - 什么时候加进来：标签那一行，`job.lines` 记下了、派它的那一轮还在；闲着时是开这一轮的那条，正忙时合成一条排在那一步的工具结果后面，之后每次请求照原文带
 - token：14（字段按 `j1`、`跑全部测试` 算，2026-11-03 照 o200k 数）
-- 为什么加：标签带编号、标题，她认得出是哪一条监视的命令出的；这一批的行原样放在下面（施工 MN-1 上，设计 56 第四节第 2 条，照回报的外壳）
-- 指纹：`433b996c`
+- 为什么加：标签带编号、标题，她认得出是哪一条监视的命令出的；这一批的行原样放在下面（施工 MN-1 上，设计 56 第四节第 2 条，照回报的外壳）；2026-11-26 标题挪到编号前（施工 JT-1，项目主人定：她跟人说只报编号，人不知道是哪个任务；只调顺序、不加字）
+- 指纹：`ace146e2`
 
 ```text
-<command-lines job="{job}" title="{title}">
+<command-lines title="{title}" job="{job}">
 ```
 
 ### 人这边：监视的命令出的一批行

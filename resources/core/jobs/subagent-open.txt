@@ -1,1 +1,1 @@
-<subagent-report job="{job}" title="{title}" reason="{reason}">
+<subagent-report title="{title}" job="{job}" reason="{reason}">
