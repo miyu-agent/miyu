@@ -119,7 +119,26 @@ fn main() -> ExitCode {
             idle: idle.map(Duration::from_secs),
         });
     }
+    // 直接敲 `miyu` 打开界面的快路（施工 BO-2，`cli/main.md`「怎么走」第 3 条）：不读软件包清单、不搭整棵命令行树。
+    if args.len() == 1 && terminal() {
+        return head();
+    }
     dispatch(args)
+}
+
+/// 不带子命令、在终端里：打开 `ui.head` 指的界面（施工 9-3）。快路（施工 BO-2）和照整棵命令行树解析出「没写子命令」的都走
+/// 这里，两条路做的是同一件事。
+///
+/// 为什么要快路：这是人最常敲的一种写法，原来也要先把装着的软件包清单全读一遍、解析一遍（找软件包加的子命令，三十几份），
+/// 再搭整棵命令行树、拼帮助页，最后才发现没写子命令。这些在这种写法上都用不着：没有第一个词，就没有要转交的子命令，也没有
+/// 要印的帮助、要报的错。2026-11-27 的基准测试里，到能打字的时间有四成花在启动器上。
+// 单拎成一个不内联的函数：同 `dispatch`，并进 `main` 的话核心进程走快路也算执行过它。
+#[inline(never)]
+fn head() -> ExitCode {
+    match miyu_cli::head::open(None, core) {
+        miyu_cli::head::Opened::Ran(code) => ExitCode::from(code),
+        miyu_cli::head::Opened::NoPage => ExitCode::from(USAGE),
+    }
 }
 
 /// 前台跑核心的那几种写法：`core`、`core --idle-seconds <秒>`、`core --idle-seconds=<秒>`，认得出的交回空闲秒数（没写的
@@ -233,10 +252,7 @@ fn dispatch(args: Vec<OsString>) -> ExitCode {
             })
         }
         // 不带子命令（施工 9-3）：在终端里打开 `ui.head` 指的界面；不在终端里（被脚本调、接管道）印帮助、退出码 2。
-        None if terminal() => match miyu_cli::head::open(None, core) {
-            miyu_cli::head::Opened::Ran(code) => ExitCode::from(code),
-            miyu_cli::head::Opened::NoPage => ExitCode::from(USAGE),
-        },
+        None if terminal() => head(),
         None => {
             print!("{help}");
             ExitCode::from(USAGE)
