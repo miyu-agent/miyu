@@ -13,8 +13,9 @@ use crate::support::{Asked, Tape, ask_onto, plan};
 use miyu_cli::{Output, Plan};
 use miyu_session::testkit::Play;
 
-/// 等到工作目录里有了 `go` 才退出的命令：这台机器上的写法，Unix 上是 bash、zsh 的，Windows 上是 PowerShell 的。
-fn until_go() -> &'static str {
+/// 等到工作目录里有了 `go` 才退出的命令：这台机器上的写法，Unix 上是 bash、zsh 的，Windows 上是 PowerShell 的（`acp/sessions.rs`
+/// 也用）。
+pub fn until_go() -> &'static str {
     if cfg!(windows) {
         "while (-not (Test-Path go)) { Start-Sleep -Milliseconds 100 }"
     } else {

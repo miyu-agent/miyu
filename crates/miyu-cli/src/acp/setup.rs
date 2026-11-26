@@ -113,11 +113,12 @@ impl Server {
         // 能选的模型每次都重问（施工 ACP-9）：新装的包带的供应商，列表可能是上一次以后才拉到的。变了的，别的会话也报一次。
         self.refresh_choices().await;
         self.sessions.insert(session.to_string(), opened);
-        // 回应里带着整份配置项，变了的那一下不另报；在等人的回了编辑器再问。
+        // 回应里带着整份配置项，变了的那一下不另报；在等人的回了编辑器再问。不是人说话开的那一轮的开头同内容一起照先后
+        // 现在报（施工 ACP-11：以前排到回应以后，整段对话最后多一句开头，那一轮的回答并进了前一条助手消息）。
         let (now, later): (Vec<Action>, Vec<Action>) = actions
             .into_iter()
             .filter(|action| *action != Action::Config)
-            .partition(|action| matches!(action, Action::Update(_)));
+            .partition(|action| matches!(action, Action::Update(_) | Action::Woken { .. }));
         self.act(session, now).await;
         let mut reply = self.described(session);
         if created {

@@ -95,8 +95,11 @@ pub(crate) struct Current {
 pub(crate) enum Stop {
     /// 正常回：`stopReason`。
     Reason(&'static str),
-    /// 出错：照 JSON-RPC 的错误回，话照连接的语言。
+    /// 出错：照 JSON-RPC 的错误回，话是核心给的说明或错误原话（照连接的语言）。
     Failed(String),
+    /// 出错、核心没给说明也没有错误原话（有计划的重启打断的、崩了补的）：照 JSON-RPC 的错误回，话照怎么结束的、照界面语言写
+    /// （施工 ACP-11：以前写原因的原文，Zed 里只见 `restarted`）。
+    Ended(miyu_kernel::event::EndReason),
 }
 
 impl Session {
@@ -168,12 +171,14 @@ pub(crate) fn stop(end: &End, cancelled: bool) -> Stop {
         _ => match end.error.as_ref().map(|error| &error.class) {
             Some(ErrorClass::ContentPolicy) => Stop::Reason("refusal"),
             Some(ErrorClass::OutputLimit) => Stop::Reason("max_tokens"),
-            _ => Stop::Failed(
-                end.explain
-                    .clone()
-                    .or_else(|| end.error.as_ref().map(|error| error.message.clone()))
-                    .unwrap_or_else(|| end.reason.as_str().to_string()),
-            ),
+            _ => match end
+                .explain
+                .clone()
+                .or_else(|| end.error.as_ref().map(|error| error.message.clone()))
+            {
+                Some(said) => Stop::Failed(said),
+                None => Stop::Ended(end.reason.clone()),
+            },
         },
     }
 }

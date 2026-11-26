@@ -248,3 +248,37 @@ fn a_turn_nobody_started_gets_an_opening_line() {
     let mut quiet = Session::new("/work");
     assert!(quiet.entry(&woke, Pace::Quiet).is_empty());
 }
+
+#[test]
+fn a_turn_cut_off_by_a_restart_answers_with_words_for_people() {
+    // 施工 ACP-11：有计划的重启打断的那一轮，收尾没有说明、没有错误原话；以前回的是原因的原文 `restarted`。
+    use crate::language::Language;
+    use miyu_kernel::event::EndReason;
+    let mut session = Session::new("/work");
+    session.prompt = Some(Prompt {
+        id: json!(3),
+        waiting: Waiting::Turn(json!(5)),
+        cancelled: false,
+    });
+    let end = entry(
+        "e9",
+        "end",
+        json!({"reason": "restarted", "took_ms": 5, "turn": 5}),
+    );
+    let actions = session.entry(&end, Pace::Live);
+    assert_eq!(
+        actions,
+        [Action::Answer {
+            id: json!(3),
+            stop: Stop::Ended(EndReason::Restarted)
+        }]
+    );
+    assert_eq!(
+        Language::Chinese.acp_ended(&EndReason::Restarted),
+        "核心重启了，这一轮没有做完"
+    );
+    assert_eq!(
+        Language::English.acp_ended(&EndReason::Restarted),
+        "the core restarted before this turn finished"
+    );
+}

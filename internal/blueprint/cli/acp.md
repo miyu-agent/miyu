@@ -28,7 +28,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 ### 对外的样子
 
 - 没有参数。标准输出上只有协议的行；连不上核心这类开局的错误照 `miyu ask` 的写法写在标准错误上（`miyu: …`），退出码 1。编辑器关了管道：退出码 0，正在进行的回合留在核心里接着跑。核心断了不退出，见「核心断了」（施工 ACP-9；以前退出码 1，编辑器下一次开会话报「Incoming transport closed」）。
-- 用到的环境变量：`MIYU_HOME`（数据根）；拉起的核心照它自己的一套（`core.md`）。
+- 用到的环境变量：`MIYU_HOME`（数据根）；拉起的核心照它自己的一套（`core.md`）。核心没开、由 `miyu acp` 拉起的，同别的头拉起的一样继承拉起它的进程的环境，也就是编辑器给的（`PATH`、`HOME`、编辑器设置里 `env` 写的）；之后终端界面、网页连的也是它。从程序坞、开始菜单打开的编辑器 `PATH` 短、没有 shell 配置文件里的变量，手册（`guide/editors.md`「需要知道的」）建议先在终端里 `miyu core start`。头不另走服务管理器拉、不替核心补环境（施工 ACP-11，见「还没有的」）。
 - 握手时向核心报 `head.kind` 是 `acp`、`caps.input` 是 `true`（有人能确认，核心照常等）、不带 `prefix_ask`。握手以后订配置的推送（`subscribe {stream: "config"}`，施工 ACP-9），只为模型列表变了要知道。
 
 ### 核心断了
@@ -94,7 +94,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | `step_limit` | `max_turn_requests` |
 | 出错，分类 `content_policy` | `refusal` |
 | 出错，分类 `output_limit` | `max_tokens` |
-| 别的出错、`aborted`、`restarted` | JSON-RPC 出错 `-32603`，话是收尾的 `explain`，没有的是错误原话 |
+| 别的出错、`aborted`、`restarted` | JSON-RPC 出错 `-32603`，话是收尾的 `explain`，没有的是错误原话；都没有的照怎么结束的说、照界面语言（「给人看的字」的「一轮没做完」，施工 ACP-11；以前是原因的原文，Zed 里只见 `restarted`） |
 
 ### 斜杠命令
 
@@ -117,7 +117,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | `user`，不是编辑器发的 | `user_message_chunk`（在终端、网页里接着说的），只报一次；退回的、空的不报 |
 | `tool` | 第一次见 `tool_call`，之后 `tool_call_update` 只写变了的格（见「工具步骤」） |
 | `end` | 回等着的 `session/prompt` |
-| 一轮头一次报内容（正文、思考、工具），这一轮还没有开头 | 先报一句开头 `user_message_chunk`（`messageId` 是 `turn-<那一轮>`），编辑器才另起一条消息：后台任务报回来叫醒的（旁白 `job` 记下的最近一件）是 `后台任务「<标题>」已完成`（`失败`、`已停止`、`已结束`），别的是 `Miyu 自己开始了新的一轮`。有开头的：人说的话所属的一轮（编辑器发的、别处来的都算），编辑器在等的那一句还没听到时的一轮、等的就是它的那一轮。只记下的不报 |
+| 一轮头一次报内容（正文、思考、工具），这一轮还没有开头 | 先报一句开头 `user_message_chunk`（`messageId` 是 `turn-<那一轮>`），编辑器才另起一条消息：后台任务报回来叫醒的（旁白 `job` 记下的最近一件）是 `后台任务「<标题>」已完成`（`失败`、`已停止`、`已结束`），别的是 `Miyu 自己开始了新的一轮`。重放时同实时一样照先后报在那一轮的内容以前、都在回应以前（施工 ACP-11：以前排在回应以后，整段对话最后多一句开头，那一轮的回答并进了前一条助手消息）。有开头的：人说的话所属的一轮（编辑器发的、别处来的都算），编辑器在等的那一句还没听到时的一轮、等的就是它的那一轮。只记下的不报 |
 | 别的条目、`view.hidden`、`view.remove` | 不报（ACP 没有收回报过的内容的写法） |
 | `resync` | 重新订阅；回应里的那一页照「正在发生」再过一遍，报过的只报变了的 |
 
@@ -168,6 +168,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | 确认 | `仅允许本次`、`在本会话内允许`、`拒绝`；`跳过` | `Allow once`、`Allow for this session`、`Deny`；`Skip` |
 | 表单 | `回答下面的问题`、`其他` | `Answer the questions below`、`Other` |
 | 一轮的开头 | `后台任务「<标题>」已完成`（`失败`、`已停止`、`已结束`）、`Miyu 自己开始了新的一轮` | `Background job "<title>" finished`（`failed`、`stopped`、`ended`）、`Miyu started a new turn on its own` |
+| 一轮没做完（收尾没有说明、没有错误原话的，施工 ACP-11） | `核心重启了，这一轮没有做完`（`restarted`）、`核心意外退出了，这一轮没有做完`（`aborted`）、`这一轮出错了`（`error`）、`这一轮没有做完`（别的） | `the core restarted before this turn finished`、`the core exited unexpectedly before this turn finished`、`the turn failed`、`the turn did not finish` |
 | `/compact` | `压缩上下文`，提示 `摘要要保留的要点` | `Compact the context`, hint `what the summary should keep` |
 | 出错 | `无法解析的消息`、`需要先发送 initialize`、`不支持的方法：<方法>`、`工作目录必须是绝对路径`、`会话不存在`、`上一条消息还没有回答完`、`图片或文件的内容无法解码`、`消息是空的`、`不支持的选项`、`与核心的连接已断开` | `unreadable message`、`initialize first`、`unsupported method: <method>`、`the working directory must be an absolute path`、`no such session`、`the previous prompt is still running`、`cannot decode an image or file`、`the prompt is empty`、`unsupported option`、`lost connection to the core` |
 
@@ -175,12 +176,12 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/src/acp/view/tests.rs` | 每段字带它那一条的 `messageId`；不是人说话开的一轮先报一句开头、说是哪件后台任务、一轮只报一次，人说话开的、编辑器在等的不报；正文只报一次（第一次、接上的一截、整份里多出来的）；思考；编辑器自己的话不报、别处的报一次，重放都报、只记下的不报；藏起来的不报；等的那一句听到了换成等它那一轮、别的一轮结束不回；只记下的在跑的工具不记；改了文件的要对比、扔进回收站的不要 |
+| `crates/miyu-cli/src/acp/view/tests.rs` | 每段字带它那一条的 `messageId`；不是人说话开的一轮先报一句开头、说是哪件后台任务、一轮只报一次，人说话开的、编辑器在等的不报；正文只报一次（第一次、接上的一截、整份里多出来的）；思考；编辑器自己的话不报、别处的报一次，重放都报、只记下的不报；藏起来的不报；等的那一句听到了换成等它那一轮、别的一轮结束不回；只记下的在跑的工具不记；改了文件的要对比、扔进回收站的不要；等的那一轮没有说明地出错收尾，照怎么结束的回、话照界面语言（施工 ACP-11） |
 | `crates/miyu-cli/src/acp/status/tests.rs` | 待办、用量（两个数、准的金额）、标题、权限和模型变了、在等的交出去和了结了的忘掉 |
 | `crates/miyu-cli/src/acp/tool/tests.rs` | 执行命令的内容先是命令原文、标题不变、写到一半的不报；`kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比 |
 | `crates/miyu-cli/src/acp/prompt/tests.rs` | 内容块照先后、`file://` 解成路径、解不开的整句不收 |
 | `crates/miyu-cli/src/acp/forms/tests.rs`、`options/tests.rs`、`setup/tests.rs` | 表单的格和读回答；能选的模型、配置项的先后、换的值查过；`~` 写成绝对路径、只收绝对的目录 |
-| `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking,choosing,relink}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单；不要密钥的供应商列表后来才拉到：编辑器收到新的配置项、之后开的会话列得出（施工 ACP-9）；核心重启：正在进行的那一轮回出错、之后照常开会话、原来的会话重新订阅说得了话，自己重连的那一次连得上的什么都不发也接着报（施工 ACP-9，`tests/support/restart.rs` 在同一个数据根上重启核心） |
+| `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking,choosing,relink}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史、后台任务叫醒的那一轮的开头在它的回答以前、都在回应以前，施工 ACP-11）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单；不要密钥的供应商列表后来才拉到：编辑器收到新的配置项、之后开的会话列得出（施工 ACP-9）；核心重启：正在进行的那一轮回出错、话是给人看的（施工 ACP-11）、之后照常开会话、原来的会话重新订阅说得了话，自己重连的那一次连得上的什么都不发也接着报（施工 ACP-9，`tests/support/restart.rs` 在同一个数据根上重启核心） |
 
 ### 出处
 
@@ -196,3 +197,4 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 - 压缩（`compaction_update`）、旁白（`notice`）不报；`plan_update` 不用（只报 `plan`）。
 - 重放时人附的图、文件不报；工具改文件的对比只在正在发生时要。
 - `session/list` 不分页。
+- 拉起核心用的环境（施工 ACP-11）：照别的头，继承拉起它的编辑器的。装了用户服务的走服务管理器拉、核心起来时读登录 shell 的环境补 `PATH`，都是改所有头拉起核心的规矩，等项目主人定。

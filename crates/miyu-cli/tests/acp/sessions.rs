@@ -66,6 +66,70 @@ async fn load_replays_the_history_before_answering() {
 }
 
 #[tokio::test]
+async fn load_replays_a_woken_turn_where_it_happened() {
+    // 施工 ACP-11：后台任务报回来叫醒的那一轮，重放时开头那一句以前排在回应以后、整段对话最后，那一轮的回答并进了前一条
+    // 助手消息。要同实时一样：开头那一句在那一轮的回答以前，都在回应以前。
+    let work = Outside::new();
+    let args = json!({"command": crate::commands::until_go(), "description": "等 go",
+        "run_in_background": true});
+    let home = home([
+        Play::calls(&[("shell", &args.to_string())]),
+        Play::Says("放到后台了。"),
+        Play::Says("跑完了。"),
+    ]);
+    let session = {
+        let mut editor = Editor::new(&home).await;
+        let (session, _) = editor.open(&work.text()).await;
+        editor.say(&session, "后台跑一下").await;
+        work.file("go", "");
+        let id = home
+            .sessions()
+            .into_iter()
+            .find(|id| id.to_string() == session)
+            .expect("有这个会话");
+        home.until_ended(&id, 2).await;
+        session
+    };
+    let mut editor = Editor::new(&home).await;
+    let params = json!({"sessionId": session, "cwd": work.text(), "mcpServers": []});
+    let (seen, reply) = editor.call("session/load", params).await;
+    assert!(reply["result"].is_object(), "{reply}");
+    let said: Vec<(&str, &str, &str)> = seen
+        .iter()
+        .filter(|message| {
+            matches!(
+                kind(message),
+                Some("user_message_chunk" | "agent_message_chunk")
+            )
+        })
+        .map(|message| {
+            let update = &message["params"]["update"];
+            (
+                update["sessionUpdate"].as_str().unwrap_or_default(),
+                update["messageId"].as_str().unwrap_or_default(),
+                update["content"]["text"].as_str().unwrap_or_default(),
+            )
+        })
+        .collect();
+    let kinds: Vec<&str> = said.iter().map(|(kind, _, _)| *kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "user_message_chunk",
+            "agent_message_chunk",
+            "user_message_chunk",
+            "agent_message_chunk"
+        ],
+        "{said:#?}"
+    );
+    let (_, opening, text) = said[2];
+    assert!(opening.starts_with("turn-"), "{said:#?}");
+    assert_eq!(text, "后台任务「等 go」已完成", "{said:#?}");
+    assert_eq!(said[3].2, "跑完了。", "那一轮的回答另起一条：{said:#?}");
+    assert_ne!(said[3].1, said[1].1, "{said:#?}");
+}
+
+#[tokio::test]
 async fn load_pages_back_through_a_long_history() {
     // 订阅回应只带最新一页（20 轮）：再早的照 `view.page` 往前翻，照先后接起来。
     const ANSWERS: [&str; 22] = [

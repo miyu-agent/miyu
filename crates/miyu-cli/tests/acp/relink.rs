@@ -43,6 +43,12 @@ async fn after_a_restart_the_running_turn_fails_and_the_next_requests_go_on() {
         reply["error"].is_object() && reply.get("result").is_none(),
         "正在进行的那一轮照出错回：{reply}"
     );
+    // 话是给人看的（施工 ACP-11：以前是收尾原因的原文 `restarted`）：核心先收好这一轮再断开的说重启了，没来得及的说断开了。
+    let message = reply["error"]["message"].as_str().unwrap_or_default();
+    assert!(
+        ["核心重启了，这一轮没有做完", "与核心的连接已断开"].contains(&message),
+        "{reply}"
+    );
     within("知道断了", editor.dropped.notified()).await;
     // 之后照常：新开一个会话（以前到这里 `miyu acp` 已经退了）。
     let (second, opened) = editor.open(&work.text()).await;

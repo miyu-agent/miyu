@@ -245,6 +245,10 @@ impl Server {
                     .error(id, editor::INTERNAL, &message, None)
                     .await;
             }
+            Stop::Ended(reason) => {
+                let message = self.language.acp_ended(&reason);
+                self.editor.error(id, editor::INTERNAL, message, None).await;
+            }
         }
     }
 
