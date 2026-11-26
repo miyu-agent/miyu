@@ -13,9 +13,12 @@ use crate::rpc::Rpc;
 /// 握手：协议的版本、是哪个头、界面语言（核心的拒绝照它说）、有没有人能当场回答、本机令牌。交回核心的回应：里面有这台
 /// 机器的沙盒能不能用（施工 5-4 下）。
 ///
+/// 回应不一直等（施工 CS-6）：照 `miyu_ipc::Patience` 过了 3 秒还没回，在标准错误上说一句「核心还没有回应，继续等待…」，最多等
+/// 10 分钟，到了说「核心一直没有回应」、交回退出码。连上了却没人回的是核心卡住了（被 `SIGSTOP`、卡死）。
+///
 /// # Errors
 ///
-/// 被拒绝、核心断开：说清楚，交回退出码。
+/// 被拒绝、核心断开、等过了上限：说清楚，交回退出码。
 pub(crate) async fn hello(
     rpc: &mut Rpc,
     token: &str,
@@ -30,7 +33,16 @@ pub(crate) async fn hello(
         "caps": {"input": input},
         "token": token,
     });
-    request(rpc, "hello", hello, language, err).await
+    let notice = || crate::startup::notice(*language, crate::startup::Slow::Answering);
+    let asked = request(rpc, "hello", hello, language, err);
+    match miyu_ipc::patiently(asked, miyu_ipc::Patience::current(), &notice).await {
+        Some(answered) => answered,
+        None => {
+            let problem = Problem::new(crate::startup::no_answer(*language));
+            diagnostic::error(err, *language, &problem);
+            Err(exit::ERROR)
+        }
+    }
 }
 
 /// 握手以后说哪种话（施工 8-2）：照回应的 `language`；老的核心没回的，还是 `asked`（握手以前的那一种）。

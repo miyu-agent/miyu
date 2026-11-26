@@ -98,7 +98,7 @@ mod workspace;
 pub use activity::Activity;
 pub(crate) use activity::Connected;
 pub use connection::serve;
-pub use listen::run;
+pub use listen::{run, run_until};
 
 use std::fmt;
 use std::path::PathBuf;

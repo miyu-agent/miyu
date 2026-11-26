@@ -136,6 +136,7 @@
 | `core` | WARN | `ready line not written` | `error` | 往标准输出写那一行写不了 |
 | `core` | INFO | `stopped` | `reason`：`idle` 或 `signal` | 空闲够久了，或者收到停的信号 |
 | `core` | WARN | `SIGTERM not watched`、`Ctrl+C not watched` | `error` | 装不上信号的监听 |
+| `core` | WARN | `second stop signal, exiting now`、`stopping took too long, exiting now` | | 收尾时又来一次停的信号、收尾过了 30 秒，当场退出（施工 CS-6） |
 | `core` | INFO | `model profiles loaded` | `profiles`（档案里几家） | 起来时读完供应商的档案（施工 8-6，`core.md`「模型」） |
 | `core` | INFO | `catalog loaded` | `source`（`snapshot` 或 `cache`）、`fetched`、`providers`、`models`、`ms` | 读完 models.dev 的目录（施工 8-7，`models.md`「怎么走」第二条第 2 条；V-2 下补起找到资源目录就读，不等 `ready`） |
 | `core` | WARN | `catalog unreadable`、`catalog empty` | `source`、`error`；`catalog empty` 没有键 | 一份目录读不了；两份都读不了 |
@@ -199,6 +200,7 @@
 | `endpoint` | WARN | `bad token` | `head` | 握手时令牌不对 |
 | `endpoint` | INFO | `connected` | `head`、`version`、`protocol` | 握手成了 |
 | `endpoint` | INFO | `disconnected` | | 握过手的连接断开 |
+| `endpoint` | INFO | `listener closed` | | 定下要停，不再接新连接（施工 CS-6） |
 | `endpoint` | WARN | `lagged, resync` | 带会话编号 | 订阅掉了队 |
 | `endpoint` | ERROR | `list panicked` | `panic`（是不是 panic；原话不写） | 列会话的任务 panic 了 |
 | `endpoint` | WARN | `sessions not listed` | `error` | 列不出会话 |
@@ -209,9 +211,10 @@
 | `endpoint` | WARN | `workspace not prepared` | `kind` | 退回默认工作区时建不了它 |
 | `endpoint` | ERROR | `undo report panicked` | `panic`（是不是 panic；原话不写） | 撤销的回应里比改动的任务 panic 了 |
 | `endpoint` | WARN | `undo report not written` | `error` | 撤销的回应里读不了会话日志 |
-| `ipc` | INFO | `listening` | `socket` | 在套接字上等连接 |
+| `ipc` | INFO | `listening` | `socket` | 写好 `run/socket`、开始接连接（施工 CS-6 起在开始接连接的前一刻记） |
 | `ipc` | INFO | `stale socket removed` | `socket` | 删掉上一个核心崩了留下的套接字 |
 | `ipc` | DEBUG | `socket file not removed` | `error` | 退出时删不掉套接字文件 |
+| `ipc` | DEBUG | `socket location not removed` | `error` | 不再接连接时删不掉 `run/socket`（施工 CS-6） |
 | `ipc` | WARN | `XDG_RUNTIME_DIR not usable, using run/` | `dir` | `XDG_RUNTIME_DIR` 不合要求 |
 | `ipc` | DEBUG | `core not reaped` | `error` | 头等拉起的核心退出时出错；在头里发，没人接 |
 | `fs` | WARN | `temporary file left behind` | `error` | 整份换成新内容时没盖上去，临时文件也删不掉 |

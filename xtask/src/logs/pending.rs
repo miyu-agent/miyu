@@ -33,7 +33,8 @@ pub const PENDING: &[(&str, &str)] = &[
     ("crates/miyu-endpoint/src/provide/cache.rs", "file"),
     ("crates/miyu-endpoint/src/scripts.rs", "path"),
     ("crates/miyu-endpoint/src/secrets.rs", "file"),
-    ("crates/miyu-ipc/src/lib.rs", "socket"),
+    // 施工 CS-6 从 `lib.rs` 挪到 `Listener::publish`，同一行。
+    ("crates/miyu-ipc/src/listener.rs", "socket"),
     ("crates/miyu-ipc/src/unix.rs", "dir"),
     ("crates/miyu-ipc/src/unix.rs", "socket"),
     // 人写的字：配置写错的原文、读不懂的值、软件源的地址（只写主机）。

@@ -60,6 +60,22 @@ impl Guard {
     pub fn levels(&self) -> Levels {
         self.level.clone()
     }
+
+    /// 把写好的落到盘上的把手（施工 CS-6）：核心强退（`std::process::exit`，[`Guard`] 丢不到）以前调。
+    pub fn flusher(&self) -> Flush {
+        Flush(Arc::clone(&self.file))
+    }
+}
+
+/// 把运行日志写好的落到盘上（施工 CS-6，[`Guard::flusher`]）。
+#[derive(Debug, Clone)]
+pub struct Flush(Arc<RotatingFile>);
+
+impl Flush {
+    /// 落到盘上：交给系统的再同步一次。同步不成的不管：进程马上就退。
+    pub fn sync(&self) {
+        self.0.sync();
+    }
 }
 
 /// 换级别的把手：一个订阅者一个。

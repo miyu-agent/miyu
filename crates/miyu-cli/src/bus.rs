@@ -8,7 +8,7 @@ use std::process::{Command, ExitCode};
 use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
@@ -19,6 +19,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::say;
+use crate::startup::connect_or_start;
 
 /// `miyu bus` 的参数。给人看的说明在帮助页里（[`crate::help`]）。
 #[derive(Debug, Clone, Args)]

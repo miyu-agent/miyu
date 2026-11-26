@@ -28,12 +28,12 @@ use std::process::{Command, ExitCode};
 
 use clap::Args;
 
-use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
 use crate::diagnostic;
 use crate::language;
+use crate::startup::connect_or_start;
 
 /// `miyu acp` 的参数：没有。给人看的说明在帮助页里（`help/zh/acp.txt`）。
 #[derive(Debug, Clone, Args)]

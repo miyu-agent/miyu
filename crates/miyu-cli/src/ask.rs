@@ -43,7 +43,6 @@ use std::time::Duration;
 use clap::{Args, ValueEnum};
 use tokio::sync::mpsc;
 
-use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::human::Human;
 use miyu_store::resources::ResourceRoot;
@@ -54,6 +53,7 @@ use crate::diagnostic;
 use crate::language::{self, Language};
 use crate::setup::{HeadEnv, Setup, SetupPlan, model_ready_on};
 use crate::shown;
+use crate::startup::connect_or_start;
 
 /// 退出码（`22-命令行.md` 第二节）。
 pub mod exit {

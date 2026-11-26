@@ -8,6 +8,11 @@ license.workspace = true
 publish.workspace = true
 autotests = false
 
+[features]
+# 测试口子（施工 CS-6）：等核心等多久照 `MIYU_TEST_WAIT_SLOW_MS`、`MIYU_TEST_WAIT_LIMIT_MS`（`Patience::current`）。主程序的
+# 测试打开它，发出去的程序不打开。
+testkit = []
+
 [dependencies]
 # 本机令牌：32 个随机字节，取系统的随机数。
 getrandom = { version = "0.4", features = ["std"] }
@@ -18,7 +23,7 @@ miyu-store = { path = "../miyu-store" }
 # 数据根的指纹：路径的 SHA-256。
 sha2 = { version = "0.11", default-features = false }
 # 套接字是异步的：核心接连接、头连过去都不堵住别的任务。等核心说好了、等拉起锁，有时限（施工 3-9 上）。
-tokio = { version = "1", features = ["net", "rt", "time"] }
+tokio = { version = "1", features = ["io-util", "net", "rt", "sync", "time"] }
 # 运行日志的门面（施工 3-7 上）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 
@@ -35,8 +40,8 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_
 rustix = { version = "1", default-features = false, features = ["process"] }
 
 [dev-dependencies]
-# 测试里在套接字上收发、等待有时限。
-tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "time"] }
+# 测试里在套接字上收发、等待有时限；把钟停住快进（`start_paused`，施工 CS-6）。
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "test-util", "time"] }
 
 [lints]
 workspace = true

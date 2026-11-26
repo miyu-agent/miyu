@@ -45,19 +45,20 @@ impl<F: Fn() -> Command + Send + Sync> Reconnect for Local<F> {
         Box::pin(async move {
             let start = || (self.start)();
             let linked = match asked {
-                true => miyu_ipc::connect_or_start(&self.root, start).await,
-                false => miyu_ipc::reconnect_or_start(&self.root, start).await,
+                true => crate::startup::connect_or_start(&self.root, start).await,
+                false => crate::startup::reconnect_or_start(&self.root, start).await,
             };
             linked.map_err(|error| crate::startup::spoken(&error))
         })
     }
 }
 
-/// 握手：本机令牌 `token`，握手以前的界面语言 `language`。交回核心的回应。
+/// 握手：本机令牌 `token`，握手以前的界面语言 `language`。交回核心的回应。同 `miyu` 的握手（`link.rs`，施工 CS-6）：过了 3 秒
+/// 还没回在标准错误上说一句，最多等 10 分钟。
 ///
 /// # Errors
 ///
-/// 被拒绝、核心断开：核心的原话（断开的是空的）。
+/// 被拒绝、核心断开：核心的原话（断开的是空的）；等过了上限的是「核心一直没有回应」。
 pub(crate) async fn hello(rpc: &mut Rpc, token: &str, language: Language) -> Result<Value, Value> {
     let hello = json!({
         "protocol": [1, 1],
@@ -66,7 +67,12 @@ pub(crate) async fn hello(rpc: &mut Rpc, token: &str, language: Language) -> Res
         "caps": {"input": true},
         "token": token,
     });
-    super::prompt::answered(rpc.call("hello", hello).await)
+    let notice = || crate::startup::notice(language, crate::startup::Slow::Answering);
+    let asked = rpc.call("hello", hello);
+    match miyu_ipc::patiently(asked, miyu_ipc::Patience::current(), &notice).await {
+        Some(answered) => super::prompt::answered(answered),
+        None => Err(json!({"message": crate::startup::no_answer(language)})),
+    }
 }
 
 impl Server {

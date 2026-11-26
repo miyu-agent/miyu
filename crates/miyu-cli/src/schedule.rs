@@ -15,7 +15,7 @@ use clap::{ArgGroup, Args, Subcommand};
 use jiff::tz::TimeZone;
 use serde_json::{Value, json};
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
@@ -25,6 +25,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::say;
+use crate::startup::connect_or_start;
 
 pub use shown::{interval, moment};
 

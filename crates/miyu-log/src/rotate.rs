@@ -87,6 +87,19 @@ impl RotatingFile {
         }
     }
 
+    /// 同 [`RotatingFile::flush`]，再让系统把这一份落到盘上（施工 CS-6：核心强退以前）。落不成的不管。
+    #[expect(
+        clippy::let_underscore_must_use,
+        reason = "日志写不进去，没有别的地方可以报"
+    )]
+    pub fn sync(&self) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(file) = state.file.as_mut() {
+            let _ = file.flush();
+            let _ = file.sync_data();
+        }
+    }
+
     /// 换一份：先关掉正在写的（Windows 上开着的文件不好改名），最老的 `.<keep>` 删掉，其余的往后挪
     /// 一位，正在写的变成 `.1`，再开一份新的。
     fn rotate(&self, state: &mut State) -> io::Result<()> {

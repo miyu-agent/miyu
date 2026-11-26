@@ -86,6 +86,23 @@ pub fn wait_released(root: &DataRoot) -> std::io::Result<()> {
     file.unlock()
 }
 
+/// 同 [`wait_released`]，只是异步、能当场放下（施工 CS-6）：在一条不归运行时管的线程里等，放下了只是不再听，那条线程等到锁
+/// 放了自己走；放下运行时、进程退出都不等它（原来 `miyu core stop` 放在阻塞线程池里等，时限到了说完「没有退出」，还要等核心
+/// 真退了进程才退得了）。要在 tokio 运行时里调。
+///
+/// # Errors
+///
+/// 同 [`wait_released`]；起不了那条线程。
+pub async fn released(root: &DataRoot) -> std::io::Result<()> {
+    let root = root.clone();
+    let (sender, done) = tokio::sync::oneshot::channel();
+    std::thread::Builder::new()
+        .name("miyu-lock-wait".to_string())
+        .spawn(move || drop(sender.send(wait_released(&root))))?;
+    done.await
+        .unwrap_or_else(|_| Err(std::io::Error::other("lock waiter gone")))
+}
+
 /// 这个数据根的锁现在被拿着没有（施工 CS-3，`miyu core stop` 连不上时确认核心真不在）：打开锁文件试拿一次，拿到当场放。
 /// 没有锁文件的算没拿着。同一个进程里另开一次也是另一把，拿着锁的进程自己问也是「拿着」。
 ///

@@ -15,7 +15,6 @@ use clap::{Args, Subcommand};
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, BufReader};
 
-use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::root::DataRoot;
 
@@ -25,6 +24,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::say;
+use crate::startup::connect_or_start;
 
 /// 等服务连上最多多久：同核心等回调的时限。
 const WAIT: Duration = Duration::from_secs(600);

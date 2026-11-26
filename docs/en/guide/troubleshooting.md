@@ -102,14 +102,16 @@ For more, see [Keeping it running, and servers](service.md#logs).
 
 ## The core will not start, or cannot connect
 
-When an interface or the command line opens, it first connects to the core; if it cannot connect, it starts a core and waits up to 60 seconds. A data root runs only one core at a time, and that core holds `~/.miyu/run/core.lock`.
+When an interface or the command line opens, it first connects to the core; if it cannot connect, it starts a core and waits for it to finish starting. If it is still not connected after 3 seconds, the command line first prints `miyu: the core is still starting…` and keeps waiting, for up to 10 minutes; if the core exits while starting or reports an error, you get the error right away instead of waiting the full 10 minutes. Press `Ctrl+C` while waiting to quit at once. A data root runs only one core at a time, and that core holds `~/.miyu/run/core.lock`.
 
 | What you see | Cause | What to do |
 |---|---|---|
 | `the core couldn't start: …` | The core hit an error while starting; what follows the colon is the reason the core gave. | Fix what the reason says. If you do not understand the reason, read the last lines of `core.log`. |
 | `the core didn't start and gave no reason; see … in the data root` | The core exited without giving a reason. | Read the last lines of `~/.miyu/var/log/core.log`. |
-| `timed out waiting for the core to start` | The core was still not up after 60 seconds, most likely because the disk is busy. | Try again; if that does not help, read `core.log`. |
-| `another program is starting the core and it took too long` | Another interface is starting the core, and it was still not up after 60 seconds. | The same as the row above: try again, and if that does not help, read `core.log`. |
+| `miyu: the core is still starting…` | This is not an error: the core is starting more slowly than usual, for example because the disk is busy or several cores are starting at once. | Wait for it. |
+| `timed out waiting for the core to start` | The core's process is still there, but it was still not up after 10 minutes, most likely because it is stuck. | Read the last lines of `core.log`, then end it as the section "The old core is still running" below describes, using the process ID on the last `starting` line of `core.log`, and open Miyu again. |
+| `another program is starting the core and it took too long` | Another interface is starting the core, and it was still not up after 10 minutes. | The same as the row above. |
+| `miyu: the core hasn't answered yet, still waiting…`, and in the end `the core never answered, stopped waiting` | The core is connected but never answers, and the wait lasts up to 10 minutes; most likely the core is stuck. | The same as `timed out waiting for the core to start`. |
 | `cannot launch the core: …` | The core program cannot be found, or you have no permission to run it. | Reinstall Miyu, see [Installing, upgrading and uninstalling](install.md). |
 | `… isn't a Miyu data root …` | Something else is already at the location of the data root. The data folder of the old 0.7 version also produces this message. | If it is the data folder of the old 0.7 version, move it aside as the second half of the message says, install the migration package and migrate, see [Migrating from the old 0.7 version](migrate.md); if it is not, set `MIYU_HOME` to an empty folder. |
 | `… is an old Miyu data root, which this version doesn't read …` | This is a data root left by a development build from before the release. | Set `MIYU_HOME` to an empty folder. |
@@ -146,6 +148,10 @@ kill <process id>
 ```powershell
 Stop-Process -Id <process id>
 ```
+
+### The core is slow to stop
+
+After the core receives a stop signal (for example when you stop the startup service, or run `kill <process ID>`), it first stops the running sessions and extensions, then exits. This takes at most 30 seconds; after 30 seconds the core exits anyway. If you do not want to wait, send the stop signal once more: the core exits at once on the second one and writes `second stop signal, exiting now` to `core.log`.
 
 ### No interface opens at all
 

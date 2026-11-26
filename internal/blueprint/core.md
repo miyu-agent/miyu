@@ -12,7 +12,8 @@
 | `crates/miyu-core/src/lib.rs` | `main`：起来的先后；工具目录；写那一行 |
 | `crates/miyu-core/src/start.rs`、`owner.rs` | 起来的后半段：开套接字、找主人，没有的当场照系统用户名建一个（施工 SU-1），照他读清单和配置 |
 | `crates/miyu-core/src/models.rs`、`models/` | 读资源目录里的供应商档案（TOML 读成 JSON 交给 `miyu-models`）和模型资料，造会话的路由（施工 8-6，`models.md`） |
-| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），停的信号，头叫停（施工 DT-4 下，`core.stop`），数据根没了就走（施工 TMP-2）；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
+| `crates/miyu-core/src/serve.rs` | 接连接，空闲退出（配置项 `core.idle_exit`，施工 Z-1 上），头叫停（施工 DT-4 下，`core.stop`），数据根没了就走（施工 TMP-2）；定下要停就不再接新连接（施工 CS-6）；停下以后放锁之前的收尾（`serve_then`，施工 TMP-1 补2） |
+| `crates/miyu-core/src/stops.rs`（施工 CS-6） | 停的信号：起来时就装；第二次当场强退；收尾的总时限 30 秒 |
 | `crates/miyu-core/src/workers.rs` | 运行时开几个工作线程：照核数和系统配置的 `core.workers`，建运行时以前单独读这一项（「起来的先后」第 7 条，施工 CPU-1） |
 | `crates/miyu-endpoint/src/lib.rs` 的 `Core::finish_writes` | 等记忆在后台还没做完的：回合开始没等完的读、回合索引的后台、补齐旧会话（施工 TMP-1 补3，下面「停下」第 6 条；`memory.md` 第三条第 4 款）；停会话（`stop_sessions`）时也等 |
 | `crates/miyu-core/src/pending.rs` | 另起线程写盘的登记下来，核心放锁之前等它们写完（施工 TMP-1 补2，下面「停下」第 6 条）；还在读目录、还在写盘的照计数等（施工 TMP-3）；登记的也带一个记号，等完才放（施工 TMP-3 补） |
@@ -94,10 +95,10 @@
 2. 找数据根，建骨架（`store.md`）。
 3. 拿单实例锁 `run/core.lock`，不等。拿不到：已经有一个核心在跑，写 `running`，退出码 0，运行日志一个字都不写。先拿锁、再装日志：两个核心不写同一份日志。
 4. 装运行日志 `var/log/core.log`，级别照 `MIYU_LOG`，带上第 1 步的家目录（`log.md`）。记一条 `INFO starting version=<版本> pid=<进程号> root=<数据根> tz=<和 UTC 差多少>`，数据根里的家目录写成 `~`，例如 `root=~/.miyu tz=+09:00`。接着让它起的子进程随它结束（下面「子进程随核心退出」，施工 7-8）：Windows 上进作业对象，进不去记一条 `WARN children not bound error=…`，照样起来；别的平台这一步什么都不做。
-5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），算出套接字放哪、换本机令牌、在套接字上等连接（第 8 条）。接着建默认工作区 `workspace/` 和敏感的几处顶层目录 `trash/`、`blobs/`、`modules/`、`index/`、`kb/`（没有就建，Unix 上 0700；后几个施工 R3-1 补：布局不变，只是不再用到才建，Windows 的沙盒只禁命令起来那一刻顶层已有的，命令跑着时第一次建的整棵读得到），建不了的起不来（`stage=home`）。接着收拾上一次崩了留下的（`leftovers.rs`）：`packages/` 里升级到一半的包放回去（施工 AE-7，`packages.md`「装卸」第 1 条）；数据根里写配置、密钥时剩下的临时文件删掉（施工 AS-11，`store.md`「在哪」的 `config_file.rs`；施工 R3-1 起看 `run/` 和数据根这一层）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
+5. 找资源目录、开始读目录（同下面第 6、9 条）；起运行时（第 7 条），在运行时里先装停的信号（下面「停下」第 4 条，施工 CS-6），再算出套接字放哪、换本机令牌、绑好套接字（第 8 条）。接着建默认工作区 `workspace/` 和敏感的几处顶层目录 `trash/`、`blobs/`、`modules/`、`index/`、`kb/`（没有就建，Unix 上 0700；后几个施工 R3-1 补：布局不变，只是不再用到才建，Windows 的沙盒只禁命令起来那一刻顶层已有的，命令跑着时第一次建的整棵读得到），建不了的起不来（`stage=home`）。接着收拾上一次崩了留下的（`leftovers.rs`）：`packages/` 里升级到一半的包放回去（施工 AE-7，`packages.md`「装卸」第 1 条）；数据根里写配置、密钥时剩下的临时文件删掉（施工 AS-11，`store.md`「在哪」的 `config_file.rs`；施工 R3-1 起看 `run/` 和数据根这一层）。访问密码不在这里设：要从局域网连时用 `account.setup` 设（`protocol.md`）。
 6. 找资源目录（`store.md`）。接着读两层清单、读配置（施工 8-2，`config.md`「怎么走」第二条）：配置、信任的记录、密钥文件（施工 8-5），读不进来的照空的，有问题的每份记一条 `WARN config problems`（密钥文件组、别人读得到的记一条 `WARN secrets readable by others`）；照 `log.level` 的最终值换运行日志的级别，记一条 `INFO log level`。再照配置清单生成两份 JSON Schema 和参考文件，放在 `var/cache/config`（施工 8-1，`config.md`「怎么走」第一条第 6 到 8 条）。这一步在一条做完就退出的线程（`generate`）里做，主线程等它写完再往下走（施工 LW-5，`heap.md`「怎么走」第 5 条）：字照 `ui.language` 的最终值，`auto` 的照系统的语言挑，一样的不重写；读好的配置交给协议端点（`Core::with_config`）；写不成的、字缺了的，一份记一条 `WARN config schema not written`（目标 `miyu::config`），不影响起不起得来。说「好了」之前开始监视配置文件（`Core::watch_config`，施工 8-4，`config.md` 第七条），起一个任务跟着配置换：`log.level` 变了换级别，`ui.language` 变了重写那三份（第八条）；监视起不来的记一条 `WARN config watch unavailable`，照样起来。 照清单拼出来的包的配置项、清单的副本和配置的值只在这一步里使用，生成完参考文件就放下，不留到核心停下（施工 LW-16：原来这几份是启动函数的局部变量，启动函数一直等到核心停下才交回，它们跟着留在堆里约 0.19 MB）；读好的清单在造家底时交进去（`Core::with_found`），家底不再自己读第二遍（`packages.md`「怎么走」第 1 条）。
 7. 起运行时：多线程，接连接、会话、请求都在上面。工作线程数照 CPU 核数（`available_parallelism`，取不到的照 2），系统配置写了 `core.workers`（1 到 64）的照它；都夹到 2 到 64（施工 CPU-1：原来写死两个，整机被挤满时 Linux 大体按线程分 CPU，两个线程大半时间在排队）。运行时要先建、配置在它里面读，所以这一项在建运行时以前单独读一次系统配置（`workers.rs`）：读不到、写坏了、超范围的照核数，不报，第 6 条正式读配置时照旧报；改了重启核心生效（`config.md` 的 `restart`）。运行日志在 `DEBUG` 记一条 `runtime workers=<个数>`。tokio 的阻塞线程池、自己开的线程不跟着变；glibc 的 arena 照旧 8 个（`heap.md`）。
-8. 算出套接字放哪、换本机令牌、在套接字上等连接、记下实际的位置（`ipc.md`）。
+8. 删掉上一个留下的 `run/socket`，算出套接字放哪、换本机令牌、绑好套接字（`ipc.md`）。还不写 `run/socket`（施工 CS-6）：头照它找不到这一个，到第 16 步开始接连接的前一刻才写。原来这一步就写，到第 16 步之间（读配置、造路由、探沙盒这些，冷启动、硬盘忙时几十秒）头连得上却没人回，握手一直空等（2026-11-27 量过）。
 9. 读供应商的档案、认原厂的表，造会话的路由和核心一份的模型资料（下面「模型」，施工 8-6、8-7）。目录这时还不读。
 10. 找沙盒的助手、探一次（`sandbox.md`「怎么走」第 1、2 条）：记一行 `INFO` `sandbox` 或者 `WARN` `sandbox unavailable`（施工 5-1）。探到的结果（能不能用、为什么，`Availability`）交给协议端点：握手时报给头（施工 5-4 下）；能用的，造会话、载入时把助手交给会话，权限策略照它判执行命令，执行器照它带沙盒（施工 5-4 上）；用不了的，会话里当沙盒用不了。
     - 沙盒的缓存（缓存目录下的 `sandbox/`，施工 5-4 下）只给「工作区」一级的沙盒用，随它去掉了（施工 LV-1，`session/tools.md` 第 1a 条第 5 条）：核心起来时不再算它，也不记 `sandbox cache unavailable`。
@@ -105,10 +106,10 @@
     - 这两样都不影响起不起得来。
 11. 工具目录：登记基础系统，十一件：`edit`、`glob`、`grep`、`history`、`jobs`（施工 7-4）、`send_message`（施工 7-7）、`read`、`shell`、`subagent`（施工 7-5；7-5 再补从 `agent` 改名）、`trash`、`write`；工具的字从资源目录读，登记完就冻结（`tools/interface.md`）。
 12. 核心的家底：数据根、资源目录、模型、工具目录、系统的家目录、本机令牌，会话表是空的，执行器的任务表是空的（施工 7-3，`protocol.md`）；人格记忆装没装照读到的清单设在核心一份的记忆上（`Memory::set_installed`，施工 R-10，`memory.md` 第十一条）；照编进来的可选软件包往查询表里登记（`packages.rs`，cargo 开关 `mermaid`、`net`，施工 W-4、W-7）：`mermaid.render`、`link.preview` 调得到，没编进来的核心起来时这张表里就没有这一行；两个包都等第一次调才读自己的资源（`net` 这时才读环境变量里的代理）。清一遍分块上传留下的暂存：`blobs/tmp/` 里的 `upload-*`，崩了、被杀留下的（`packages::clear_uploads`，施工 W-5，`store.md` 第九条第 6 款）；在这一步做，接连接以前：真要传的东西这时都还没开始。不载入任何会话；会话列表的索引 `index/sessions.db` 用到时才开，开了一直开着：没有的新建，读不了、坏了、版本不对的删掉换一份空的，列会话时照日志补；都不影响起不起得来（施工 3-8 七补，`store/index.md`「怎么走」第 1 条）。同样打开用量汇总 `var/cache/usage.db`，一直开着，交给会话（落盘时写）、模型资料（一次性入口记账，`ModelData::keep_ledger`）、协议（`usage.query`）；新建的记 `INFO usage index created`，读不了、坏了、版本不对的删掉重建、记 `WARN usage index rebuilt`，查之前照日志补（施工 8-15，`models.md`「怎么走」第九条第 4 条）。会话表造会话、载入时交给会话一份造子会话的端口（施工 7-5，`protocol.md`「会话表」第 7 条）。
-13. 往标准输出写一行 `ready`。接着在后台读 models.dev 的目录、用出来的、供应商的列表，读完放行等着它的（造会话、载入、`model.list`），之后在后台更新目录（下面「模型」第 5、6 条，施工 8-7）。
+13. 在后台读 models.dev 的目录、用出来的、供应商的列表，读完放行等着它的（造会话、载入、`model.list`），之后在后台更新目录（下面「模型」第 5、6 条，施工 8-7）。
 14. 清一次回收处（施工 3-8 三补，`store.md` 第 12 条第 2 款）：回收处里删了满 7 天（`KEEP`，2026-09-30 项目主人定）的会话连目录删掉。删之前先留用量的底（施工 8-15，`models.md`「怎么走」第九条第 5 条）：照它的日志算好合计，往 `journal.jsonl` 追加一条 `usage.purged`，写进去了才删；写不进去的（连同日志读不了的）留着，记 `WARN trash entry kept`，下次再清。写了 `ready` 以后在阻塞线程里清，不耽误头连上来、第 15 步照常；核心放锁之前等它清完（下面「停下」第 6 条）。钟是这时系统的钟，读不出的当 1970 年（什么都不满时限，一个都不删）。删了的记一条 `INFO trash purged removed=<几个>`，一个都没删的不记；读不出删的时刻、删不掉的，一个一条 `WARN trash entry kept session=… error=…`；回收处读不了的记 `WARN trash not read error=…`。都不影响起不起得来。
 15. 开始自己记内存账（施工 V-4，`heap.md`「自己记账」）：Linux、macOS（施工 V-4 补）上起一个任务，记一行 `start`，之后每分钟一行，涨得快的多一行，写进 `var/log/memory.jsonl`；量不出来的平台不起，记一条 `DEBUG memory samples unsupported`；文件打不开的记一条 `WARN memory samples not started`，照样起来。接着起合库的写前日志的线程（施工 V-28，`store.md`「怎么走」第 14 条）：库最后一次提交过去 2 秒，把 `-wal` 合回主库、截短；一个进程只起一个，起不来的记一条 `WARN wal checkpoints not started`，照样起来。
-16. 一个个接连接，直到停下（下面「停下」）。
+16. 写 `run/socket`（`Listener::publish`，记 `INFO listening`），往标准输出写一行 `ready`，接着一个个接连接，直到停下（下面「停下」）。这三件之间没有别的事：头读到 `ready`、照 `run/socket` 连上就有人回（施工 CS-6）。原来 `ready` 写在第 13 步，之后拉起扩展、补登记 blob 这些做完才开始接连接。写不进 `run/socket` 的起不来（`stage=socket`，`socket_failed`）。
 
 第 2 到 11 步哪一步出了错（第 3 步拿不到锁的除外；第 10 步探沙盒只记日志，不会出错）：写 `error <代码>: <原因>`（施工 EN-2：每一步都带代码，`miyu-core` 的 `not_started.rs`；原因只写会变的那一段，系统的原话或路径），退出码 1；运行日志已经装上了的（第 5 步起），再记一条 `WARN not started stage=<哪一步>`：第 5 到第 9 步依次是 `home`、`resources`、`runtime`、`socket`、`models`，第 11 步是 `tools`。原因只交给头，不进运行日志（施工 4-9 再补四上：原来 `reason=<原因>` 整句写进去）。第 8 步以后出的错，走的时候照样删掉套接字文件、放开锁（`ipc.md`）；写那一行之前先等另起线程写盘的写完（下面「停下」第 6 条），调它的地方接着就放锁。
 
@@ -155,11 +156,15 @@
 1. **连着头的时候不看**（施工 V-6 下）：有连接就不算空闲，不定时醒，等连上、断开、来请求的信号（`miyu_endpoint::Activity`，`activity.rs`）再算。没有连接的时候每隔一会儿看一次空不空闲：空闲时限的四分之一，最少 100 毫秒，最多 30 秒；600 秒的是每 30 秒（回合、后台命令、扩展忙完没有，没有统一的信号）。没有空闲时限的（默认）也每 30 秒看一次，照这一刻的 `core.idle_exit` 判（施工 Z-1 上：配置当场生效）；间隔照起来时的那个时限定。起来时先等一个间隔再看第一次。以前连着头也每 30 秒看一次，空闲的核心每秒醒一次多（另一半是内存账，`heap.md`「自己记账」第 3 条），施工 V-6 下量过：连着一个头空闲时每秒醒 1.2 次，改完 0 次；没有连接、等着退出时 1.3 次，改完 0.13 次。
 2. 空闲：没有连接（握没握手都算），没有忙着的会话，也没有在跑的后台命令（结束了、记录还没落盘的也算；`12-进程形态与分发.md` R1，施工 7-3；`protocol.md`「空闲和停下」）。
 3. 看到空闲，从这一次看的时刻记起；哪一次看的时候还空闲、已经够了空闲时限，就停。中间哪一次看到不空闲，从头记。所以从真的空下来算，到退出，至少是空闲时限，最多再多两个间隔；600 秒的，在 600 到 660 秒之间：记起的时刻和后来看的时刻都是当时的钟，正好满 600 秒的那一次看可能差几微秒不够，要等下一次。`--idle-seconds 0` 的，第一次看到空闲就停。
-4. 停的信号：Ctrl+C（SIGINT），Unix 上还有 SIGTERM。收到了，先有计划地停下全部在跑的会话（跑到一半的回合记成「重启了」，下次载入接着干；在跑的后台命令先记 `restarted`、落了盘再整组杀，R5，施工 7-3），等记忆在后台的读写做完（施工 TMP-1 补3，第 6 条），再停。拉起的核心自成一个进程组，终端里按 Ctrl+C 打不到它，要停得明着发。
-5. Unix 上装不上 SIGTERM 的，记一条 `WARN SIGTERM not watched error=…`，只等 Ctrl+C。只等 Ctrl+C 的（Windows 上、Unix 上装不上 SIGTERM 的）连 Ctrl+C 也装不上，记一条 `WARN Ctrl+C not watched error=…`，当它不会来。SIGTERM 装得上时，等的是 Ctrl+C 和 SIGTERM 一起 `select!`：这时 Ctrl+C 装不上，照样记一条 `WARN Ctrl+C not watched error=…`，当它不会来，只等 SIGTERM（施工 4-9 再补三上）。
+4. 停的信号：Ctrl+C（SIGINT），Unix 上还有 SIGTERM。起来时就装好（「起来的先后」第 5 步，`stops.rs`，施工 CS-6）：原来到第 16 步才装，起来那一段收到的照系统的默认当场杀掉；起来那一段收到的现在记着，开始接连接时当场照下面停。收到了，先有计划地停下全部在跑的会话（跑到一半的回合记成「重启了」，下次载入接着干；在跑的后台命令先记 `restarted`、落了盘再整组杀，R5，施工 7-3），等记忆在后台的读写做完（施工 TMP-1 补3，第 6 条），再停。拉起的核心自成一个进程组，终端里按 Ctrl+C 打不到它，要停得明着发。
+5. 装不上的当它不会来：Unix 上 SIGTERM 装不上记一条 `WARN SIGTERM not watched error=…`，Ctrl+C（Unix 上是 SIGINT、Windows 上是控制台的 Ctrl+C）装不上记一条 `WARN Ctrl+C not watched error=…`，照样等装上了的；都装不上的一直等下去（施工 4-9 再补三上）。
+   - **第二次就强退**（施工 CS-6，2026-11-27 项目主人定）：第一次照第 4 条有计划地停；之后再来一次（SIGTERM、SIGINT 哪一种都算，起来那一段来的也算），记一行 `WARN second stop signal, exiting now`、把运行日志落到盘上，退出码 1 当场退出，收尾剩下的不做。原来第二次被吞掉（tokio 装上信号以后不再交还系统的默认），收尾卡住的核心 SIGTERM 怎么发都不走。
+   - **收尾有总时限**（施工 CS-6）：定下要停的那一刻（信号、头叫停、空闲、数据根没了都算）起表，30 秒还没走到第 8 条，记一行 `WARN stopping took too long, exiting now`，同样落盘、退出码 1 当场退出。30 秒：停扩展、MCP 服务各等 5 秒，记忆写完、清回收处一般几秒；比 `miyu core stop` 等核心退的 60 秒短，人敲的「停」等得到它；比 systemd 默认的 `TimeoutStopSec` 90 秒短，服务管理器不用自己去杀。打开 `testkit` 的构建另认测试口子 `MIYU_TEST_STOP_LIMIT_MS`（毫秒）。
+   - 当场退出时：锁由系统放（进程没了就放），套接字文件留下、下一个核心起来时当旧的清掉，`run/socket` 留下、照它连是被拒绝（`NotRunning`）；长住的子进程、后台命令照「子进程随核心退出」由看门的收掉，再载入时补 `aborted`。
+   - **定下要停就不再接新连接**（施工 CS-6）：第 2、4、9、10 条哪一种定下要停，先关掉监听、删掉套接字文件和 `run/socket`（端点记 `INFO listener closed`，目标 `miyu::endpoint`），头再连是「没在跑」，不会连上了却等不到回应；拉起核心的头看到锁还被拿着就等它走了再拉（`ipc.md`「连不上就拉起」第 4 步）。已经连着的照常说话，到第 8 条才断。锁另外拿着（`Listener::take_lock`），第 7 条记完才放。原来监听器跟着锁一起放在最后，收尾那几秒里新连上的头一直空等。
 6. 收尾，在放锁之前做完（施工 TMP-1 补2，`serve_then`）：等第 14 步清完回收处、清完缓存（`cache.rs`），等另起线程写盘的写完（缓存目录里整理好的模型目录，`models.md`「怎么走」第二条；`pending.rs`）。起来时另起线程读的模型目录还没读完的也等（施工 TMP-3）：写盘的线程是它读完才起的，原来只等登记了的，起来不久就停下的放锁时登记里还是空的，读完照样把删掉的数据根建回来（main b47ecacb3 的门禁，`miyu` 的 `heads` 测试：拉起核心、问完装了哪些界面就叫停）。读的、写的线程起来之前各拿一个记号、做完才放，照计数等，不照谁取走了登记：两处同时等的各自都等到全部做完。登记的写盘线程也连同一个记号记着，`join` 完才放（施工 TMP-3 补）：原来只有线程自己拿着的才算，另一处先取走登记、还在等时，这一处拿到空的就交回了（960c21421 的 Windows 门禁）；现在先取走能取的等完，取不到了照计数等到 0，新登记的叫醒等着的那一处接着取。这些都碰数据根，只许拿着锁的核心做：原来锁放了才等，下一份核心起来、测试删数据根时撞上，删掉的目录又被一层层建回来（2026-10-29 主会话定：这是核心的毛病，不在测试夹具上补）。在这之前先等记忆在后台的读写做完（施工 TMP-1 补3，`Core::finish_writes`）：回合开始问记忆、限时过了会话不等的读（头一回读一间要读记忆日志、开库，`memory.md` 第三条第 4 款），回合索引的后台，补齐旧会话的线程。空闲退出的没停会话，在这里等；收到信号的停会话时（`stop_sessions`）就等过了。原来交回时那次读还在读，CI 上测试删数据根时撞上，剩下记忆日志、回合库。
 7. 停之前记一条 `INFO stopped reason=idle`（空闲）、`reason=signal`（信号）、`reason=request`（头叫停，第 10 条）或 `reason=gone`（数据根没了，第 9 条）：那时锁还在手里，下一个核心起来之前，这份日志还是它一个人写。
-8. 然后删掉套接字文件、放开锁，连接跟着没了，退出码 0。
+8. 然后断开连着的头、放开锁，退出码 0。
 9. **数据根没了就走**（施工 TMP-2）：没有连接、每次看空不空闲的时候（第 1 条），先看数据根里的锁文件还是不是拿着的这一个（`ipc.md` 的 `Held`）。不是了（测试删了临时目录、人手删了数据根，删了又建了一个新的也算），记一条 `WARN data root gone, stopping`，照第 4 条有计划地停下会话，再照第 6 到 8 条走，`reason=gone`。没有空闲时限的（默认）核心原来一直开着：测试漏掉的、数据根被删了的核心永远不退，2026-10-29 主会话的机器上攒了十个、跑了二十小时。没有空闲时限的每 30 秒看一次，所以最多三十秒走；连着头的不看，头走了以后照常看。
 10. **头叫停**（施工 DT-4 下）：出示本机令牌连上的头调 `core.stop`（`protocol.md` 方法表），端点把回应 `{}` 写出去以后叫一声（`Activity::stop_requested`，`activity.rs`）；核心照第 4 条有计划地停下会话，再照第 6 到 8 条走，`reason=request`。桌面端托盘里的「退出」连核心一起关用它：头不知道核心的进程号，Windows 上拉起的核心脱了控制台，信号发不过去。和信号、空闲同时到的照先到的那一个停，只停一次。回应以前在 `run/` 里留下人停的记号 `stopped`（施工 CS-5，`ipc.md`「人停的不自己拉起」）：头断线以后自己重连不再拉起它。
 
@@ -194,6 +199,7 @@
 | `ERROR` | `background write panicked`、`background writes not awaited panic=…`（施工 TMP-1 补2：另起线程写盘的、等它们的线程 panic 了） |
 | `ERROR` | `memory writes wait panicked`（施工 TMP-1 补3：等记忆在后台的读写的那个线程 panic 了；目标 `miyu::endpoint`） |
 | `WARN` | `SIGTERM not watched error=…`、`Ctrl+C not watched error=…` |
+| `WARN` | `second stop signal, exiting now`、`stopping took too long, exiting now`（施工 CS-6：第二次停的信号、收尾过了 30 秒，当场退出，退出码 1） |
 | `WARN` | `data root gone, stopping`（施工 TMP-2：数据根里的锁文件不在了、换了，「停下」第 9 条） |
 | `INFO` | `stopped reason=idle`、`stopped reason=signal`、`stopped reason=request`、`stopped reason=gone` |
 
@@ -217,7 +223,9 @@
 | `crates/miyu/tests/crash.rs`（施工 7-8、V-48） | 真的 `miyu core` 被硬杀：后台命令跟着停（三个平台）；Unix 上前台、监视的（MN-1 上）、人用 `!` 跑的（SH-1 上）也跟着停，命令自己和孙进程都没了，组里看门的是 `miyu-watchdog`（主程序旁边有的话）；两个核心各管各的，有计划地停下不留看门的 |
 | `crates/miyu/tests/crash_kept.rs`（施工 XH-1） | 真的 `miyu core` 拉起扩展（`miyu-test-extension` 一起来就 `hang`，再起一个睡着的子进程）、系统配置里的命令型 MCP 服务、`embed` 小程序包里的程序（这两种是一段 `sh` 先在后台起 `sleep` 再 `exec` 成 `miyu-test-mcp`、`miyu-test-embed`），硬杀核心以前两个进程在同一组、组长不是它们也不是核心的组（施工 LW-28 起这一组是长住的子进程共用的），硬杀以后两个都在 10 秒内没了；扩展那一条三个平台跑（Windows 上是核心的作业对象），另两条 Unix |
 | `crates/miyu-core/tests/serve.rs` | 空闲退出、放开锁和套接字；收尾时锁还在、交回以后才放（施工 TMP-1 补2）；回合开始问记忆的读慢过限时、会话不等的，收到停的信号、空闲退出都等它读完才交回（施工 TMP-1 补3）；有头连着不退；空闲的钟从最后一个头走时算起；在跑的回合不退；有在跑的后台命令不退、结束了记下再退（施工 7-3）；收到停的信号先停下会话、跑到一半的记成重启了，没有空闲时限的删了数据根自己走、`reason=gone`（只在 Unix 上，施工 TMP-2），后台命令先记 `restarted`、落了盘再杀（施工 7-3）；没配模型的每次请求都说没有模型、分类 `no_model`、没发出去（施工 8-6）；头调 `core.stop` 先收到 `{}`，再照信号那样停下会话、原因是 `request`（施工 DT-4 下），回应时 `run/stopped` 已经在了（施工 CS-5） |
-| `crates/miyu-core/src/serve/tests.rs` | 多久看一次：四分之一，最多 30 秒，最少 100 毫秒；装不上的 Ctrl+C 当它不会来（造不出真的装不上，测的是等它的那一小段）。最后一个头走了才开始算空闲、断开时叫一声（`tests/serve.rs`，施工 V-6 下拿掉断开时那一声就红） |
+| `crates/miyu/tests/stopping.rs`（施工 CS-6，Unix） | 真的核心带一个停的时候要等 5 秒的扩展：收尾时第二次信号 2 秒内退、退出码 1、记一行、没记 `stopped`；总时限（测试口子 1 秒）到了退、退出码 1、记一行；收尾时连是 `NotRunning`；收尾时敲 `miyu core start` 说「核心还在启动」、等它走了拉起新的，回来时新的在跑 |
+| `crates/miyu-core/src/stops/tests.rs`（施工 CS-6） | 装不上的、装上了又断了的信号当它不会来，来了的照常回；总时限是 30 秒 |
+| `crates/miyu-core/src/serve/tests.rs` | 多久看一次：四分之一，最多 30 秒，最少 100 毫秒。最后一个头走了才开始算空闲、断开时叫一声（`tests/serve.rs`，施工 V-6 下拿掉断开时那一声就红） |
 | `crates/miyu-core/src/pending/tests.rs`（施工 TMP-1 补2） | 读目录时另起线程写的整理好的一份，等完以后已经在缓存目录里了（写得慢的，测试里让它先睡 300 毫秒，也等）；登记了的都等；起来时读的目录还没读完就等的（读的也先睡 300 毫秒），等完删掉数据根，过 1.5 秒里面没有又出现整理好的一份（施工 TMP-3）；另一处先取走了登记、正在等，这一处也等到写完才交回（施工 TMP-3 补） |
 | `crates/miyu-core/tests/tools.rs` | 工具目录里是基础系统的七件；资源目录坏了，说是哪一份 |
 | `crates/miyu-core/src/models/tests.rs` | 出厂的档案读得进来，DeepSeek 那一套开关和请求形状探针用的 `Compat::deepseek()` 一样、收图不收 PDF、图照官方的算法（施工 8-6，原来写在代码里，施工 4-13）；TOML 变成 JSON，写错的说是档案 |

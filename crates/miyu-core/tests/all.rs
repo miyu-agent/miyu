@@ -7,6 +7,7 @@ mod support;
 
 mod catalog;
 mod catalog_recall;
+mod closing;
 mod config_words;
 mod embed_package;
 mod embedding_names;

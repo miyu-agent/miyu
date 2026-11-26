@@ -303,7 +303,7 @@ async fn a_core_that_leaves_without_a_word_is_reported() {
 #[tokio::test]
 async fn a_head_waits_for_a_core_that_is_running_but_not_listening_yet() {
     let home = Home::new();
-    // 另一个核心刚拿到锁，还没开始等连接：拉起的那一个说「已经在跑」就走，头等着连上它。
+    // 另一个核心刚拿到锁，还没开始等连接：头看到锁被拿着就不拉，等着连上它（施工 CS-6；原来拉起的那一个说「已经在跑」就走）。
     let lock = Lock::acquire(&home.root).expect("拿得到");
     let head = tokio::spawn({
         let root = home.root.clone();
@@ -320,6 +320,7 @@ async fn a_head_waits_for_a_core_that_is_running_but_not_listening_yet() {
         ..Dirs::current()
     };
     let opened = miyu_ipc::open_locked(&home.root, &dirs, lock).expect("起得来");
+    opened.listener.publish().expect("写得进");
     let (_, token) = within("连上", head)
         .await
         .expect("没 panic")

@@ -7,14 +7,14 @@
 | 文件 | 管什么 |
 |---|---|
 | `crates/miyu-client/src/lib.rs` | 门面：几组 `pub use`，`CoreCommand`，`testkit` 打开时的 `WORKSPACE_ROOT` |
-| `crates/miyu-client/src/open.rs` | 照终端的样子连核心（出示本机令牌；施工 W-8 补起 `connect_login` 出示登录令牌、W-8 再补起 `connect_password` 照用户名密码握手并交回换到的登录令牌，都是替人做事的程序用，不读本机令牌；拒绝、连不上、没回一律交 `Refused {reason, message, retry_after_ms, data}`，`reason` 是核心的 `data.reason` 或 `unreachable`、`no_answer`、`disconnected`、`io`，`data` 是核心那份 `error.data` 原样、核心之外的是 `null`（施工 CA-2：接入通讯平台的页面要冲突时的 `current`、写错的 `problems`、续传的 `received`））、一问一答（`Core`；`call` 一直没有一行到来时最多等 `WAIT` 30 秒，做得久的请求用 `call_waiting` 自己给时长，施工 CA-1：网页导出大会话的原始包），系统的办法开浏览器（`Browser`、`SystemBrowser`），这台机器的语言（`locale`）。从 `miyu-webserve` 挪来，行为不变（`webserve.md` 的「怎么用」照旧） |
+| `crates/miyu-client/src/open.rs` | 照终端的样子连核心（出示本机令牌；施工 W-8 补起 `connect_login` 出示登录令牌、W-8 再补起 `connect_password` 照用户名密码握手并交回换到的登录令牌，都是替人做事的程序用，不读本机令牌；拒绝、连不上、没回一律交 `Refused {reason, message, retry_after_ms, data}`，`reason` 是核心的 `data.reason` 或 `unreachable`、`no_answer`、`disconnected`、`io`，`data` 是核心那份 `error.data` 原样、核心之外的是 `null`（施工 CA-2：接入通讯平台的页面要冲突时的 `current`、写错的 `problems`、续传的 `received`））、一问一答（`Core`；`Core::connect_waiting`、`Core::reconnect_waiting` 多收一个 `Slow`：拉起核心、等握手的回应各段过了 3 秒还没好各叫一次（施工 CS-6）；握手的回应照 `Patience` 最多等 10 分钟，过了是 `no_answer`（原来 30 秒）；`call` 一直没有一行到来时最多等 `WAIT` 30 秒，做得久的请求用 `call_waiting` 自己给时长，施工 CA-1：网页导出大会话的原始包），系统的办法开浏览器（`Browser`、`SystemBrowser`），这台机器的语言（`locale`）。从 `miyu-webserve` 挪来，行为不变（`webserve.md` 的「怎么用」照旧） |
 | `crates/miyu-client/src/tests.rs` | 门面上的每一样用一遍：拿掉了哪一样当场编不过 |
 
 ### 门面上有什么
 
 | 一组 | 转出什么 | 原来在 |
 |---|---|---|
-| `connect` | `connect`、`connect_or_start`、`connect_or_start_bare`、`reconnect_or_start`、`reconnect_or_start_bare`（施工 CS-5：头自己重连，人停的不拉）、`spawn_detached`、`Connection`、`Ready`、`ConnectError`、`StartError` | `miyu-ipc` |
+| `connect` | `connect`、`connect_or_start`、`connect_or_start_bare`、`reconnect_or_start`、`reconnect_or_start_bare`（施工 CS-5：头自己重连，人停的不拉）、`spawn_detached`、`Connection`、`Ready`、`ConnectError`、`StartError`；施工 CS-6 起另有带 `_waiting` 的五个（四个连法加 `spawn_detached_waiting`）多收一个 `Slow`（`&(dyn Fn() + Send + Sync)`，过了 3 秒还没好叫一次，页面照它显示「核心还在启动」），`Patience`（3 秒、10 分钟）、`patiently`（照它等一个 future）。不带的照旧、不叫 | `miyu-ipc` |
 | `open_files` | `raise`、`Raised`：常驻的头、扩展起来时把打开文件数的软上限调高（施工 YC-1） | `miyu-ipc` |
 | `open` | `Core`、`Browser`、`SystemBrowser`（Linux `xdg-open`、macOS `open`、Windows `rundll32 url.dll,FileProtocolHandler`，网址整个是一个参数、不经过 shell；施工 AU-014，原来 Windows 是 `cmd /C start ""`，`&` 后面的被当成另一条命令，`open/browser.rs`）、`locale`；连不上、拉不起核心的 `Refused`（`unreachable`）原话照 `locale` 的语言从资源目录取字（施工 EN-2，`open/unreachable.rs`），取不到的照底层的原话 | 本 crate |
 | `places` | `DataRoot`、`ResourceRoot`、`Env`、`Platform`、`locale`、`cache_root`；施工 S-6 上补 `write`（生成的文件，`generated`）、`config_file`（读配置文件那一层）、`Packages`、`Issue`（两层的软件包清单） | `miyu-store` |

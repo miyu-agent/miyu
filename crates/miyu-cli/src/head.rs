@@ -14,7 +14,6 @@ use std::process::Command;
 use serde_json::json;
 
 use miyu_config::package::{Manifest, PackageKind};
-use miyu_ipc::connect_or_start;
 use miyu_store::env::Env;
 use miyu_store::packages::{Found, Launch, Packages};
 use miyu_store::resources::ResourceRoot;
@@ -25,6 +24,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::packages;
 use crate::rpc::Rpc;
+use crate::startup::connect_or_start;
 
 /// 打开的结果。
 #[derive(Debug, PartialEq, Eq)]

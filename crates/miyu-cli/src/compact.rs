@@ -11,7 +11,7 @@ use clap::Args;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 
-use miyu_ipc::{Connection, connect_or_start};
+use miyu_ipc::Connection;
 use miyu_store::env::Env;
 use miyu_store::human::Human;
 use miyu_store::root::DataRoot;
@@ -23,6 +23,7 @@ use crate::language::{self, Language};
 use crate::link;
 use crate::rpc::Rpc;
 use crate::shown::{self, say};
+use crate::startup::connect_or_start;
 
 /// `miyu compact` 的参数。给人看的说明在帮助页里（[`crate::help`]），这里的注释只给读代码的人看。
 #[derive(Debug, Clone, Args)]

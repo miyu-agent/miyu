@@ -50,6 +50,7 @@ async fn stops_cleanly(name: &str, answer: bool) {
         Lock::acquire(&root).expect("拿得到锁"),
     )
     .expect("开得了套接字");
+    opened.listener.publish().expect("写得进");
     let released = Arc::new(AtomicBool::new(false));
     let core = {
         let released = Arc::clone(&released);
@@ -114,6 +115,7 @@ async fn a_core_that_lost_its_run_files_is_not_called_stopped() {
         Lock::acquire(&root).expect("拿得到锁"),
     )
     .expect("开得了套接字");
+    opened.listener.publish().expect("写得进");
     for name in ["socket", "token"] {
         std::fs::remove_file(root.run().join(name)).expect("删得掉");
     }
@@ -124,5 +126,28 @@ async fn a_core_that_lost_its_run_files_is_not_called_stopped() {
     assert!(said.starts_with("miyu: 核心还在运行，但无法连接"), "{said}");
     assert!(said.contains("core.log"), "{said}");
     drop(opened);
+    std::fs::remove_dir_all(root.path()).expect("删得掉临时目录");
+}
+
+/// 核心拿着锁、令牌在、还没开始接连接（正在起来、正在收尾，施工 CS-6）：不说连不上，等着；它走了（锁放了）就是停了，退出码 0、
+/// 什么都不印。
+#[tokio::test]
+async fn a_core_between_listening_and_answering_is_waited_for() {
+    let root = temp_root("between");
+    let opened = miyu_ipc::open_locked(
+        &root,
+        &Dirs::current(),
+        Lock::acquire(&root).expect("拿得到锁"),
+    )
+    .expect("开得了套接字");
+    let leaving = tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        drop(opened);
+    });
+    let mut err = Vec::new();
+    let code = core_stop_on(&root, Language::Chinese, &mut err).await;
+    assert_eq!(code, exit::OK, "{}", String::from_utf8_lossy(&err));
+    assert!(err.is_empty(), "{}", String::from_utf8_lossy(&err));
+    leaving.await.expect("没 panic");
     std::fs::remove_dir_all(root.path()).expect("删得掉临时目录");
 }

@@ -69,7 +69,11 @@ pub async fn serve(
         Ok(hello) => hello,
         Err(error) => {
             tracing::warn!(target: "miyu::acp", %error, "hello refused");
-            return exit::ERROR;
+            // 标准错误编辑器收进日志：被拒、一直没回的原话写在那里（施工 CS-6）。
+            return match error["message"].as_str() {
+                Some(message) => crate::diagnostic::fail(message),
+                None => exit::ERROR,
+            };
         }
     };
     let mut server = Server {

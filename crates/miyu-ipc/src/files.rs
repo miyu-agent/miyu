@@ -52,6 +52,19 @@ pub(crate) fn write_location(root: &DataRoot, socket: &Path) -> io::Result<()> {
     replace(&root.run().join(LOCATION), &line)
 }
 
+/// 删掉记下的位置（施工 CS-6）：核心起来时先删（上一个崩了留下的，开始接连接以前不让头照它连上），不再接连接时再删。没有的
+/// 不算错。
+///
+/// # Errors
+///
+/// 删不掉。
+pub(crate) fn forget_location(root: &DataRoot) -> io::Result<()> {
+    match fs::remove_file(root.run().join(LOCATION)) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
+        _ => Ok(()),
+    }
+}
+
 /// 读套接字的实际位置。
 ///
 /// # Errors
