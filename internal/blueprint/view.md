@@ -24,7 +24,7 @@
 | `crates/miyu-view/tests/venue_names.rs`（施工 VW-2、VP-1补） | 场所里的人说的话 `from` 带 `name`；戳一戳的那条 `user` 带 `poke: true`、`poke_text` 原样，没戳的两格都不写；读回来一样 |
 | `crates/miyu-view/tests/group_page.rs`、`crates/miyu-endpoint/src/view/read/tests/cast.rs`（施工 FX-16） | 翻页切在开头以后，回复的 `persona`、换人格的旁白、消息的 `level` 和整份喂的一样；没下载的平台媒体在 `user` 的 `media` 里带种类（原图已经交进来的不重写）；只有叫她的那一条带 `trigger: true`，一起收进这一轮的旁听不带 |
 | `crates/miyu-view/src/projector/hosted.rs`（施工 HT-3） | 供应商侧工具那一步：流式开条目、收参数、出结果，落盘照块定稿；标题照 `title.rs` 的 `hosted`、谁跑的照 `via` |
-| `crates/miyu-view/tests/hosted.rs`（施工 HT-3） | 供应商侧工具：流式和翻页一字不差；流式时准备中、在跑、结果到了才定（结果在下一块开始以后才到也一样）；成了、出错、打断了没结果的 `cancelled`、说完了没结果的 `ok`；认得的名字照核心那件（搜索、读网页，收起那一行单算），不认得的写原名、算别的工具；DeepSeek 的搜索、打开网页照核心的搜索、读网页画，搜索的对象是 `queries` 的第一句（施工 DSR-4）；`via` 照显示名、没有的照编号；结果照 100 行、8 KiB 切；和核心工具在一条回复里各对各的结果，工具结果找不到它；没写成回复的拿掉；中途订阅补推的一串画得一样；在跑时 `doing` 是 `tool` |
+| `crates/miyu-view/tests/hosted.rs`（施工 HT-3） | 供应商侧工具：流式和翻页一字不差；流式时准备中、在跑、结果到了才定（结果在下一块开始以后才到也一样）；成了、出错、打断了没结果的 `cancelled`、说完了没结果的 `ok`；认得的名字照核心那件（搜索、读网页，收起那一行单算），不认得的写原名、算别的工具；DeepSeek 的搜索、打开网页照核心的搜索、读网页画，搜索的对象是 `queries` 的第一句（施工 DSR-4）；`via` 照显示名、没有的照编号；结果照 100 行、8 KiB 切；和核心工具在一条回复里各对各的结果，工具结果找不到它；没写成回复的拿掉；中途订阅补推的一串画得一样；在跑时 `doing` 是 `tool`；驱动在还开着的那一块上问人时参数算收全了、标题不再是准备中（施工 ACP-12，`hosted_stream.rs`） |
 | `crates/miyu-view/src/summary.rs`、`title.rs`、`estimate.rs`、`explain.rs`、`words.rs` | 收起那一行、标题那一句、照参数估的行数、出错说明；给人看的字的接口（`Words`、`Texts`）和工具分类（`Kinds`） |
 | `crates/miyu-view/tests/` | 照内核的替身跑真会话，每个测试都对照视图流和翻页最后一样（`support/mod.rs` 的 `same`）；`random.rs` 三百份随机剧本；`notices.rs` 另有切在派任务之后的一页（9-8 中）、回报的退出码和用时（9-8 三补）；`lines.rs` 另有改了文件的一步带 `files`（9-8 三补）、工具的名字照记下的、照这一刻工具目录里的、照工具名（9-8 六补）；`outputs.rs` 一步带结果原文的前面一段，切在 100 行、8 KiB、字的边界上（9-8 十四补） |
 | `crates/miyu-endpoint/tests/view_entries.rs`、`view_page.rs`、`view_detail.rs` | 真核心走一遍（9-8 中）：握手报版本；交条目的页、边界照旧、字照连接的语言；更早派出的任务照样有标题；调用的结果原文、压缩的摘要 |
@@ -105,7 +105,7 @@
 
 **供应商侧工具**（`hosted: true`，施工 HT-3）：和核心执行的工具同样的一步（同一段、同样的标题、点开看结果），不同的几处：
 
-1. 状态：参数还在写 `preparing`；参数收全（这一块的 `end`，或者下一块开始了）、结果没到 `running`；`model.delta` 的 `outcome` 到了 `ok`，`failed` 的 `error`。结果可以在下一块开始以后才到，收参数时不定状态。回复落了盘还没有结果的：回复是打断的（`message.assistant` 的 `interrupted`：打断、出错、写到上限）写 `cancelled`，不是的写 `ok`（供应商没报结果）。永远没有 `approval`、没有 `denied`。
+1. 状态：参数还在写 `preparing`；参数收全（这一块的 `end`，或者下一块开始了）、结果没到 `running`；`model.delta` 的 `outcome` 到了 `ok`，`failed` 的 `error`。结果可以在下一块开始以后才到，收参数时不定状态。回复落了盘还没有结果的：回复是打断的（`message.assistant` 的 `interrupted`：打断、出错、写到上限）写 `cancelled`，不是的写 `ok`（供应商没报结果）。没有 `denied`；扩展驱动在这一块上问人的（施工 ACP-8）带 `approval`，这时还在写参数的当参数收全了，换成 `running`、标题照参数写（施工 ACP-12：驱动要把结果交在这一块上，问着时不收块，以前一直是准备中，标题是「准备Bash」）。
 2. `output`、`output_cut` 照结果的字（`outcome.text`），切法同核心工具的结果（100 行、8 KiB）；整份照 `view.detail` 要。没有 `said`、`diff`、`files`、`detail` 这些照 `tool.result` 来的格。
 3. `took_ms` 照这一块的起止（`model.called` 的 `blocks`，同思考），没有起止的不写；一段的 `took_ms` 也照它停表。
 4. `call` 是块上的 `call_id`，落了盘以后才有。它不等 `tool.result`（不会来），工具结果、确认、提问照调用编号找步骤时找不到它。

@@ -180,16 +180,17 @@ impl Language {
         }
     }
 
-    /// 一轮出错收尾、核心没给说明也没有错误原话时，照怎么结束的说（施工 ACP-11）。
+    /// 一轮出错收尾、核心没给说明也没有错误原话时，照怎么结束的说（施工 ACP-11）。`restarted` 是核心停下时收的：人停的、收到停的
+    /// 信号的、换程序重启的都是它，分不出来，只说停了（施工 ACP-12）。
     pub(crate) fn acp_ended(&self, reason: &miyu_kernel::event::EndReason) -> &'static str {
         use miyu_kernel::event::EndReason;
         match (self, reason) {
-            (Language::Chinese, EndReason::Restarted) => "核心重启了，这一轮没有做完",
+            (Language::Chinese, EndReason::Restarted) => "核心停了，这一轮没有做完",
             (Language::Chinese, EndReason::Aborted) => "核心意外退出了，这一轮没有做完",
             (Language::Chinese, EndReason::Error) => "这一轮出错了",
             (Language::Chinese, _) => "这一轮没有做完",
             (Language::English, EndReason::Restarted) => {
-                "the core restarted before this turn finished"
+                "the core stopped before this turn finished"
             }
             (Language::English, EndReason::Aborted) => {
                 "the core exited unexpectedly before this turn finished"

@@ -141,3 +141,34 @@ fn a_command_shows_its_text_above_the_output() {
     let preparing = step(json!({"name": "shell", "state": "preparing", "args": "{\"comm"}));
     assert!(opened("b3.1", &preparing, "/work").get("content").is_none());
 }
+
+#[test]
+fn a_hosted_command_the_driver_asks_about_shows_its_text_like_a_shell() {
+    // 施工 ACP-12：对方自带的工具（Claude 适配器的 `Bash`）经驱动问人，命令原文在确认的 `detail` 里；以前卡片只有标题，要点开
+    // 参数原文才看得到要跑什么。
+    let detail = json!({"driver": "acp/acp", "tool": "touch a.txt", "title": "touch a.txt",
+        "command": "touch a.txt"});
+    let asked = step(
+        json!({"name": "Bash", "hosted": true, "title": {"name": "Bash", "via": "ACP 智能体"},
+        "args": "{\"command\":\"touch a.txt\"}", "approval": {"access": "execute", "detail": detail}}),
+    );
+    let call = opened("b5.0", &asked, "/work");
+    assert_eq!(call["title"], "Bash (ACP 智能体)");
+    assert_eq!(call["status"], "pending");
+    assert_eq!(
+        call["content"],
+        json!([{"type": "content", "content": {"type": "text", "text": "```\n$ touch a.txt\n```"}}])
+    );
+    // 包问人的那种（没有命令）、没问过的不报命令。
+    let guarded = json!({"driver": "acp/acp", "guard": "acp", "tool": "Edit", "reason": "a.txt"});
+    let edit = step(
+        json!({"name": "Edit", "hosted": true, "title": {"name": "Edit"},
+        "args": "{}", "approval": {"access": "write", "detail": guarded}}),
+    );
+    assert!(opened("b5.1", &edit, "/work").get("content").is_none());
+    let unasked = step(
+        json!({"name": "Bash", "hosted": true, "title": {"name": "Bash"},
+        "args": "{\"command\":\"ls\"}"}),
+    );
+    assert!(opened("b5.2", &unasked, "/work").get("content").is_none());
+}

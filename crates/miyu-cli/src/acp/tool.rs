@@ -110,7 +110,8 @@ fn fill(call: &mut Value, tool: &Tool, cwd: &str) {
 }
 
 /// 卡片里的内容（`content`，每次整份换）：执行命令的先是命令原文（`$ <命令>`，规范要编辑器把命令写全，确认框里尤其要看得到；
-/// 标题只有她写的说明），再是结果的字。参数还没写完的、没有命令也没有结果的是空的。
+/// 标题只有她写的说明），再是结果的字。参数还没写完的、没有命令也没有结果的是空的。供应商侧工具经驱动照跑命令问过人的，命令照
+/// 确认的 `detail`（施工 ACP-12：以前卡片上看不到要跑什么）。
 pub(crate) fn content(tool: &Tool) -> Vec<Value> {
     let mut out = Vec::new();
     if let Some(command) = command(tool) {
@@ -122,13 +123,26 @@ pub(crate) fn content(tool: &Tool) -> Vec<Value> {
     out
 }
 
-/// 执行命令的那一行原文：`shell` 参数写完了的 `command`。
+/// 执行命令的那一行原文：`shell` 参数写完了的 `command`；供应商侧工具是驱动问人时交的 `detail.command`。
 fn command(tool: &Tool) -> Option<String> {
+    if tool.hosted {
+        return asked_command(tool);
+    }
     if tool.name != "shell" || tool.state == ToolState::Preparing {
         return None;
     }
     let args = serde_json::from_str::<Value>(&tool.args).ok()?;
     args["command"]
+        .as_str()
+        .filter(|command| !command.is_empty())
+        .map(str::to_string)
+}
+
+/// 驱动照跑命令问人时写在确认里的命令（核心的 `driver_ask.rs`：`{driver, tool, title, command}`）。
+fn asked_command(tool: &Tool) -> Option<String> {
+    let detail = tool.approval.as_ref()?.detail.as_ref()?;
+    let detail = serde_json::from_str::<Value>(detail.get()).ok()?;
+    detail["command"]
         .as_str()
         .filter(|command| !command.is_empty())
         .map(str::to_string)

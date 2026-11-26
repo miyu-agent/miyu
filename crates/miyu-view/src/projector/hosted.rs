@@ -75,7 +75,7 @@ impl Projector {
             at,
         });
         self.join_group(&group, id.clone());
-        // 驱动在这一块上问过的（读回日志时请求排在回复前面，施工 ACP-8）：写上。
+        // 驱动在这一块上问过的（读回日志时请求排在回复前面，施工 ACP-8）：写上，参数当收全了（同 [`Self::driver_asked`]）。
         if let Some((call, approval)) = self.held.remove(&id) {
             self.touch(&id, |entry| {
                 if let Body::Tool(tool) = &mut entry.body {
@@ -83,11 +83,13 @@ impl Projector {
                     tool.approval = Some(approval);
                 }
             });
+            self.hosted_ready(&id);
         }
     }
 
     /// 驱动在一次请求进行中问人（施工 ACP-8）：画在第 `seen` 次请求的第 `index` 块上，那一步的调用编号先写成这一问的（头照它回答），
-    /// 回复落了盘换成供应商侧工具自己的。还没开条目的（读回日志时）记在手里，开了再写。
+    /// 回复落了盘换成供应商侧工具自己的。还没开条目的（读回日志时）记在手里，开了再写。问的就是这一块的参数：还在写参数的当收全了
+    /// （施工 ACP-12：驱动等着结果交在这一块上、不收块，以前一直是准备中，确认卡片写「准备Bash」）。
     pub(super) fn driver_asked(&mut self, requested: &ApprovalRequested, block: DriverBlock) {
         let index = usize::try_from(block.index).unwrap_or(usize::MAX);
         let id = EntryId::block(block.seen, index);
@@ -104,6 +106,7 @@ impl Projector {
                 tool.approval = Some(approval);
             }
         });
+        self.hosted_ready(&id);
     }
 
     /// 参数收全了（这一块的 `end`、下一块开始）：还在写参数的换成在跑，标题照参数写。结果先到了的不动。

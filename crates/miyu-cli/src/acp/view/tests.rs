@@ -252,6 +252,8 @@ fn a_turn_nobody_started_gets_an_opening_line() {
 #[test]
 fn a_turn_cut_off_by_a_restart_answers_with_words_for_people() {
     // 施工 ACP-11：有计划的重启打断的那一轮，收尾没有说明、没有错误原话；以前回的是原因的原文 `restarted`。
+    // 施工 ACP-12：核心停下（人 `miyu core stop`、收到停的信号、升级换程序）都记 `restarted`，分不出之后还起不起来；以前说
+    // 「核心重启了」，人自己停的也这么说。
     use crate::language::Language;
     use miyu_kernel::event::EndReason;
     let mut session = Session::new("/work");
@@ -275,10 +277,10 @@ fn a_turn_cut_off_by_a_restart_answers_with_words_for_people() {
     );
     assert_eq!(
         Language::Chinese.acp_ended(&EndReason::Restarted),
-        "核心重启了，这一轮没有做完"
+        "核心停了，这一轮没有做完"
     );
     assert_eq!(
         Language::English.acp_ended(&EndReason::Restarted),
-        "the core restarted before this turn finished"
+        "the core stopped before this turn finished"
     );
 }

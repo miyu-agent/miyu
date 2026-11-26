@@ -1,12 +1,17 @@
 //! 供应商侧工具的流式那几种（施工 HT-3，从 `hosted.rs` 分出来：那一份到了行数上限）：没写成回复的拿掉，中途订阅补推的一串
-//! 画得一样，在跑时 `doing` 是 `tool`。
+//! 画得一样，在跑时 `doing` 是 `tool`；驱动在还开着的那一块上问人时参数算收全了（施工 ACP-12）。
 
 use std::sync::Arc;
 
 use miyu_kernel::accumulate::Kind;
 use miyu_kernel::block::Outcome;
-use miyu_kernel::event::{Body as EventBody, Piece, TransientBody};
+use miyu_kernel::event::{
+    ApprovalRequested, Body as EventBody, DriverBlock, Event, Piece, TransientBody,
+};
+use miyu_kernel::origin::By;
+use miyu_kernel::raw::RawJson;
 use miyu_kernel::testkit::{Line, Streamed};
+use miyu_kernel::tool::Access;
 use miyu_view::{Body, Doing, Projector, ToolState};
 
 use crate::hosted::{run, searched, start, text};
@@ -114,4 +119,51 @@ fn while_it_runs_she_is_using_a_tool() {
     assert!(tool.hosted);
     assert_eq!(tool.state, ToolState::Preparing);
     assert!(tool.approval.is_none());
+}
+
+#[test]
+fn a_block_the_driver_asks_about_has_its_arguments_written() {
+    // 施工 ACP-12：对方自带的 `Bash` 要权限，包先开块、交参数，块不收（结果还要交在它上面）就请核心问人。以前这一步一直是
+    // 准备中，确认卡片的标题是「准备Bash」（中文的字没有空格）。问的就是这些参数：当收全了，换成在跑、标题照参数写。
+    let mut stage = stage();
+    stage.model([Line::streams(vec![
+        start(0, "Bash"),
+        text(0, r#"{"command":"touch a.txt"}"#),
+    ])
+    .held()]);
+    stage.say("建个文件");
+    let mut projector = Projector::new(Arc::new(texts("en")), None);
+    for item in stage.stream() {
+        match item {
+            Streamed::Event(event) => projector.event(event),
+            Streamed::Transient(transient) => projector.transient(transient),
+        };
+    }
+    let last = stage.log().last().expect("有事件").clone();
+    let detail = r#"{"driver":"acp/acp","tool":"touch a.txt","title":"touch a.txt","command":"touch a.txt"}"#;
+    let asked = Event {
+        seq: last.seq.next(),
+        by: By::Kernel,
+        body: EventBody::ApprovalRequested(Box::new(ApprovalRequested {
+            call_id: serde_json::from_value(serde_json::json!("call_9_1")).expect("调用编号"),
+            access: Access::Execute,
+            rule: None,
+            detail: Some(serde_json::from_str::<RawJson>(detail).expect("是 JSON")),
+            nested: None,
+            expires_at: None,
+            driver: Some(DriverBlock {
+                seen: stage.marks()[0],
+                index: 0,
+            }),
+        })),
+        ..last
+    };
+    projector.event(&asked);
+    let Body::Tool(tool) = &of_kind(projector.entries(), "tool")[0].body else {
+        unreachable!("是一步工具");
+    };
+    assert!(tool.approval.is_some(), "确认画在这一块上");
+    assert_eq!(tool.state, ToolState::Running);
+    assert_eq!(tool.title.name, "Bash", "不再是准备中：{:?}", tool.title);
+    assert!(tool.title.via.is_some(), "经谁做的照旧：{:?}", tool.title);
 }
