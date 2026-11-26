@@ -143,7 +143,7 @@ Response `{"packages": [...], "generated", "stale"?}`, where each item is `{"pac
 
 ## `package.clean`
 
-This method deletes downloaded package files that aren't the installed version. It takes no params; the response is `{"removed", "freed"}`: how many files were deleted and how many bytes were freed.
+This method deletes downloaded package files that aren't the installed version. It takes no params; the response is `{"removed", "freed"}`: how many files were deleted and how many bytes were freed. When `package.remove` removes a package, it also deletes the package file of the installed version; package files of other versions are left for this method.
 
 ## `package.upgrades`, `package.upgrade`
 

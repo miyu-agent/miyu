@@ -1,6 +1,7 @@
 //! 卸（施工 F-5 上；施工 PK-5补 从 `manage.rs` 挪出来，行数）：`package.remove` 卸装着的包，`package.disable` 关出厂的、删人格
 //! 连包卸、她的工具卸的也走这里。卸就是清干净，只有给人改的两样照 pacman 默认留下、`purge` 的才删：配置目录 `etc/<编号>/`
-//! （施工 PK-5）、`etc/config.toml` 里它的设置项（施工 PK-5补，留下的怎么认见 `config/left.rs`）。
+//! （施工 PK-5）、`etc/config.toml` 里它的设置项（施工 PK-5补，留下的怎么认见 `config/left.rs`）。下载缓存里它那一版的包
+//! 文件一起删（施工 BO-1）。
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -93,6 +94,10 @@ pub(crate) async fn remove_package(
         })
         .unwrap_or_default();
     let layer = one.layer;
+    // 你装的那一版从软件源下的包文件（施工 BO-1）：卸成了一起删，见下面。出厂的、系统加装的没有下过。
+    let downloaded = (layer == Layer::Home)
+        .then(|| one.read.as_ref().ok()?.version.clone())
+        .flatten();
     // 它带的人格、预设在你那一层有改动的，卸成了记一笔是它留下的（施工 P-11 下）。
     let noting = super::left::noting(core, &id, &one.files_dir());
     // 先停下用着它的、再删文件（施工 F-5 补）：Windows 上开着的文件删不掉。删不成的照原来的清单换回来。
@@ -142,6 +147,13 @@ pub(crate) async fn remove_package(
             drop_if_empty(&config);
         }
         remove_file_if_there(&root.provide_cache(&package))?;
+        // 下载缓存里它那一版的包文件（施工 BO-1）：卸了的包留着它没有用处。别的版本、别的包照旧留到 `package.clean`。
+        if let Some(version) = &downloaded {
+            let freed = super::source::clean::forget(&root.package_downloads(), &package, version);
+            if freed > 0 {
+                tracing::info!(target: TARGET, package = package.as_str(), freed, "package download removed");
+            }
+        }
         miyu_store::scripts::forget_states(&root, &package)
     });
     if let Err(refusal) = cleared.await {

@@ -138,11 +138,17 @@ async fn a_package_comes_with_its_dependency_and_is_recorded_with_its_origin() {
         "下好的进缓存"
     );
 
-    // 卸了再装（只写 `package`：不是出厂包的照软件源装）：缓存里有、哈希对得上的不再下（服务器已经没有回应可给了）。
+    // 卸掉的包那一版的包文件一起删（施工 BO-1）；还装着的依赖的留着。
+    let cached = home.root.path().join("var/cache/packages/downloads");
     let removed = client
         .call("r", "package.remove", json!({"package": "app"}))
         .await;
     assert_eq!(removed["result"]["removed"], true, "{removed}");
+    assert!(!cached.join("app-1.0.miyu").exists(), "卸掉的包不留包文件");
+    assert!(cached.join("lib-1.0.miyu").is_file(), "还装着的照旧留着");
+
+    // 再装（只写 `package`：不是出厂包的照软件源装）：缓存里有、哈希对得上的不再下（服务器已经没有回应可给了）。
+    std::fs::write(cached.join("app-1.0.miyu"), &app.1).expect("写得进");
     let (again, _) =
         call_collecting(&mut client, "package.install", json!({"package": "app"})).await;
     assert_eq!(again["result"]["package"], "app", "{again}");

@@ -248,7 +248,7 @@ The following can be deleted; run `miyu core stop` before deleting:
 | What to delete | Effect of deleting it | Is it cleaned automatically |
 |---|---|---|
 | All of `~/.miyu/var/cache/` | Indexes and usage totals are rebuilt the next time they are needed, so the first time you open the session list or search memory is a little slower; model lists and the package source index are downloaded again | Script caches unused for 30 days are cleaned when the core starts |
-| Download cache of packages | No effect | Not automatically; run `miyu pkg clean`, which deletes package files that are not the installed version |
+| Download cache of packages | No effect | Removing a package also deletes the downloaded package file of the version that was installed. Nothing else is cleaned automatically; run `miyu pkg clean`, which deletes package files that are not the installed version |
 | Old logs under `~/.miyu/var/log/` | No effect | `core.log` switches to a new file at 10 MB, keeping at most 5 old ones; an extension's `stderr` is moved to `stderr.old` when it gets too large |
 | `~/.miyu/var/tmp/` | No effect | Files unused for 7 days are cleaned when the core starts |
 | `~/.miyu/tmp/` | No effect | The unpacking space for installing packages is cleared when the core starts; each package's own directory is cleared before every start of that package |

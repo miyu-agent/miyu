@@ -231,7 +231,7 @@ miyu pkg clean     # clear the cache
 
 - `update`: prints one line per package source, `updated <source>: N packages (<time>)`. You do not have to run it by hand: when you search, install or upgrade and the index on this machine is more than 24 hours old, it is fetched automatically. If the package source cannot be reached, the copy on this machine keeps being used, and searching shows `cannot reach the package source, using the local index (<time>)`.
 - `upgrade`: upgrades only packages installed from the package source. Packages installed from a folder or package file on this machine are not upgraded; shipped packages are upgraded together with Miyu itself (`miyu upgrade`); packages installed with the system package manager (for example `pacman` or Homebrew) are upgraded by the system package manager, and `miyu pkg upgrade` leaves them alone. A package is upgraded whenever the version in the package source differs from the installed one, so if the author withdraws a new version, the package goes back too. The confirmation screen shows one line per package, `Will upgrade <id> <old version> → <new version>`; capabilities the new version needs in addition are listed below it under `New: `, and then it asks `Upgrade '<id>' and approve the new capabilities? [Y/n]`. Settings, state, switches and capabilities you approved before are all kept. If you do not approve the extra capabilities of the new version, you are asked again when you turn the package on.
-- `clean`: deletes package files in the cache that are not the installed version, and prints `removed N package files, freed <size>`.
+- `clean`: deletes package files in the cache that are not the installed version, and prints `removed N package files, freed <size>`. Removing a package already deletes the package file of its installed version, so you do not need to run `clean` after that.
 
 In the following five cases the package is not upgraded; the command prints one sentence about each on standard error, the installed version keeps being used, and the other packages are upgraded as usual:
 
@@ -279,7 +279,7 @@ Remove 'ocr'? [Y/n]
 
 The two lines in the middle show full paths. The above is how it looks on Linux; on macOS the paths look like `/Users/me/.miyu/var/lib/ocr`, and on Windows like `C:\Users\me\.miyu\var\lib\ocr`.
 
-- Deleted: the package folder `~/.miyu/opt/<id>/`; its `<id>/` under `var/lib/`, `var/cache/`, `var/log/`, `tmp/` and `run/` in `~/.miyu/`; the state folders of the scripts it brings.
+- Deleted: the package folder `~/.miyu/opt/<id>/`; its `<id>/` under `var/lib/`, `var/cache/`, `var/log/`, `tmp/` and `run/` in `~/.miyu/`; the state folders of the scripts it brings; the package file of the installed version that was downloaded from a package source (in `~/.miyu/var/cache/packages/downloads/`).
 - Kept: the config folder `~/.miyu/etc/<id>/`, and its settings in `~/.miyu/etc/config.toml`. If you install the same id again, they are used as before. They are deleted too only if you add `--purge` (the same as `-n`).
 - If other installed packages depend on it, it cannot be removed, and the command reports `Other packages depend on it, so it cannot be uninstalled`.
 
