@@ -136,6 +136,13 @@ async fn a_turn_streams_its_thinking_and_text_and_ends_the_prompt() {
     assert_eq!(reply["result"]["stopReason"], "end_turn", "{reply}");
     assert_eq!(joined(&seen, "agent_thought_chunk"), "想一想。");
     assert_eq!(joined(&seen, "agent_message_chunk"), "你好，我是 Miyu。");
+    // 思考、正文各自一条（`messageId` 不同），编辑器不把它们接在别的块后面。
+    let thought = updates(&seen, "agent_thought_chunk")[0]["messageId"].clone();
+    let reply = updates(&seen, "agent_message_chunk")[0]["messageId"].clone();
+    assert!(
+        thought.is_string() && reply.is_string() && thought != reply,
+        "{thought} {reply}"
+    );
     // 编辑器自己发的那一句不报回去。
     assert_eq!(joined(&seen, "user_message_chunk"), "", "{seen:#?}");
     // 每一条都是这个会话的。

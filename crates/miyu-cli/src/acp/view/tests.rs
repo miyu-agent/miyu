@@ -153,3 +153,98 @@ fn a_finished_edit_asks_for_its_diff() {
         [Action::Update(_)]
     ));
 }
+
+#[test]
+fn every_chunk_names_the_entry_it_belongs_to() {
+    // 编号变了编辑器另起一块：上一轮打断了的思考和下一轮的思考不连成一句（真 Zed 里看到过）。
+    let mut session = Session::new("/work");
+    let first = entry(
+        "b5.0",
+        "thought",
+        json!({"group": "g1", "text": "想", "turn": 3}),
+    );
+    let second = entry(
+        "b9.0",
+        "thought",
+        json!({"group": "g2", "text": "再想", "turn": 3}),
+    );
+    session.introduced.insert("3".to_string());
+    let a = session.entry(&first, Pace::Live);
+    let b = session.entry(&second, Pace::Live);
+    assert_eq!(updates(&a)[0]["messageId"], "b5.0");
+    assert_eq!(updates(&b)[0]["messageId"], "b9.0");
+    let more = session.push("view.append", &json!({"id": "b9.0", "text": "想"}));
+    assert_eq!(updates(&more)[0]["messageId"], "b9.0");
+}
+
+#[test]
+fn a_turn_nobody_started_gets_an_opening_line() {
+    let mut session = Session::new("/work");
+    // 人说的话开的一轮：有开头，不另报。
+    session.entry(
+        &entry("m4", "user", json!({"text": "在吗", "turn": 5})),
+        Pace::Live,
+    );
+    let reply = entry(
+        "b6.0",
+        "reply",
+        json!({"text": "在。", "persona": null, "turn": 5}),
+    );
+    assert!(
+        !session
+            .entry(&reply, Pace::Live)
+            .iter()
+            .any(|action| matches!(action, Action::Woken { .. }))
+    );
+    // 后台任务报回来叫醒的一轮：先报一句开头，说是哪一件；同一轮只报一次。
+    let job = entry(
+        "e20",
+        "notice",
+        json!({"what": "job", "job": "j1", "job_kind": "shell", "title": "跑测试", "mark": "done"}),
+    );
+    session.entry(&job, Pace::Live);
+    let woke = entry(
+        "b22.0",
+        "thought",
+        json!({"group": "g9", "text": "测试过了", "turn": 21}),
+    );
+    let actions = session.entry(&woke, Pace::Live);
+    assert_eq!(
+        actions[0],
+        Action::Woken {
+            turn: "21".to_string(),
+            job: Some(("跑测试".to_string(), "done".to_string()))
+        }
+    );
+    let again = entry(
+        "b22.1",
+        "reply",
+        json!({"text": "好了", "persona": null, "turn": 21}),
+    );
+    assert!(
+        !session
+            .entry(&again, Pace::Live)
+            .iter()
+            .any(|action| matches!(action, Action::Woken { .. }))
+    );
+    // 编辑器在等的那一句还没听到：这一轮当是它开的。
+    session.prompt = Some(Prompt {
+        id: json!(1),
+        waiting: Waiting::Message("m30".to_string()),
+        cancelled: false,
+    });
+    let ours = entry(
+        "b31.0",
+        "reply",
+        json!({"text": "嗯", "persona": null, "turn": 31}),
+    );
+    assert!(
+        !session
+            .entry(&ours, Pace::Live)
+            .iter()
+            .any(|action| matches!(action, Action::Woken { .. }))
+    );
+    // 只记下的不报。
+    let mut quiet = Session::new("/work");
+    assert!(quiet.entry(&woke, Pace::Quiet).is_empty());
+}

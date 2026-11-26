@@ -88,6 +88,11 @@ impl Server {
         if let Ok(input) = serde_json::from_str::<Value>(&step.args) {
             tool_call["rawInput"] = input;
         }
+        // 要跑的命令原文写进确认框（标题只有她写的说明）。
+        let content = tool::content(step);
+        if !content.is_empty() {
+            tool_call["content"] = json!(content);
+        }
         let ruled = step
             .approval
             .as_ref()

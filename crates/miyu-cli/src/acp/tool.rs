@@ -103,9 +103,40 @@ fn fill(call: &mut Value, tool: &Tool, cwd: &str) {
     if !places.is_empty() {
         call["locations"] = json!(places);
     }
-    if let Some(text) = said(tool) {
-        call["content"] = json!([{"type": "content", "content": {"type": "text", "text": text}}]);
+    let content = content(tool);
+    if !content.is_empty() {
+        call["content"] = json!(content);
     }
+}
+
+/// 卡片里的内容（`content`，每次整份换）：执行命令的先是命令原文（`$ <命令>`，规范要编辑器把命令写全，确认框里尤其要看得到；
+/// 标题只有她写的说明），再是结果的字。参数还没写完的、没有命令也没有结果的是空的。
+pub(crate) fn content(tool: &Tool) -> Vec<Value> {
+    let mut out = Vec::new();
+    if let Some(command) = command(tool) {
+        out.push(text_item(&fenced(&format!("$ {command}"))));
+    }
+    if let Some(text) = said(tool) {
+        out.push(text_item(&text));
+    }
+    out
+}
+
+/// 执行命令的那一行原文：`shell` 参数写完了的 `command`。
+fn command(tool: &Tool) -> Option<String> {
+    if tool.name != "shell" || tool.state == ToolState::Preparing {
+        return None;
+    }
+    let args = serde_json::from_str::<Value>(&tool.args).ok()?;
+    args["command"]
+        .as_str()
+        .filter(|command| !command.is_empty())
+        .map(str::to_string)
+}
+
+/// 一项字的内容。
+fn text_item(text: &str) -> Value {
+    json!({"type": "content", "content": {"type": "text", "text": text}})
 }
 
 /// 结果的字：输出原文的开头一段，照代码块写（编辑器照 Markdown 画）；没有输出的、出错被拒的写结果那一句。还没结果的没有。

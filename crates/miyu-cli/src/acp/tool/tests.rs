@@ -113,3 +113,31 @@ fn unified_diffs_become_before_and_after_pieces() {
         ]
     );
 }
+
+#[test]
+fn a_command_shows_its_text_above_the_output() {
+    let args = "{\"command\":\"ls -la\",\"description\":\"List files\"}";
+    let running = step(
+        json!({"name": "shell", "title": {"name": "执行命令", "object": "List files"}, "args": args}),
+    );
+    let call = opened("b3.1", &running, "/work");
+    assert_eq!(call["title"], "执行命令 List files", "标题照旧");
+    assert_eq!(
+        call["content"],
+        json!([{"type": "content", "content": {"type": "text", "text": "```\n$ ls -la\n```"}}])
+    );
+    let done = step(
+        json!({"name": "shell", "title": {"name": "执行命令", "object": "List files"}, "args": args,
+        "state": "ok", "output": "a\n"}),
+    );
+    let update = changed("b3.1", &running, &done, "/work").expect("变了");
+    // 内容整份换：命令照样在最前面。
+    assert_eq!(
+        update["content"][0]["content"]["text"],
+        "```\n$ ls -la\n```"
+    );
+    assert_eq!(update["content"][1]["content"]["text"], "```\na\n```");
+    // 写到一半的参数不报命令。
+    let preparing = step(json!({"name": "shell", "state": "preparing", "args": "{\"comm"}));
+    assert!(opened("b3.1", &preparing, "/work").get("content").is_none());
+}

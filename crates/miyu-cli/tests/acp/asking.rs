@@ -56,6 +56,15 @@ async fn an_approval_becomes_a_permission_request_and_the_choice_goes_back() {
         params["toolCall"]["rawInput"]["command"],
         "git reset --hard"
     );
+    // 确认框里看得到要跑的命令原文。
+    let shown = params["toolCall"]["content"][0]["content"]["text"]
+        .as_str()
+        .unwrap_or_default();
+    assert!(
+        shown.contains("$ git reset --hard"),
+        "{}",
+        params["toolCall"]
+    );
     let kinds: Vec<&str> = params["options"]
         .as_array()
         .expect("有")

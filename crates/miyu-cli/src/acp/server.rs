@@ -218,6 +218,15 @@ impl Server {
                 Action::Answer { id, stop } => self.reply(&id, stop).await,
                 Action::Waiting(waiting) => self.ask(session, waiting).await,
                 Action::Config => self.config_changed(session).await,
+                Action::Woken { turn, job } => {
+                    let text = self.language.acp_woken(
+                        job.as_ref()
+                            .map(|(title, mark)| (title.as_str(), mark.as_str())),
+                    );
+                    let message = format!("turn-{turn}");
+                    let update = editor::chunk("user_message_chunk", &text, &message);
+                    self.editor.update(session, update).await;
+                }
             }
         }
     }

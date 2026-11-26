@@ -25,6 +25,11 @@ pub(crate) struct Session {
     pub(crate) current: Current,
     /// 这个会话认的斜杠命令（`command.catalog` 的 `commands`）。
     pub(crate) commands: Vec<Value>,
+    /// 编辑器里已经有开头的几轮（`turn` 写成字）：人说的话、编辑器自己发的那一句开的。别的一轮（后台任务报回来叫醒的、
+    /// 循环到点的）头一次报内容以前先报一句开头，编辑器才另起一条消息。
+    pub(crate) introduced: HashSet<String>,
+    /// 最近一件结束了、还没叫醒哪一轮的后台任务：标题、怎么结束的（`done`、`failed`、`stopped`）。
+    pub(crate) finished_job: Option<(String, String)>,
 }
 
 /// 一条条目报到哪了。
@@ -109,6 +114,8 @@ impl Session {
                 ..Current::default()
             },
             commands: Vec::new(),
+            introduced: HashSet::new(),
+            finished_job: None,
         }
     }
 

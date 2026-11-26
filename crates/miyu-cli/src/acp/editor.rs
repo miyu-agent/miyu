@@ -98,7 +98,8 @@ impl Editor {
     }
 }
 
-/// 流式的一段字：正文 `agent_message_chunk`、思考 `agent_thought_chunk`、你说的 `user_message_chunk`。
-pub(crate) fn chunk(kind: &str, text: &str) -> Value {
-    json!({"sessionUpdate": kind, "content": {"type": "text", "text": text}})
+/// 流式的一段字：正文 `agent_message_chunk`、思考 `agent_thought_chunk`、人说的 `user_message_chunk`。`id` 是它属于哪一条
+/// （`messageId`，条目编号）：编号变了编辑器另起一块，不接在上一块后面（上一轮打断了的思考、下一轮的思考不连成一句）。
+pub(crate) fn chunk(kind: &str, text: &str, id: &str) -> Value {
+    json!({"sessionUpdate": kind, "messageId": id, "content": {"type": "text", "text": text}})
 }

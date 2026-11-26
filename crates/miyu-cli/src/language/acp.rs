@@ -62,11 +62,11 @@ impl Language {
         }
     }
 
-    /// 表单里给人自己写的那一格的标题：接在题目的标题后面。
-    pub(crate) fn acp_other(&self, title: &str) -> String {
+    /// 表单里给人自己写的那一格的标题：紧跟在那道题的选项后面，不再重复题目。
+    pub(crate) fn acp_other(&self) -> &'static str {
         match self {
-            Language::Chinese => format!("{title}（其他）"),
-            Language::English => format!("{title} (other)"),
+            Language::Chinese => "其他",
+            Language::English => "Other",
         }
     }
 
@@ -155,6 +155,28 @@ impl Language {
         match self {
             Language::Chinese => "不支持的选项",
             Language::English => "unsupported option",
+        }
+    }
+
+    /// 不是人说话开的一轮在编辑器里的开头：叫醒它的后台任务（标题、`done`、`failed`、`stopped`），不知道的说她自己接着做。
+    pub(crate) fn acp_woken(&self, job: Option<(&str, &str)>) -> String {
+        match (self, job) {
+            (Language::Chinese, Some((title, "done"))) => format!("后台任务「{title}」已完成"),
+            (Language::Chinese, Some((title, "failed"))) => format!("后台任务「{title}」失败"),
+            (Language::Chinese, Some((title, "stopped"))) => format!("后台任务「{title}」已停止"),
+            (Language::Chinese, Some((title, _))) => format!("后台任务「{title}」已结束"),
+            (Language::Chinese, None) => "Miyu 自己开始了新的一轮".to_string(),
+            (Language::English, Some((title, "done"))) => {
+                format!("Background job \"{title}\" finished")
+            }
+            (Language::English, Some((title, "failed"))) => {
+                format!("Background job \"{title}\" failed")
+            }
+            (Language::English, Some((title, "stopped"))) => {
+                format!("Background job \"{title}\" stopped")
+            }
+            (Language::English, Some((title, _))) => format!("Background job \"{title}\" ended"),
+            (Language::English, None) => "Miyu started a new turn on its own".to_string(),
         }
     }
 

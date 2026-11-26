@@ -26,39 +26,38 @@ pub(crate) fn message(language: Language, questions: &[Question]) -> String {
     }
 }
 
-/// 这几道题的表单（`requestedSchema`）。
+/// 这几道题的表单（`requestedSchema`）。题目只写一处（真 Zed 里表单的标题、格的标题、格的说明各写一遍，同一句出现三次）：
+/// 一道题的，题目是表单上面那句话，格的标题只写 `header`（没有的不写）；几道的，格的标题是题目，有 `header` 的写成
+/// `<header>：<题目>`。都不写说明。给人自己写的那一格标题只写「其他」，紧跟在那道题后面。
 pub(crate) fn schema(language: Language, questions: &[Question]) -> Value {
     let mut properties = Map::new();
+    let single = questions.len() == 1;
     for (index, question) in questions.iter().enumerate() {
-        let title = question
-            .header
-            .clone()
-            .unwrap_or_else(|| question.question.clone());
+        let title = match (single, &question.header) {
+            (true, header) => header.clone(),
+            (false, Some(header)) => Some(format!("{header}：{}", question.question)),
+            (false, None) => Some(question.question.clone()),
+        };
         let labels: Vec<&str> = question
             .options
             .iter()
             .map(|choice| choice.label.as_str())
             .collect();
-        let field = match (labels.is_empty(), question.multiple) {
+        let mut field = match (labels.is_empty(), question.multiple) {
             (true, _) => json!({"type": "string"}),
             (false, false) => json!({"type": "string", "enum": labels}),
             (false, true) => json!({"type": "array", "items": {"type": "string", "enum": labels}}),
         };
-        properties.insert(name(index), described(field, &title, &question.question));
+        if let Some(title) = title {
+            field["title"] = json!(title);
+        }
+        properties.insert(name(index), field);
         if !labels.is_empty() {
-            let title = language.acp_other(&title);
-            let field = described(json!({"type": "string"}), &title, &question.question);
+            let field = json!({"type": "string", "title": language.acp_other()});
             properties.insert(other(index), field);
         }
     }
     json!({"type": "object", "properties": properties})
-}
-
-/// 给一格加上标题和说明。
-fn described(mut field: Value, title: &str, description: &str) -> Value {
-    field["title"] = json!(title);
-    field["description"] = json!(description);
-    field
 }
 
 /// 每道题都没答（人没填就关了、回的读不懂）：`session.answer` 的 `answers`，一题一个空的。

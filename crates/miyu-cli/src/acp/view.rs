@@ -9,7 +9,7 @@ use serde_json::Value;
 use miyu_view::{Body, Entry, Tool, ToolState};
 
 use super::editor::chunk;
-use super::session::{Known, Session, Stop};
+use super::session::{Known, Session, Stop, Waiting};
 use super::tool;
 
 /// 一条推送引出的要做的事。
@@ -33,6 +33,13 @@ pub(crate) enum Action {
     },
     /// 会话在等人：确认、提问，照先后。
     Waiting(Vec<miyu_view::Waiting>),
+    /// 一轮不是人说话开的（后台任务报回来叫醒的、到点的）：先报一句开头（`user_message_chunk`），编辑器才另起一条消息。
+    Woken {
+        /// 哪一轮（写成字）：开头那一句的 `messageId` 照它。
+        turn: String,
+        /// 叫醒它的后台任务：标题、怎么结束的；不知道的没有。
+        job: Option<(String, String)>,
+    },
     /// 权限、模型、思考档位变了：报 `current_mode_update`、`config_option_update`。
     Config,
 }
@@ -61,6 +68,12 @@ impl Session {
 
     /// 一条条目，照 `pace` 报。认不得的（以后的版本加的种类）不报。
     pub(crate) fn entry(&mut self, raw: &Value, pace: Pace) -> Vec<Action> {
+        // 后台任务结束的旁白：记下它，叫醒的那一轮的开头照它说（只看这几格，旁白别的格变了也认得）。
+        if raw["kind"] == "notice" && raw["what"] == "job" && raw["hidden"] != true {
+            let title = raw["title"].as_str().unwrap_or_default().to_string();
+            let mark = raw["mark"].as_str().unwrap_or_default().to_string();
+            self.finished_job = Some((title, mark));
+        }
         let Ok(entry) = serde_json::from_value::<Entry>(raw.clone()) else {
             return Vec::new();
         };
@@ -71,9 +84,21 @@ impl Session {
         let turn = raw.get("turn").filter(|turn| !turn.is_null());
         match entry.body {
             Body::User(user) => self.user(&id, &user, turn, pace),
-            Body::Reply(reply) => self.text(&id, "agent_message_chunk", &reply.text, pace),
-            Body::Thought(thought) => self.text(&id, "agent_thought_chunk", &thought.text, pace),
-            Body::Tool(step) => self.tool(&id, step, pace),
+            Body::Reply(reply) => {
+                let mut out = self.introduce(turn, pace);
+                out.extend(self.text(&id, "agent_message_chunk", &reply.text, pace));
+                out
+            }
+            Body::Thought(thought) => {
+                let mut out = self.introduce(turn, pace);
+                out.extend(self.text(&id, "agent_thought_chunk", &thought.text, pace));
+                out
+            }
+            Body::Tool(step) => {
+                let mut out = self.introduce(turn, pace);
+                out.extend(self.tool(&id, step, pace));
+                out
+            }
             Body::End(end) => {
                 self.known.insert(id, Known::Other);
                 match (pace, self.ended(&end, turn)) {
@@ -88,7 +113,32 @@ impl Session {
         }
     }
 
-    /// 人说的话：编辑器自己发的不报（只看它是哪一轮），别处来的报一次（终端、网页里接着说的）；退回的不报。
+    /// 这一轮在编辑器里还没有开头的，先交回一句开头（[`Action::Woken`]）：不是人说话开的那几轮。编辑器在等的那一句还没
+    /// 听到的、等的就是这一轮的，当这一轮是它开的。只记下的只记，不报。
+    fn introduce(&mut self, turn: Option<&Value>, pace: Pace) -> Vec<Action> {
+        let Some(turn) = turn else {
+            return Vec::new();
+        };
+        let key = turn.to_string();
+        if !self.introduced.insert(key.clone()) || pace == Pace::Quiet {
+            return Vec::new();
+        }
+        let ours = match self.prompt.as_ref().map(|prompt| &prompt.waiting) {
+            Some(Waiting::Message(_) | Waiting::Command(_)) => true,
+            Some(Waiting::Turn(waited)) => waited == turn,
+            None => false,
+        };
+        match ours {
+            true => Vec::new(),
+            false => vec![Action::Woken {
+                turn: key,
+                job: self.finished_job.take(),
+            }],
+        }
+    }
+
+    /// 人说的话：编辑器自己发的不报（只看它是哪一轮），别处来的报一次（终端、网页里接着说的）；退回的不报。它所属的那一轮
+    /// 就有了开头。
     fn user(
         &mut self,
         id: &str,
@@ -96,6 +146,10 @@ impl Session {
         turn: Option<&Value>,
         pace: Pace,
     ) -> Vec<Action> {
+        if let Some(turn) = turn {
+            self.introduced.insert(turn.to_string());
+            self.finished_job = None;
+        }
         if self.own.contains(id) {
             self.heard(id, turn);
             return Vec::new();
@@ -103,7 +157,7 @@ impl Session {
         let first = !self.known.contains_key(id);
         self.known.insert(id.to_string(), Known::Other);
         match first && pace != Pace::Quiet && !user.withdrawn && !user.text.is_empty() {
-            true => vec![Action::Update(chunk("user_message_chunk", &user.text))],
+            true => vec![Action::Update(chunk("user_message_chunk", &user.text, id))],
             false => Vec::new(),
         }
     }
@@ -123,7 +177,7 @@ impl Session {
         );
         match text.strip_prefix(sent.as_str()) {
             Some(more) if !more.is_empty() && pace != Pace::Quiet => {
-                vec![Action::Update(chunk(kind, more))]
+                vec![Action::Update(chunk(kind, more, id))]
             }
             _ => Vec::new(),
         }
@@ -138,7 +192,7 @@ impl Session {
             return Vec::new();
         };
         sent.push_str(text);
-        vec![Action::Update(chunk(kind, text))]
+        vec![Action::Update(chunk(kind, text, id))]
     }
 
     /// 一步工具：第一次见的报 `tool_call`，见过的报变了的那几格。刚有结果、改了文件的，要对比（只在正在发生时）。

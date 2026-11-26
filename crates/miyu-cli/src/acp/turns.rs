@@ -120,8 +120,9 @@ impl Server {
             Err(error) => {
                 let said = self.refused(&error);
                 self.settle().await;
+                let message = format!("said-{id}");
                 self.editor
-                    .update(session, chunk("agent_message_chunk", &said))
+                    .update(session, chunk("agent_message_chunk", &said, &message))
                     .await;
                 self.reply(id, super::session::Stop::Reason("end_turn"))
                     .await;
@@ -129,8 +130,10 @@ impl Server {
             }
         };
         if let Some(said) = result["said"].as_str().filter(|said| !said.is_empty()) {
+            // 命令回执是这一句自己的一条消息：编号照编辑器那条请求的。
+            let message = format!("said-{id}");
             self.editor
-                .update(session, chunk("agent_message_chunk", said))
+                .update(session, chunk("agent_message_chunk", said, &message))
                 .await;
         }
         let events: Vec<Value> = result["events"].as_array().cloned().unwrap_or_default();

@@ -97,6 +97,8 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 
 视图流的推送照会话翻（`view.md`）：
 
+每一段流式的字（`agent_message_chunk`、`agent_thought_chunk`、`user_message_chunk`）带 `messageId`，是它那一条条目的编号：编号变了编辑器另起一块，上一轮打断了的思考和下一轮的思考不连成一句（ACP-7 在真 Zed 里看到过）。斜杠命令的回执、被拒的原话是 `said-<编辑器那条请求的编号>`。
+
 | 条目、推送 | `session/update` |
 |---|---|
 | `reply` | `agent_message_chunk`：第一次见报整份，之后 `view.append` 的那一截、`view.update` 里报过的以后多出来的；前面对不上的（重写过）不报 |
@@ -104,6 +106,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | `user`，不是编辑器发的 | `user_message_chunk`（在终端、网页里接着说的），只报一次；退回的、空的不报 |
 | `tool` | 第一次见 `tool_call`，之后 `tool_call_update` 只写变了的格（见「工具步骤」） |
 | `end` | 回等着的 `session/prompt` |
+| 一轮头一次报内容（正文、思考、工具），这一轮还没有开头 | 先报一句开头 `user_message_chunk`（`messageId` 是 `turn-<那一轮>`），编辑器才另起一条消息：后台任务报回来叫醒的（旁白 `job` 记下的最近一件）是 `后台任务「<标题>」已完成`（`失败`、`已停止`、`已结束`），别的是 `Miyu 自己开始了新的一轮`。有开头的：人说的话所属的一轮（编辑器发的、别处来的都算），编辑器在等的那一句还没听到时的一轮、等的就是它的那一轮。只记下的不报 |
 | 别的条目、`view.hidden`、`view.remove` | 不报（ACP 没有收回报过的内容的写法） |
 | `resync` | 重新订阅；回应里的那一页照「正在发生」再过一遍，报过的只报变了的 |
 
@@ -115,14 +118,14 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 - `status`：`preparing` → `pending`；`running` 有确认没定的 → `pending`，别的 → `in_progress`；`ok` → `completed`；`error`、`denied`、`cancelled`、`skipped` → `failed`。
 - `rawInput`：参数写完了的（不是 `preparing`）照参数原文解开。
 - `locations`：结果里改了的文件（`files`，真实位置的绝对路径）；还没结果的，`read`、`edit`、`write` 照参数的 `file_path`，相对的照编辑器给的目录补全。
-- `content`：有结果的，输出原文的开头一段围进代码块（围栏比字里最长的一串反引号多一个，至少三个）；没有输出的写结果那一句（被拒的为什么）。做成了、新建或者改了文件的，再要 `view.detail {session, call}`，一个文件的每一段 `@@` 写成一项 `{"type": "diff", path, oldText, newText}`（改前是上下文加删的行，改后是上下文加加的行，新建的文件改前是 `null`），有对比的整个 `content` 换成对比；扔进回收站的不要对比。重放时不要对比。
+- `content`（每次整份换）：执行命令的（`shell`，参数写完了的）先是一段代码块 `$ <命令原文>`：标题只有她写的说明，规范要编辑器把命令写全，确认框里尤其要看到；再是结果：有结果的，输出原文的开头一段围进代码块（围栏比字里最长的一串反引号多一个，至少三个）；没有输出的写结果那一句（被拒的为什么）。做成了、新建或者改了文件的，再要 `view.detail {session, call}`，一个文件的每一段 `@@` 写成一项 `{"type": "diff", path, oldText, newText}`（改前是上下文加删的行，改后是上下文加加的行，新建的文件改前是 `null`），有对比的整个 `content` 换成对比；扔进回收站的不要对比。重放时不要对比。
 
 ### 确认和提问
 
 会话状态的 `waiting` 里每一件（调用编号，脚本里调的带序号）只问编辑器一次；了结了的（别的头上答了、到时被拒）忘掉。
 
-- **确认**（`approve`）：`session/request_permission {sessionId, toolCall: {toolCallId, title, kind, status: "pending", rawInput?}, options}`。选项照先后：`allow_once`（`仅允许本次`，`decision: once`）；带了放行范围（`approval.rule`）的再有 `allow_session`（`在本会话内允许`，kind `allow_always`，`decision: session`）；`reject`（`拒绝`，kind `reject_once`，`decision: deny`）。编辑器选了的照 `session.answer {session, call, decision, nested?}` 回；取消了的、认不得的一律拒绝。
-- **提问**（`ask`），编辑器能弹表单的：`elicitation/create {sessionId, toolCallId, mode: "form", message, requestedSchema}`：第 N 道题是 `qN`（单选带 `enum` 的字、多选元素带 `enum` 的数组、没选项的字），有选项的另有 `qN_other`（`<标题>（其他）`）；`message` 一道题是那道题，几道的是 `回答下面的问题`。`accept` 的照内容读（不是选项的不算、空白的字不算），别的每道都没答。
+- **确认**（`approve`）：`session/request_permission {sessionId, toolCall: {toolCallId, title, kind, status: "pending", rawInput?, content?}, options}`，`content` 同工具卡片（执行命令的是命令原文）。选项照先后：`allow_once`（`仅允许本次`，`decision: once`）；带了放行范围（`approval.rule`）的再有 `allow_session`（`在本会话内允许`，kind `allow_always`，`decision: session`）；`reject`（`拒绝`，kind `reject_once`，`decision: deny`）。编辑器选了的照 `session.answer {session, call, decision, nested?}` 回；取消了的、认不得的一律拒绝。
+- **提问**（`ask`），编辑器能弹表单的：`elicitation/create {sessionId, toolCallId, mode: "form", message, requestedSchema}`：第 N 道题是 `qN`（单选带 `enum` 的字、多选元素带 `enum` 的数组、没选项的字），有选项的另有 `qN_other`（标题 `其他`）。题目只写一处，都不写说明（ACP-7 在真 Zed 里看到同一句出现三次）：一道题的，题目是 `message`，格的标题只写 `header`，没有的不写；几道的，`message` 是 `回答下面的问题`，格的标题是题目，有 `header` 的写成 `<header>：<题目>`。`accept` 的照内容读（不是选项的不算、空白的字不算），别的每道都没答。
 - **提问**，编辑器不能弹表单的：一道一道问 `session/request_permission`，`title` 是题目，每个选项一项（`c<第几个>`，kind `allow_once`），加一项 `skip`（`跳过`，kind `reject_once`）；没有选项的题当没答。
 - 回答照 `session.answer {session, call, answers, nested?}` 交；核心回 `bad_answer` 的，照每道都没答再交一次。
 
@@ -152,7 +155,8 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 | 模式 | `开放权限`、`只读` | `Full access`、`Read-only` |
 | 配置项 | `权限`、`模型`、`思考强度`；`模型池` | `Permission`、`Model`、`Thinking effort`；`Model pools` |
 | 确认 | `仅允许本次`、`在本会话内允许`、`拒绝`；`跳过` | `Allow once`、`Allow for this session`、`Deny`；`Skip` |
-| 表单 | `回答下面的问题`、`<标题>（其他）` | `Answer the questions below`、`<title> (other)` |
+| 表单 | `回答下面的问题`、`其他` | `Answer the questions below`、`Other` |
+| 一轮的开头 | `后台任务「<标题>」已完成`（`失败`、`已停止`、`已结束`）、`Miyu 自己开始了新的一轮` | `Background job "<title>" finished`（`failed`、`stopped`、`ended`）、`Miyu started a new turn on its own` |
 | `/compact` | `压缩上下文`，提示 `摘要要保留的要点` | `Compact the context`, hint `what the summary should keep` |
 | 出错 | `无法解析的消息`、`需要先发送 initialize`、`不支持的方法：<方法>`、`工作目录必须是绝对路径`、`会话不存在`、`上一条消息还没有回答完`、`图片或文件的内容无法解码`、`消息是空的`、`不支持的选项`、`与核心的连接已断开` | `unreadable message`、`initialize first`、`unsupported method: <method>`、`the working directory must be an absolute path`、`no such session`、`the previous prompt is still running`、`cannot decode an image or file`、`the prompt is empty`、`unsupported option`、`lost connection to the core` |
 
@@ -160,9 +164,9 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 
 | 测试 | 守哪几条 |
 |---|---|
-| `crates/miyu-cli/src/acp/view/tests.rs` | 正文只报一次（第一次、接上的一截、整份里多出来的）；思考；编辑器自己的话不报、别处的报一次，重放都报、只记下的不报；藏起来的不报；等的那一句听到了换成等它那一轮、别的一轮结束不回；只记下的在跑的工具不记；改了文件的要对比、扔进回收站的不要 |
+| `crates/miyu-cli/src/acp/view/tests.rs` | 每段字带它那一条的 `messageId`；不是人说话开的一轮先报一句开头、说是哪件后台任务、一轮只报一次，人说话开的、编辑器在等的不报；正文只报一次（第一次、接上的一截、整份里多出来的）；思考；编辑器自己的话不报、别处的报一次，重放都报、只记下的不报；藏起来的不报；等的那一句听到了换成等它那一轮、别的一轮结束不回；只记下的在跑的工具不记；改了文件的要对比、扔进回收站的不要 |
 | `crates/miyu-cli/src/acp/status/tests.rs` | 待办、用量（两个数、准的金额）、标题、权限和模型变了、在等的交出去和了结了的忘掉 |
-| `crates/miyu-cli/src/acp/tool/tests.rs` | `kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比 |
+| `crates/miyu-cli/src/acp/tool/tests.rs` | 执行命令的内容先是命令原文、标题不变、写到一半的不报；`kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比 |
 | `crates/miyu-cli/src/acp/prompt/tests.rs` | 内容块照先后、`file://` 解成路径、解不开的整句不收 |
 | `crates/miyu-cli/src/acp/forms/tests.rs`、`options/tests.rs`、`setup/tests.rs` | 表单的格和读回答；能选的模型、配置项的先后、换的值查过；`~` 写成绝对路径、只收绝对的目录 |
 | `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单 |

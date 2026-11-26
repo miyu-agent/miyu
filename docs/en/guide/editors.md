@@ -59,11 +59,12 @@ This page explains how to use Miyu as the AI assistant of an editor such as Zed.
 |---|---|
 | Send a message | Type in the input box and press Enter. You can mention files with `@` and paste images: mentioned files are given to the AI as attachments, and images are handled like images pasted in the terminal interface. |
 | See what the AI is doing | The AI's thinking and reply appear as they are written; each tool it uses shows up as a card whose title is the same line as in the terminal interface. Cards for tools that changed files show the before and after, and clicking a file name takes you there. |
-| Approve | When the AI wants to run a command that needs approval, the editor shows a confirmation with the options `Allow once` and `Deny`, and sometimes `Allow for this session`. When the AI asks you questions, the choices also appear in a confirmation; if the editor supports forms, it shows a form where you can pick a choice or write your own answer. |
+| Approve | When the AI wants to run a command that needs approval, the editor shows a confirmation with the full command and the options `Allow once` and `Deny`, and sometimes `Allow for this session`. When the AI asks you questions, the choices also appear in a confirmation; if the editor supports forms, it shows a form where you can pick a choice or write your own answer. |
 | Interrupt | Click the editor's stop button to interrupt the turn; if your message is still queued, it is withdrawn. |
 | Switch permission | The editor's mode selector has `Full access` and `Read-only`, Miyu's two permission levels; new sessions start with full access. See [Permissions and sandbox](permissions.md). |
 | Change the model or thinking effort | The editor's option selector lists the models you have keys for and the model pools; when the current model has thinking levels, you can switch the thinking effort too. |
 | Slash commands | Typing `/` lists Miyu's slash commands, such as `/clear` and `/todo`, plus `/compact` to compact the context by hand. See [Slash commands](commands.md). |
+| The AI going on by itself | When a background job reports back and wakes the AI, the editor first shows a line such as `Background job "run tests" finished`, then the AI's reply. |
 | To-dos and usage | The AI's to-do list appears as the editor's plan; how much of the context is used and how much has been spent are shown too (the amount is left out when it cannot be computed exactly). |
 | Open an earlier session | Pick a session in the editor's thread history and Miyu shows its earlier conversation again, so you can go on. The list shows the Miyu sessions whose working directory is the current project. |
 

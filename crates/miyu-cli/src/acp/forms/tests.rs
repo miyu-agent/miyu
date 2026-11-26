@@ -21,11 +21,30 @@ fn each_kind_of_question_gets_its_field() {
     let form = schema(Language::Chinese, &asked);
     let fields = &form["properties"];
     assert_eq!(fields["q1"]["enum"], json!(["a", "b"]));
-    assert_eq!(fields["q1_other"]["title"], "哪个？（其他）");
+    // 几道题的：格的标题是题目，不写说明；自己写的那一格只写「其他」。
+    assert_eq!(fields["q1"]["title"], "哪个？");
+    assert!(fields["q1"].get("description").is_none());
+    assert_eq!(
+        fields["q1_other"],
+        json!({"type": "string", "title": "其他"})
+    );
     assert_eq!(fields["q2"]["items"]["enum"], json!(["x", "y"]));
     assert_eq!(fields["q3"]["type"], "string");
     assert!(fields["q3_other"].is_null(), "没有选项的题本来就是自己写");
     assert_eq!(message(Language::Chinese, &asked[..1]), "哪个？");
+    // 一道题的：题目在表单上面，格里不再写一遍；有 header 的只写 header。
+    let one = schema(Language::Chinese, &asked[..1]);
+    assert!(one["properties"]["q1"].get("title").is_none(), "{one}");
+    let mut headed = question("哪个？", &["a"], false);
+    headed.header = Some("库".to_string());
+    let one = schema(Language::Chinese, &[headed]);
+    assert_eq!(one["properties"]["q1"]["title"], "库");
+    let text = one.to_string();
+    assert_eq!(
+        text.matches("哪个？").count(),
+        0,
+        "题目一处都不在格里：{text}"
+    );
     assert_eq!(message(Language::Chinese, &asked), "回答下面的问题");
 }
 
