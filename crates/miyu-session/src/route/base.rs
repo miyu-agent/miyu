@@ -174,6 +174,7 @@ impl Routes {
                         .ok_or_else(|| NoModel(super::unbuilt(&speaking)))?,
                     reach: reach.clone(),
                     texts,
+                    asker: None,
                 })),
                 _ => Speaker::Builtin(
                     speaking

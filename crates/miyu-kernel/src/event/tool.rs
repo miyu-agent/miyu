@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::block::Block;
 use crate::event::Effect;
-use crate::id::CallId;
+use crate::id::{CallId, Seq};
 use crate::raw::RawJson;
 use crate::text_enum::text_enum;
 use crate::time::Timestamp;
@@ -124,6 +124,19 @@ pub struct ApprovalRequested {
     /// 画倒计时。一直等的（配置是 0）没有。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub expires_at: Option<Timestamp>,
+    /// 驱动在一次请求进行中问的（施工 ACP-8）：画在哪一块供应商侧工具上。这时 `call_id` 是内核另给的编号（`call_<这一条的序号>_1`），
+    /// 不对着哪一次调用，不会有结果。工具调用的确认、以前的日志没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub driver: Option<DriverBlock>,
+}
+
+/// 驱动问的确认画在哪一块上（施工 ACP-8）：第 `seen` 次请求的第 `index` 块，同 `model.delta` 的两格。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DriverBlock {
+    /// 哪一次请求。
+    pub seen: Seq,
+    /// 第几块，从 0 数起。
+    pub index: u32,
 }
 
 /// `tool.approval_decided`：人对一个请求的决定。`by` 是回答的人；到时没人确认、内核替人拒的（施工 CD-1）是内核。

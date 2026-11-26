@@ -72,7 +72,8 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
      是搜索的）放行，照设计 71 画成供应商侧工具；别的（`edit`、`delete`、`move`、`execute`、`other`）对方来要权限时回拒绝；对方
      不要权限就自己跑的，照样画成供应商侧工具，并在包的日志里记一条警告。能关掉的照 agent 的说法关（Claude 适配器的
      `disallowedTools` 一类，放在 `session/new` 的 `_meta` 里）。
-   - **也放行对方的工具**：对方要权限时，包经核心的确认框问主人（`tool.guard` 同一套：允许这一次 / 拒绝，选项照对方给的），选了
+   - **也放行对方的工具**：对方要权限时，包经核心的确认框问主人（施工 ACP-8 的 `driver.approve`：同工具调用的确认那一套，只能允许
+     这一次 / 拒绝，选项照对方给的；项目主人 2026-11-26 看了 Zed 的做法以后定用 Miyu 自己的确认框，没人看着的会话一律拒绝），选了
      允许的让它自己跑，照供应商侧工具画；跑命令、改文件不在 Miyu 的沙盒里，设置页这一档的说明写清楚。
    不给 agent 开 `fs/*`、`terminal/*`（不声明这两项能力）：文件、命令都走 Miyu 的工具。
 8. **一轮怎么交**：`agent_message_chunk` → 正文块；`agent_thought_chunk` → 思考块；`tool_call`/`tool_call_update` → 交回核心的工具
@@ -133,6 +134,7 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
 | ACP-2 | `acp` 包骨架：仓库、清单、登记表的取和缓存、装（binary、npx、uvx，核 sha256）、`driver.models` |
 | ACP-3 | `acp` 包：进程、握手、登录的报错、会话对应（指纹前缀、转录）、一轮的增量、`usage.context`、`stopReason` |
 | ACP-4 | `acp` 包：MCP 桥（Miyu 的工具）、对方自带的工具两档、权限请求 |
+| ACP-8 | 核心：扩展驱动在一次调用进行中请核心问人（`driver.approve`），同工具调用的确认那一套，头不用改；`acp` 包改用它（ACP-4 补） |
 | ACP-5 | `acp` 包：真 agent 实测（Claude 适配器、Antigravity、Gemini CLI），README、发版 |
 | ACP-6 | 核心 `miyu acp`：握手、会话（new、load、resume、list）、一轮的翻译、确认、模式、斜杠命令 |
 | ACP-7 | `miyu acp` 用真编辑器（Zed）实测；用户手册（中英） |
@@ -151,3 +153,29 @@ GitHub Copilot、Kimi、Qwen Code 都在。这份设计做两个方向：
 - 第五节第 7 条：头自己加了 `/compact`（核心的命令表里没有它，同终端界面）。
 - 没做的：子代理的会话（`subagent_update`）和子会话里的确认、压缩（`compaction_update`）、旁白（`notice`）、`plan_update`、
   `session/list` 分页；重放时人附的图、文件不报，改文件的对比只在正在发生时要。
+
+施工 ACP-2 到 ACP-4（方向一，2026-11-26）：
+
+- 第四节第 1 条驱动名：清单的 `[[driver]]` 只能写死，做不到每个 agent 一个 `acp/<编号>`。做成一个驱动 `acp/acp`、一家自带的
+  供应商 `acp`，agent 写在模型名里（`acp/claude-acp`、`acp/claude-acp/sonnet`）；代码也认 `acp/<agent>` 的驱动名，以后改成
+  每个 agent 一段 `[[driver]]` 接得上。
+- 第四节第 1 条手写的 agent：核心不许多行的文字项默认为空，参数、环境变量不单列，写成一行启动命令（`名字=值 … 程序 参数…`，
+  认引号，不经 shell）。
+- 第四节第 2 条装的进度：`package.progress` 是核心推给发起安装的那条连接的，扩展推不了；下载进度只写进包的日志。
+- 第四节第 7 条：Antigravity 只留 `search_web`，`read_url_content` 照 `antigravity` 包的先例不开。
+- 第四节第 8 条用量：agent 在 `session/prompt` 的回应里带了 token 数（Claude 适配器带）的照它记四项加 `context`；没带的整格不报
+  （内核的 `Usage` 四项必填，`context` 不能单报），这时上下文照 Miyu 的估算（agent 自己会压缩，影响小）。
+- 设计没写到、顺手定的：会话共用包的状态目录下一个空目录当工作目录；窗口没学到之前 Claude 适配器写 200k、别的 128k；清单里的
+  命令叫 `acp-agents`（`acp` 会被核心的 `miyu acp` 盖掉）。
+- 没做的：进程收掉以后用 `session/resume` 接着同一个会话（现在照新开、重放）；`effort` 对应 agent 的思考档位；一步里并行的几件
+  Miyu 工具（第二件拒，照 `antigravity` 包）；工具结果里的图交回 agent；机器上没有 npx、uvx 时照样列出、用到才报。
+
+施工 ACP-8、ACP-4 补（2026-11-26）：
+
+- 第四节第 7 条「也放行对方的工具」：ACP-4 先做成交回核心一次 `ask_user` 问主人（扩展发不起确认框，时间线上多一次「AI 提问」）；
+  项目主人看了 Zed 的做法以后定用 Miyu 自己的确认框。核心加了 `driver.approve`（施工 ACP-8）：确认画在那一块供应商侧工具上，
+  `by` 是包，`detail` 照跑命令（有命令的）或者包问人（别的）的样子写，头照已有的样子画、不用改；只能允许这一次或者拒绝，对方的
+  「总是允许」不映射成「本会话内允许」（两个头都只认允许这一次、拒绝，核心发的确认也都不带规则），允许时照对方的「允许这一次」
+  回、没有的才照「总是允许」。没人能确认的会话（场所会话、不是能输入的头开的会话）、只读时要写要跑命令的当场拒；问着时这一次
+  调用不计时限。`acp` 包去掉了借 `ask_user` 的做法；旧核心回「没有这个方法」的照「只用 Miyu 的工具」那一档拒绝，日志里写一句。
+- 没做的：崩了以后载入时，在等的那一问不补决定（不对着调用），视图里那一步留着没定的请求；收紧成只读时不回头拦下已经在问的。

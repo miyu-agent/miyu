@@ -6,17 +6,67 @@
 //! - `pair`：第一次先不答，第二次来了两次交错着交（第一次的字、第二次的字、各自收尾），先答第二次、再答第一次：核心照 `call`
 //!   分开，两个会话各拿到自己的；
 //! - `hosted`：先一块供应商侧工具 `search_web`（参数分两段、带一份私有数据、结果、收），再一块正文（施工 HT-4）；
-//! - `hosted-undeclared`：同上，`search_web` 后面再一块清单里没声明的 `browse_page`。
+//! - `hosted-undeclared`：同上，`search_web` 后面再一块清单里没声明的 `browse_page`；
+//! - `approve`：先开一块供应商侧工具 `Bash`（参数是一条命令），再请核心问人（`driver.approve`，施工 ACP-8），回应到了再收这一块、
+//!   交正文、回答；回应原样留在记下的里（`serve` 每一行都记）；
+//! - `approve-other`：同上，先问一个不是这一次的 `call`，再问一块还没开始的，两个回应都到了再收尾。
 
-/// 压着没答的那一次：请求编号、调用编号、要回的字。
+/// 压着没答的那一次：请求编号、调用编号、要回的字；在等核心问人的几次：调用编号到请求编号、要回的字、还差几个回应。
 pub(crate) struct Held {
     first: Option<(String, String, String)>,
+    approving: Vec<(String, String, String, usize)>,
 }
 
 impl Held {
     pub(crate) fn new() -> Held {
-        Held { first: None }
+        Held {
+            first: None,
+            approving: Vec::new(),
+        }
     }
+}
+
+/// 核心回了一条 `driver.approve`（编号 `approve-<调用编号>-<第几问>`）：那一次的回应都到了的，收这一块、交正文、回答。
+pub(crate) fn approved(line: &str, held: &mut Held) -> Vec<String> {
+    let Some(id) = super::field(line, "id") else {
+        return Vec::new();
+    };
+    let Some(call) = id
+        .strip_prefix("approve-")
+        .and_then(|rest| rest.rsplit_once('-'))
+        .map(|(call, _)| call.to_string())
+    else {
+        return Vec::new();
+    };
+    let Some(at) = held.approving.iter().position(|(c, ..)| *c == call) else {
+        return Vec::new();
+    };
+    held.approving[at].3 -= 1;
+    if held.approving[at].3 > 0 {
+        return Vec::new();
+    }
+    let (call, id, said, _) = held.approving.remove(at);
+    vec![
+        delta(
+            &call,
+            r#"{"outcome":{"index":0,"text":"ran"}},{"end":{"index":0}}"#,
+        ),
+        delta(
+            &call,
+            &format!(
+                r#"{{"start":{{"index":1,"kind":"text"}}}},{{"text":{{"index":1,"text":"{}"}}}},{{"end":{{"index":1}}}}"#,
+                super::quoted(&said)
+            ),
+        ),
+        answer(&id),
+    ]
+}
+
+/// 请核心问人的一条：问 `call` 的第 `index` 块，第 `n` 问，编号照 `mine`（这一次的调用编号）记。
+fn approve(mine: &str, call: &str, index: usize, n: usize) -> String {
+    format!(
+        r#"{{"jsonrpc":"2.0","id":"approve-{mine}-{n}","method":"driver.approve","params":{{"call":"{call}","index":{index},"access":"execute","title":"List files","command":"ls -la","options":[{{"id":"yes","name":"Allow","kind":"allow_once"}},{{"id":"always","name":"Always","kind":"allow_always"}},{{"id":"no","name":"Reject","kind":"reject_once"}}]}}}}"#
+    )
 }
 
 /// 答这一行 `driver.call` 或 `driver.encode`（JSON-RPC 编号 `id`），照 `how`（`<怎么答 call>+<怎么编>`）：交回要写的几行，照先后。
@@ -48,6 +98,20 @@ pub(crate) fn answered(id: &str, how: &str, line: &str, held: &mut Held) -> Vec<
             };
             let mut lines = searched(&call, names, &said);
             lines.push(answer(id));
+            lines
+        }
+        "approve" | "approve-other" => {
+            let mut lines = vec![delta(
+                &call,
+                r#"{"start":{"index":0,"kind":{"hosted_tool":{"name":"Bash"}}}},{"text":{"index":0,"text":"{\"command\":\"ls -la\"}"}}"#,
+            )];
+            let asks = match how {
+                "approve" => vec![approve(&call, &call, 0, 1)],
+                _ => vec![approve(&call, "nope", 0, 1), approve(&call, &call, 5, 2)],
+            };
+            held.approving
+                .push((call.clone(), id.to_string(), said, asks.len()));
+            lines.extend(asks);
             lines
         }
         "half" => {

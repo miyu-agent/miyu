@@ -34,7 +34,7 @@ pub use peers::PeerWatching;
 use peers::Peers;
 pub(crate) use peers::digest;
 use seal::Sealing;
-use shape::{check_call_ids, in_turn_only, tool_call_id};
+use shape::{asked_call, check_call_ids, in_turn_only, tool_call_id};
 use triggers::Triggers;
 
 pub use error::LedgerError;
@@ -231,7 +231,9 @@ impl Ledger {
                 self.peers.check_watch(&result.effects)
             }
             Body::ApprovalRequested(requested) => {
-                self.check_pending(requested.call_id)?;
+                if let Some(call_id) = asked_call(seq, requested)? {
+                    self.check_pending(call_id)?;
+                }
                 match self.asking.contains(&requested.call_id) {
                     true => Err(format!(
                         "{} already has a pending approval request",

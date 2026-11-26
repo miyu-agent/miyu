@@ -376,19 +376,14 @@ impl Projector {
 
     /// 一次调用要人确认。
     pub(super) fn approval_requested(&mut self, requested: &ApprovalRequested) {
+        // 驱动问的画在它那一块供应商侧工具上（施工 ACP-8，`hosted.rs`）。
+        if let Some(block) = requested.driver {
+            return self.driver_asked(requested, block);
+        }
         let Some(id) = self.calls.get(&requested.call_id).cloned() else {
             return;
         };
-        let approval = Approval {
-            access: requested.access.clone(),
-            rule: requested.rule.clone(),
-            detail: requested.detail.clone(),
-            decision: None,
-            reason: None,
-            by: None,
-            nested: requested.nested,
-            expires_at: requested.expires_at,
-        };
+        let approval = super::hosted::approval_of(requested);
         self.touch(&id, |entry| {
             if let Body::Tool(tool) = &mut entry.body {
                 tool.approval = Some(approval);
@@ -401,13 +396,15 @@ impl Projector {
         let Some(id) = self.calls.get(&decided.call_id).cloned() else {
             return;
         };
+        // 驱动问的、那一步还没开条目的（读回日志时，施工 ACP-8）：记在手里的那一份上。
+        if let Some(approval) = self.held.get_mut(&id).map(|(_, approval)| approval) {
+            decide(approval, event, decided);
+        }
         self.touch(&id, |entry| {
             if let Body::Tool(tool) = &mut entry.body
                 && let Some(approval) = tool.approval.as_mut()
             {
-                approval.decision = Some(decided.decision.clone());
-                approval.reason.clone_from(&decided.reason);
-                approval.by = Some(event.by.clone());
+                decide(approval, event, decided);
             }
         });
     }
@@ -439,6 +436,13 @@ impl Projector {
             }),
         );
     }
+}
+
+/// 确认有了决定：照 `decided` 写上怎么定的、为什么、谁定的。
+fn decide(approval: &mut Approval, event: &Event, decided: &ApprovalDecided) {
+    approval.decision = Some(decided.decision.clone());
+    approval.reason.clone_from(&decided.reason);
+    approval.by = Some(event.by.clone());
 }
 
 /// 参数原文里的 `command`：后台命令派出时的那一句。

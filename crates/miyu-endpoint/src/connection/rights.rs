@@ -97,6 +97,8 @@ pub(super) fn right(method: &str, params: &Value) -> Right {
         // 扩展提供的模型驱动交的增量（施工 MD-2）：是通知，读循环照 `call` 交给核心发出去的那一次，不过这张表；没批 `model.driver`
         // 的收不到 `driver.call`，交来的对不上，丢掉。
         "driver.delta" => Needs(ModelDriver),
+        // 扩展驱动进行中请核心问人（施工 ACP-8）：只认这个连接上在进行的那一次 `driver.call`。
+        "driver.approve" => Needs(ModelDriver),
         // 代表平台上的人、场所的原语（`venue.delivered`、`venue.recalled` 是 `events.append` 里只给桥的两种事件）。
         "session.note" | "venue.binding" | "venue.delivered" | "venue.recalled"
         | "venue.records" | "venue.plugins" | "venue.session" | "venue.sessions" => {

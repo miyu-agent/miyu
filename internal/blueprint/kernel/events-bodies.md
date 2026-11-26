@@ -328,6 +328,7 @@
 | `detail` | 原样的 JSON | 可以没有 | 给头看的：为什么要问 |
 | `nested` | 正整数 | 可以没有 | 脚本里调的（施工 M-7 上）：`call_id` 是父级那次调用，这是嵌套调用的序号，拼起来是 `tool.nested` 的编号；直接调用的没有，以前的日志没有 |
 | `expires_at` | 时刻 | 可以没有 | 到这一刻还没人确认就自动拒（施工 CD-1，`kernel/asking.md`「到时没人确认」）：记请求的时刻加这一轮配的等多久；头照它画倒计时。配了一直等的没有 |
+| `driver` | `{seen, index}` | 可以没有 | 扩展驱动在一次请求进行中问的（施工 ACP-8，`kernel/asking.md`「驱动问的确认」）：画在第 `seen` 次请求的第 `index` 块供应商侧工具上。这时 `call_id` 是 `call_<这一条的序号>_1`，不对着调用，不会有结果。工具调用的确认、以前的日志没有 |
 
 `rule`、`detail` 的写法由提问的模块定，内核原样记，不看里面（权限策略写的样子见 `session/guard.md` 第五条）。例如越过沙盒跑一条命令（施工 D-4）：`{"call_id":"…","access":"execute","detail":{"command":"touch ~/Downloads/x.txt","sandbox":false,"title":"Create a file","tool":"shell"}}`，没有 `rule`：只能选允许这一次或者拒绝。装包（施工 F-10 下，`tools/package.md`）：`{"call_id":"…","access":"install","detail":{"install":"/home/me/work/notes","preview":{"package":"notes","skills":["take-notes"],"scripts":["dice"],"files":3,"size":713},"tool":"package"}}`：`preview` 是装之前看一眼的那一份（同 `package.install` 带 `preview` 的回应；卸的是 `package.remove` 带 `preview` 的），头照命令行 `miyu pkg install` 那样列；也没有 `rule`。
 

@@ -18,7 +18,7 @@ use miyu_kernel::request::{Message, Request};
 use miyu_models::matching::Vendors;
 use miyu_models::profile::Profiles;
 
-use super::super::driver_port::{Broken, Declared, DriverPort, NotYet, Pending};
+use super::super::driver_port::{Broken, Declared, DriverAsk, DriverPort, NotYet, Pending};
 use super::super::exchange::Learn;
 use super::super::shared::ModelData;
 use super::*;
@@ -81,7 +81,10 @@ impl DriverPort for Fake {
         _: &DriverRef,
         call: &str,
         params: String,
-        deltas: mpsc::UnboundedSender<Value>,
+        (deltas, _): (
+            mpsc::UnboundedSender<Value>,
+            mpsc::UnboundedSender<DriverAsk>,
+        ),
     ) -> Result<Pending, NotYet> {
         if let Some(not_yet) = self.not_yet {
             return Err(not_yet);
@@ -188,6 +191,7 @@ fn ready(fake: &Arc<Fake>, idle: Duration) -> Ready {
                 quiet: None,
             },
             texts: hosted::texts(),
+            asker: None,
         })),
         call: Call {
             model: ModelName::parse("m").expect("模型名"),

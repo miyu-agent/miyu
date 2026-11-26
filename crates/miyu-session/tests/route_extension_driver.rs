@@ -19,7 +19,7 @@ use miyu_http::testkit::Server;
 use miyu_kernel::block::Block;
 use miyu_kernel::event::{Body, ErrorClass, ModelCalled};
 use miyu_models::provider::DriverRef;
-use miyu_session::{Declared, DriverPending, DriverPort, NotYet};
+use miyu_session::{Declared, DriverAsk, DriverPending, DriverPort, NotYet};
 
 /// 这一轮的主请求那一条 `model.called`（最后一条不带用途的）。起标题这类旁路请求在这一轮说完以后才发，赶在读日志以前落盘的
 /// 排在主请求后面：假服务器只备了一份回复，它那一条是连不上的错，不能拿最后一条当主请求（施工 AUD-1）。
@@ -133,7 +133,10 @@ impl DriverPort for Fake {
         _: &DriverRef,
         _: &str,
         params: String,
-        deltas: mpsc::UnboundedSender<Value>,
+        (deltas, _): (
+            mpsc::UnboundedSender<Value>,
+            mpsc::UnboundedSender<DriverAsk>,
+        ),
     ) -> Result<DriverPending, NotYet> {
         self.params
             .lock()

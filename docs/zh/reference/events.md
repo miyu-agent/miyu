@@ -42,7 +42,7 @@
 | `model.called` | 一次模型请求的记录：用了哪个模型、用量、花费，出错时带 `error`。回复被截过的带 `cut`，每一块文字一项：`[{"block", "at", "bytes", "role"}]`（`block` 是第几块，和 `model.delta` 的 `index` 相同；`at` 是从那一块原文的第几个字节开始截；`bytes` 是截掉了多少字节；`role` 是那个角色词：`user`、`assistant`、`system`、`human`、`tool`）。截掉的原文不记录；没有截过的就不写。 |
 | `tool.result` | 一次工具调用的结果：`status` 是 `ok`、`error`、`denied`、`cancelled`、`skipped`。 |
 | `tool.nested` | 脚本里的一次 `miyu call` 结束了：带 `id`（前台调用下面的写成 `call_12_1#3`，后台任务下面的写成 `j7#3`）、`name`、`args`、`status`（`ok`、`error`、`denied`、`needs_approval`、`cancelled`），有的另外带 `duration_ms`、`result`（blob）、`bytes`、`reason`。这条事件不进入 AI 的上下文；后台任务下面的不带 `turn`。 |
-| `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用；人做出的决定。如果请求带 `expires_at`（一个时刻），到那一刻还没有人确认就自动拒绝：核心记一条 `decision` 是 `deny`、`by` 是 `kernel` 的决定，AI 拿到「没人确认」的结果后继续工作；头根据它绘制倒计时。配置 `permission.confirm.timeout` 是 `0` 时一直等待，请求不带这一项。 |
+| `tool.approval_requested`、`tool.approval_decided` | 请人确认一次调用；人做出的决定。如果请求带 `expires_at`（一个时刻），到那一刻还没有人确认就自动拒绝：核心记一条 `decision` 是 `deny`、`by` 是 `kernel` 的决定，AI 拿到「没人确认」的结果后继续工作；头根据它绘制倒计时。配置 `permission.confirm.timeout` 是 `0` 时一直等待，请求不带这一项。扩展驱动在一次调用进行中请求的确认（[`driver.approve`](extensions.md#driverapprove)）多一格 `driver: {seen, index}`：显示在第 `seen` 次请求的第 `index` 块供应商侧工具上；这时 `call_id` 是核心另外分配的 `call_<这一条的序号>_1`，不对应任何一次工具调用，不会有 `tool.result`；调用没有了时，核心记一条 `by` 是 `kernel` 的拒绝。 |
 | `question.asked`、`question.answered` | AI 提出了一组问题；人的回答。 |
 | `context.injected` | 注入进上下文的一块事实，例如记忆、扩展返回的内容。 |
 | `context.compacted` | 压缩的检查点；清空上下文记录的也是这条事件（`trigger` 是 `clear`）。如果摘要请求太长，截掉了最老的几组才写成摘要，事件就带 `truncated`（值是截掉的组数，最早的那一段没有进入摘要）；没有截过的不写。 |

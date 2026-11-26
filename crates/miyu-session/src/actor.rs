@@ -33,6 +33,7 @@ use durable::Syncing;
 
 mod after;
 mod back;
+mod driver_asks;
 mod durable;
 mod extract;
 mod goal;
@@ -98,6 +99,8 @@ pub(crate) struct Actor {
     /// 在等扩展守卫的调用（施工 HK-1，`guarding.rs`）；结果落盘后要发通知的直接调用（施工 HK-2，`after.rs`）。
     guarding: guarding::Guarding,
     afters: after::Calls,
+    /// 扩展驱动进行中要人确认、还没回的（施工 ACP-8，`driver_asks.rs`）。
+    driver_asks: driver_asks::Asks,
     /// 有没有在跑的回合，和 `Handle` 共用：每送完一批输入写一次；actor 退出了写成没有（施工 3-9 上）。
     busy: Arc<AtomicBool>,
     /// 在不在等人确认、回答（施工 SL-1），和 `Handle` 共用：照 `busy` 每送完一批写一次。
@@ -202,6 +205,7 @@ impl Actor {
             guard: Arc::new(guard),
             guarding: guarding::Guarding::default(),
             afters: after::Calls::default(),
+            driver_asks: driver_asks::Asks::default(),
             busy,
             waiting: Arc::new(AtomicBool::new(false)),
             onlookers: Arc::default(),
@@ -426,7 +430,8 @@ impl Actor {
             }
             // 交给执行前的链判（`guarding.rs` 的 `guard_tool`）。
             guard @ Action::GuardTool { .. } => self.guard_tool(guard).await,
-            action @ Action::RunTool { .. } => self.run_tool(action), // `actor/run.rs`
+            answer @ Action::AnswerDriver { .. } => self.driver_answered(answer), // `driver_asks.rs`
+            action @ Action::RunTool { .. } => self.run_tool(action),             // `actor/run.rs`
             // 叫它停（施工 4-9 再补一）：只举旗，工具交回来照常送回。
             Action::StopTool { call_id } => {
                 self.tools.stop(call_id);

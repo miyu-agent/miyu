@@ -77,6 +77,13 @@ impl Actor {
                 ask,
                 reply,
             } => return self.goal_asked(at, call_id, ask, reply),
+            // 扩展驱动进行中要人确认（施工 ACP-8，`driver_asks.rs`）。
+            Back::DriverAsk {
+                seen,
+                driver,
+                params,
+                reply,
+            } => return self.driver_ask(at, (seen, driver), &params, reply),
             Back::Job(ended) => self.jobs.arrived(at, ended),
             Back::JobLines(seen) => crate::jobs::SessionJobs::lines(at, seen),
             Back::Shell(ran) => {

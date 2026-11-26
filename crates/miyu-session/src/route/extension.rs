@@ -13,6 +13,7 @@
 //! - 时限同内置驱动走 HTTP：发出去到第一条增量、两条增量之间、最后一条到回答都不超过空闲时限，整个不超过它的 `TOTAL_FACTOR` 倍；
 //!   超了的不要了，当 `retryable`。连接断了也当 `retryable`。驱动在清单里声明了更长的（`quiet_secs`，施工 DR-2）照它等。
 //! - 回答写坏了的当 `unclassified`，记一行 `WARN driver bad answer`；回答里的 `sent` 随说完了交上去，记进 `model.called`。
+//! - 进行中要人确认的（施工 ACP-8，`extension/approve.rs`）：主请求的交给会话问人，问着的时候两种时限都停表；别的当场拒。
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -50,11 +51,13 @@ use crate::TARGET;
 use crate::blocking::blocking;
 use crate::config::TurnConfig;
 
+mod approve;
 pub mod check;
 mod listing;
 mod wire;
 mod wires;
 
+pub(crate) use approve::{Answerer, Asker};
 pub(super) use listing::listed;
 use wires::Undeclared;
 pub(super) use wires::Wires;
@@ -73,12 +76,14 @@ pub(super) struct Reach {
     pub(super) quiet: Option<Duration>,
 }
 
-/// 备好了的扩展驱动：哪一个、经哪个端口、挑候选时备下的，和这个会话冻结的驱动占位（施工 HT-2：别家的供应商侧工具照它写成字）。
+/// 备好了的扩展驱动：哪一个、经哪个端口、挑候选时备下的，这个会话冻结的驱动占位（施工 HT-2：别家的供应商侧工具照它写成字），
+/// 和进行中要人确认时问哪个会话（施工 ACP-8：主请求发之前交，没有的当场拒）。
 pub(super) struct Reached {
     pub(super) driver: DriverRef,
     pub(super) port: Arc<dyn DriverPort>,
     pub(super) reach: Reach,
     pub(super) texts: DriverTexts,
+    pub(super) asker: Option<Asker>,
 }
 
 impl Routes {
@@ -186,7 +191,9 @@ pub(super) async fn exchange(
     let hash = ContentHash::of(&bytes);
     drop((bytes, media));
     let (tell, mut heard) = mpsc::unbounded_channel();
-    let pending = match reached.port.call(&reached.driver, &id, params, tell) {
+    let (ask, mut asks) = mpsc::unbounded_channel();
+    let mut asking = approve::Asking::new(reached.asker.clone(), reached.driver.clone());
+    let pending = match reached.port.call(&reached.driver, &id, params, (tell, ask)) {
         Ok(pending) => pending,
         Err(NotYet { retry_in_ms }) => {
             return said(wire::classified(
@@ -202,10 +209,10 @@ pub(super) async fn exchange(
     });
     let idle = quiet_for(ready.idle, reached.reach.quiet);
     let started = Instant::now();
-    let deadline = started + idle * TOTAL_FACTOR;
+    let mut deadline = started + idle * TOTAL_FACTOR;
     let mut last = started;
     let mut checker = Accumulator::default();
-    let mut closed = false;
+    let (mut closed, mut unasked) = (false, false);
     tokio::pin!(pending, cancel);
     loop {
         let quiet = tokio::time::sleep_until((last + idle).min(deadline));
@@ -222,6 +229,23 @@ pub(super) async fn exchange(
                 // 端口放掉了交增量的那一头：连接断了，回答那一头跟着了结。
                 None => closed = true,
             },
+            // 要人确认（施工 ACP-8）：在它之前到的增量先收下，会话才认得它要画在哪一块上。
+            asked = asks.recv(), if !unasked => match asked {
+                Some(ask) => {
+                    while let Ok(batch) = heard.try_recv() {
+                        if let Err(why) = take(batch, reached, &family, &ready.learn.data, &mut checker, &mut on) {
+                            return bad(&name, "delta", &why);
+                        }
+                    }
+                    asking.ask(ask);
+                }
+                None => unasked = true,
+            },
+            // 都答了：停的那一段不算，接着计。
+            Some(paused) = asking.settled() => {
+                deadline += paused;
+                last = Instant::now();
+            }
             answered = &mut pending => {
                 // 回答之前到的增量都已经交进来了（同一条连接，端口先交增量再交回答）：收尾前读空。
                 while let Ok(batch) = heard.try_recv() {
@@ -231,7 +255,7 @@ pub(super) async fn exchange(
                 }
                 return finish(answered, &name, &hash, &ready.learn.data);
             }
-            () = quiet => {
+            () = quiet, if !asking.waiting() => {
                 // 多久没动静的是卡住（施工 YC-3）；增量一直在来、过了总时限的不算，照旧可重试。
                 let class = match Instant::now() >= deadline {
                     true => ErrorClass::Retryable,

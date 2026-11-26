@@ -17,6 +17,7 @@ An extension is a program that a package brings: the core launches it according 
 | [`tool.guard`, `guard.cancel`](#toolguard-guardcancel) | core → extension | Before a tool call runs, asks it whether to allow, deny or ask the person; stops waiting for its answer |
 | [`tool.after`](#toolafter) | core → extension | Tells it after a tool call's result is written to disk (read-only, no answer expected) |
 | [`driver.call`, `driver.delta`, `driver.cancel`](#drivercall-driverdelta-drivercancel) | both ways | The model driver it provides: takes one model call and streams deltas back; stops waiting |
+| [`driver.approve`](#driverapprove) | extension → core | In the middle of a call, asks the core to show Miyu's confirmation to the owner |
 | [`driver.encode`](#driverencode) | core → extension | Encodes once without sending, to check that the encoding is steady |
 | [`driver.models`](#drivermodels) | core → extension | Lists the models it can use (optional) |
 | [`system.append`](#systemappend) | extension → core | Puts a section at the end of the system prompt |
@@ -390,7 +391,7 @@ The model driver you provide takes one whole model call (core → extension, wit
 
 A block can only have text after it starts, and nothing can be written to it after it is complete. A wrong delta ends the call as `unclassified` (`the driver sent a bad delta: …`), and deltas arriving after it are dropped. Deltas for a `call` that isn't recognized are dropped without an error.
 
-List the names of provider-run tools in this driver's `hosted` in the manifest ([manifest](../dev/manifest.md#driver)), so that the owner knows from it at install time what the provider will run on its own. A name that isn't listed is still accepted and shown as usual, and the core logs a warning in its run log (once per driver and name each time the core runs; at most 64 names are listed per driver, and for names beyond that, or names longer than 64 bytes, only one more line is logged saying there are more, without the names). Don't report tools that change things (running commands, writing files) this way; turn them off and use the core's tools instead.
+List the names of provider-run tools in this driver's `hosted` in the manifest ([manifest](../dev/manifest.md#driver)), so that the owner knows from it at install time what the provider will run on its own. A name that isn't listed is still accepted and shown as usual, and the core logs a warning in its run log (once per driver and name each time the core runs; at most 64 names are listed per driver, and for names beyond that, or names longer than 64 bytes, only one more line is logged saying there are more, without the names). Tools that change things (running commands, writing files) are best turned off in favor of the core's tools; if you can't turn one off and want to let it run, ask the owner first with [`driver.approve`](#driverapprove).
 
 **Response** `{"usage"?, "error"?, "sent"?}`, sent after all of this call's `driver.delta`:
 
@@ -400,9 +401,52 @@ List the names of provider-run tools in this driver's `hosted` in the manifest (
 
 A response with extra fields or in a wrong format counts as `unclassified` (`the driver sent a bad answer: …`); so does a JSON-RPC error (`the driver refused the call: …`).
 
-**Time limits**: the same as for built-in drivers: from sending to the first delta, between two deltas, and from the last delta to the response, none may exceed the idle limit (180 seconds, scaled up by reasoning effort; when the manifest's `[[driver]]` sets a longer `quiet_secs`, that value is used), and the whole call may not exceed ten times the idle limit. A call past the limit counts as `retryable` (`the driver went quiet`). When the extension crashes or the connection drops, a waiting call counts as `retryable` (`the driver went away`). While you are backing off and waiting to be launched again, a call counts as `retryable`, with the wait taken from `retry_in`; an extension that is switched off, not approved or stopped isn't called, so the provider counts as unusable, and a pool moves on to its next member.
+**Time limits**: the same as for built-in drivers: from sending to the first delta, between two deltas, and from the last delta to the response, none may exceed the idle limit (180 seconds, scaled up by reasoning effort; when the manifest's `[[driver]]` sets a longer `quiet_secs`, that value is used), and the whole call may not exceed ten times the idle limit. A call past the limit counts as `retryable` (`the driver went quiet`). Time spent waiting for the owner to answer a `driver.approve` doesn't count toward either limit. When the extension crashes or the connection drops, a waiting call counts as `retryable` (`the driver went away`). While you are backing off and waiting to be launched again, a call counts as `retryable`, with the wait taken from `retry_in`; an extension that is switched off, not approved or stopped isn't called, so the provider counts as unusable, and a pool moves on to its next member.
 
 **`driver.cancel`** (core → extension, notification): `{"call"}`. The person interrupted, the turn was cancelled, the call timed out, or a delta was wrong, so the core no longer waits: don't send any more requests for this call; later deltas and the response are ignored.
+
+## `driver.approve`
+
+In the middle of a `driver.call`, asks the core to show Miyu's own confirmation to the owner (extension → core, with an `id`, expects a response). It is for when the program behind your driver (for example an agent connected over ACP) wants to run a command or change files outside Miyu's sandbox and needs the owner's go-ahead. The confirmation is the same kind as a tool call's: heads show it as usual, the owner answers it as usual with [`session.answer`](sessions.md#sessionanswer), and the only choices are "allow once" and "deny".
+
+**Who can call it**: needs `model.driver`; only during the `driver.call` in progress on this connection, with that call's `call`.
+
+**Params** `{"call", "index", "access", "title", "command"?, "text"?, "options"}`:
+
+| Field | Meaning |
+|---|---|
+| `call` | The id of the `driver.call` in progress |
+| `index` | Which block the confirmation is shown on: the number of a provider-side tool block (`hosted_tool`) this call has already started. Start the block with `driver.delta` first, then call this method |
+| `access` | What kind of thing is about to happen: `read`, `write`, `execute` or `network` |
+| `title` | The title people see, at most 200 characters; the rest is cut |
+| `command` | The command to run, verbatim (at most 4000 characters). With it, the confirmation is shown like running a command: the title on top, the command below |
+| `text` | Without a command, the description verbatim, such as the paths of the files to change (at most 4000 characters). The confirmation is shown like an extension asking |
+| `options` | The options on your side, 1 to 16 of them, each `{"id", "name"?, "kind"}`, where `kind` is one of `allow_once`, `allow_always`, `reject_once` and `reject_always` (the same as ACP's option kinds) |
+
+**Response**:
+
+| Field | Meaning |
+|---|---|
+| `decision` | `once` (the owner allowed it once), `deny` (denied), or `cancelled` (this call is gone: it was answered, interrupted, timed out, or the session stopped) |
+| `option` | The `id` of your option picked by `decision`: `allow_once` when allowed, or `allow_always` if there is none; `reject_once` when denied, or `reject_always` if there is none; absent when nothing matches. Miyu doesn't remember "always allow" for your side |
+| `reason` | The reason the owner wrote when denying, only when they wrote one |
+| `auto` | Why Miyu denied without asking the owner: `unattended` (no one in the session can confirm: venue sessions such as group chats and private chats, or a session not opened by a head that takes input), `read_only` (the session is read-only and the request is `write` or `execute`), `expired` (no one answered by the confirmation deadline, see `session.answer`), or `aside` (asked during a helper request such as compaction or titling) |
+
+```json
+→ {"jsonrpc":"2.0","id":"p1","method":"driver.approve","params":{"call":"d12","index":0,"access":"execute","title":"List files","command":"ls -la","options":[{"id":"allow","kind":"allow_once"},{"id":"reject","kind":"reject_once"}]}}
+← {"jsonrpc":"2.0","id":"p1","result":{"decision":"once","option":"allow"}}
+```
+
+**Errors**
+
+| `data.reason` | When |
+|---|---|
+| `unknown_call` | `call` isn't a call in progress on this connection: it was answered already, the core stopped waiting, or it belongs to another connection |
+| `bad_params` (`-32602`) | The params are malformed, or `index` isn't a provider-side tool block this call has started; `data.why` says why, in English |
+
+- Before answering, the session records a `tool.approval_requested` (`by` is your package, `driver` says which block it is shown on, and `call_id` is a number the core assigns that matches no tool call; see [events](events.md)); an answer from the owner, no one answering in time, and the call going away each record a `tool.approval_decided`.
+- While waiting for the owner, this call's time limits stop; they go on once it is answered.
+- Older cores don't have this method and answer "method not found" (`-32601`): treat that as a denial.
 
 ## `driver.encode`
 

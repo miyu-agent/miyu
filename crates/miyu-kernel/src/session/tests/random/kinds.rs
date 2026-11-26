@@ -206,6 +206,8 @@ impl InputKind {
             Input::Recalled { .. } => InputKind::Recalled,
             Input::Woke { .. } => InputKind::Woke,
             Input::ApprovalExpired { .. } => InputKind::Expired,
+            // 随机测试不造驱动问的确认（施工 ACP-8，`tests/driver_ask.rs` 测）：照到时算。
+            Input::DriverAsked(_) => InputKind::Expired,
             Input::JobEnded { .. } | Input::JobLines { .. } => InputKind::JobEnded,
             Input::Watched { .. } => InputKind::Watched,
             Input::WatchEnded { .. } => InputKind::WatchEnded,

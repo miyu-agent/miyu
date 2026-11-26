@@ -11,12 +11,13 @@
 use serde_json::Value;
 
 use miyu_kernel::block::{HostedTool, Outcome};
+use miyu_kernel::event::{ApprovalRequested, DriverBlock};
 use miyu_kernel::id::CallId;
 use miyu_kernel::origin::By;
 use miyu_kernel::time::Timestamp;
 
 use super::{Projector, output_of};
-use crate::entry::{Body, Entry, EntryId, Tool, ToolState};
+use crate::entry::{Approval, Body, Entry, EntryId, Tool, ToolState};
 use crate::title;
 
 impl Projector {
@@ -73,7 +74,36 @@ impl Projector {
             hidden: false,
             at,
         });
-        self.join_group(&group, id);
+        self.join_group(&group, id.clone());
+        // 驱动在这一块上问过的（读回日志时请求排在回复前面，施工 ACP-8）：写上。
+        if let Some((call, approval)) = self.held.remove(&id) {
+            self.touch(&id, |entry| {
+                if let Body::Tool(tool) = &mut entry.body {
+                    tool.call = Some(call);
+                    tool.approval = Some(approval);
+                }
+            });
+        }
+    }
+
+    /// 驱动在一次请求进行中问人（施工 ACP-8）：画在第 `seen` 次请求的第 `index` 块上，那一步的调用编号先写成这一问的（头照它回答），
+    /// 回复落了盘换成供应商侧工具自己的。还没开条目的（读回日志时）记在手里，开了再写。
+    pub(super) fn driver_asked(&mut self, requested: &ApprovalRequested, block: DriverBlock) {
+        let index = usize::try_from(block.index).unwrap_or(usize::MAX);
+        let id = EntryId::block(block.seen, index);
+        let call = requested.call_id;
+        self.calls.insert(call, id.clone());
+        let approval = approval_of(requested);
+        if !self.at.contains_key(&id) {
+            self.held.insert(id, (call, approval));
+            return;
+        }
+        self.touch(&id, |entry| {
+            if let Body::Tool(tool) = &mut entry.body {
+                tool.call.get_or_insert(call);
+                tool.approval = Some(approval);
+            }
+        });
     }
 
     /// 参数收全了（这一块的 `end`、下一块开始）：还在写参数的换成在跑，标题照参数写。结果先到了的不动。
@@ -133,6 +163,20 @@ impl Projector {
             *tool != before
         });
         self.refresh_groups_of(vec![id.clone()]);
+    }
+}
+
+/// 一次确认请求在那一步上记成的样子：还没定。
+pub(super) fn approval_of(requested: &ApprovalRequested) -> Approval {
+    Approval {
+        access: requested.access.clone(),
+        rule: requested.rule.clone(),
+        detail: requested.detail.clone(),
+        decision: None,
+        reason: None,
+        by: None,
+        nested: requested.nested,
+        expires_at: requested.expires_at,
     }
 }
 

@@ -35,6 +35,7 @@ pub(crate) fn input(input: &Input) -> &'static str {
         Input::AsideEnded { .. } => "aside_ended",
         Input::Described { .. } => "described",
         Input::Nested(_) => "nested",
+        Input::DriverAsked(_) => "driver_asked",
     }
 }
 
@@ -55,6 +56,7 @@ pub(crate) fn action(action: &Action) -> &'static str {
         Action::CancelTool { .. } => "cancel_tool",
         Action::GuardTool { .. } => "guard_tool",
         Action::AnswerTool { .. } => "answer_tool",
+        Action::AnswerDriver { .. } => "answer_driver",
         Action::RunTool { .. } => "run_tool",
         Action::RunShell { .. } => "run_shell",
         Action::HaltShell { .. } => "halt_shell",

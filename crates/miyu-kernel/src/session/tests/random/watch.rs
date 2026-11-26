@@ -381,8 +381,8 @@ impl Watch {
             Action::RunTool { call_id, .. } => self.run(call_id),
             Action::RunShell { .. } | Action::HaltShell { .. } => panic!("种子 {seed}：没打过命令"),
             stop @ Action::StopJobs { .. } => self.stop_checked(&stop),
-            // 读回日志照撤销的规矩查（`watch/undo.rs`）；取回原文在这一条输入送完以后交回。
-            Action::ReadBack { .. } => {}
+            // 读回日志照撤销的规矩查（`watch/undo.rs`）；取回原文在这一条输入送完以后交回；不造驱动问的确认（施工 ACP-8）。
+            Action::ReadBack { .. } | Action::AnswerDriver { .. } => {}
             Action::Recall { blobs } => self.compactions.rebuild.recalling = Some(blobs),
             Action::AnswerTool { call_id, answers } => self.handed(call_id, &answers),
             Action::StopTool { call_id } => self.stop_asked(call_id),

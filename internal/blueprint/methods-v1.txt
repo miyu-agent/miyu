@@ -25,6 +25,7 @@ content.changed
 content.list
 content.read
 core.stop
+driver.approve
 driver.call
 driver.cancel
 driver.check

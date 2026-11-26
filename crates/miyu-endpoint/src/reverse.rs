@@ -4,7 +4,8 @@
 //! 太长、核心没读的，等它的当场了结成一条错误（[`Peer::too_long`]，施工 YC-5补）。
 //!
 //! 扩展提供的模型驱动（施工 MD-2，设计 66 第五节）：`driver.call` 的参数原样拼进那一行（[`Peer::call_raw`]，1 MB 的请求不多解析
-//! 一遍）；扩展发来的 `driver.delta` 照 `call` 交给登记了这一次的那一头（[`Peer::stream`]、[`Peer::delta`]），对不上的丢掉。
+//! 一遍）；扩展发来的 `driver.delta` 照 `call` 交给登记了这一次的那一头（[`Peer::stream`]、[`Peer::delta`]），对不上的丢掉；
+//! `driver.approve`（施工 ACP-8）同样照 `call` 交过去（[`Peer::approve`]）。
 //! 读的那一头先交增量、再交回应，等回应的拿到回应时增量已经都交了。
 
 use std::collections::HashMap;
@@ -12,6 +13,8 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use serde_json::{Value, json};
 use tokio::sync::{mpsc, oneshot};
+
+use miyu_session::DriverAsk;
 
 use crate::wire::Response;
 
@@ -38,8 +41,14 @@ struct State {
     last: u64,
     /// 编号到等它的。
     waiting: HashMap<String, oneshot::Sender<Result<Value, Value>>>,
-    /// 扩展驱动的调用编号到交增量的那一头（施工 MD-2）：连接断了一起放掉。
-    streams: HashMap<String, mpsc::UnboundedSender<Value>>,
+    /// 扩展驱动的调用编号到交增量、交要人确认的那两头（施工 MD-2、ACP-8）：连接断了一起放掉。
+    streams: HashMap<
+        String,
+        (
+            mpsc::UnboundedSender<Value>,
+            mpsc::UnboundedSender<DriverAsk>,
+        ),
+    >,
     /// 往连接写的一头；连接断了放掉，是 `None`（施工 O-2 再补：提供者表里存着这一头，留着它，写的那一头就一直不结束，
     /// 核心察觉不到扩展退出，崩了不重新拉起）。
     out: Option<mpsc::Sender<String>>,
@@ -164,13 +173,34 @@ impl Peer {
         state.out = None;
     }
 
-    /// 扩展驱动的调用 `call` 的增量交给 `deltas`（施工 MD-2）：登记到不要了为止（[`Peer::unstream`]）。
-    pub(crate) fn stream(&self, call: &str, deltas: mpsc::UnboundedSender<Value>) {
+    /// 扩展驱动的调用 `call` 的增量交给 `deltas`、要人确认的交给 `asks`（施工 MD-2、ACP-8）：登记到不要了为止（[`Peer::unstream`]）。
+    pub(crate) fn stream(
+        &self,
+        call: &str,
+        listen: (
+            mpsc::UnboundedSender<Value>,
+            mpsc::UnboundedSender<DriverAsk>,
+        ),
+    ) {
         self.state
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .streams
-            .insert(call.to_string(), deltas);
+            .insert(call.to_string(), listen);
+    }
+
+    /// 收到一条 `driver.approve`（施工 ACP-8）：照 `call` 交给登记了这一次的那一头，交回等答的那一头；不是这个连接上在进行的
+    /// 那一次的没有。
+    pub(crate) fn approve(
+        &self,
+        call: &str,
+        params: Value,
+    ) -> Option<oneshot::Receiver<Result<Value, String>>> {
+        let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        let (_, asks) = state.streams.get(call)?;
+        let (reply, answered) = oneshot::channel();
+        asks.send(DriverAsk { params, reply }).ok()?;
+        Some(answered)
     }
 
     /// 这一刻有几次扩展驱动的调用没答完（施工 MD-3）：`driver.check` 照它定能不能重启扩展。
@@ -206,7 +236,7 @@ impl Peer {
             .map(Value::take)
             .unwrap_or(Value::Null);
         let state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some(stream) = state.streams.get(&call) {
+        if let Some((stream, _)) = state.streams.get(&call) {
             drop(stream.send(deltas));
         }
     }

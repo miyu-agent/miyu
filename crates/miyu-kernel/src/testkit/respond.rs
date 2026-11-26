@@ -116,6 +116,8 @@ impl Stage {
             Action::AnswerTool { call_id, answers } => {
                 vec![self.done(call_id, false, &answered(&answers))]
             }
+            // 驱动问的确认（施工 ACP-8）：替身没有驱动，回了也没人收。
+            Action::AnswerDriver { .. } => Vec::new(),
             // 叫它停（施工 4-9 再补一）：替身记下来，停住的调用照旧停着，等测试定它怎么交回。
             Action::StopTool { call_id } => {
                 self.stops.push(call_id);

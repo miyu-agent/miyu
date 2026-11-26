@@ -281,7 +281,7 @@
 
 ## `session.answer`
 
-AI 做需要确认的事情时会停下来询问（推送 `tool.approval_requested`）；AI 用 `ask_user` 提问时也会等待（推送 `question.asked`）。这个方法用来回答这两种情况。如果确认请求带了 `expires_at`，到了那一刻还没有人回答，就会自动拒绝（由配置 `permission.confirm.timeout` 决定，出厂值是 5 分钟）；提问会一直等待。
+AI 做需要确认的事情时会停下来询问（推送 `tool.approval_requested`）；AI 用 `ask_user` 提问时也会等待（推送 `question.asked`）。这个方法用来回答这两种情况。如果确认请求带了 `expires_at`，到了那一刻还没有人回答，就会自动拒绝（由配置 `permission.confirm.timeout` 决定，出厂值是 5 分钟）；提问会一直等待。扩展驱动也可以在一次模型调用进行中请求确认（[`driver.approve`](extensions.md#driverapprove)），这种请求带 `driver`，回答的方法相同，只能选 `once` 或者 `deny`；拒绝的理由交给那个驱动（附件记在日志里，不交给它）。
 
 **参数**
 

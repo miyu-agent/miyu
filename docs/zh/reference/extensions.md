@@ -17,6 +17,7 @@
 | [`tool.guard`、`guard.cancel`](#toolguardguardcancel) | 核心 → 扩展 | 工具调用执行之前询问它：放行、拒绝，还是询问人；不再等待它的回答 |
 | [`tool.after`](#toolafter) | 核心 → 扩展 | 工具调用的结果写入磁盘以后通知它（只读，不等待回答） |
 | [`driver.call`、`driver.delta`、`driver.cancel`](#drivercalldriverdeltadrivercancel) | 两个方向 | 它提供的模型驱动：接收一次模型调用、返回增量；不再等待 |
+| [`driver.approve`](#driverapprove) | 扩展 → 核心 | 一次调用进行中，请核心弹出确认框问主人 |
 | [`driver.encode`](#driverencode) | 核心 → 扩展 | 编码一次但不发送：检查编码是否稳定 |
 | [`driver.models`](#drivermodels) | 核心 → 扩展 | 列出它能用的模型（可选） |
 | [`system.append`](#systemappend) | 扩展 → 核心 | 往系统提示词的末尾放一段内容 |
@@ -390,7 +391,7 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 只有在一块开始以后才能有文字，一块收全以后不能再写；增量不对时，这一次调用按照 `unclassified` 结束（`the driver sent a bad delta: …`），之后到达的增量都会丢掉。`call` 无法识别的增量直接丢掉，不报错。
 
-供应商侧工具的名字要写进清单里这个驱动的 `hosted`（[清单](../dev/manifest.md#driver)）：这样主人在安装包时就能根据它知道供应商会自己运行什么。没有写进去的名字仍然接受、照常显示，核心会在运行日志里记录一行警告（同一个驱动的同一个名字，核心每次运行只记录一次；每个驱动最多列出 64 个名字，超出的名字、长度超过 64 个字节的名字，只再记录一行「还有更多」，不带名字）。会修改东西的工具（运行命令、写入文件）不要报告成这一种，要把它关掉，改为使用核心的工具。
+供应商侧工具的名字要写进清单里这个驱动的 `hosted`（[清单](../dev/manifest.md#driver)）：这样主人在安装包时就能根据它知道供应商会自己运行什么。没有写进去的名字仍然接受、照常显示，核心会在运行日志里记录一行警告（同一个驱动的同一个名字，核心每次运行只记录一次；每个驱动最多列出 64 个名字，超出的名字、长度超过 64 个字节的名字，只再记录一行「还有更多」，不带名字）。会修改东西的工具（运行命令、写入文件）最好关掉，改为使用核心的工具；关不掉、又要让它运行的，运行之前先用 [`driver.approve`](#driverapprove) 问主人。
 
 **回应** `{"usage"?, "error"?, "sent"?}`，在这一次调用的所有 `driver.delta` 之后发送：
 
@@ -400,9 +401,52 @@ access = ["network"]         # 访问类别，可以不写；两样至少一样
 
 多了字段、写法不对的回应，当作 `unclassified`（`the driver sent a bad answer: …`）；返回 JSON-RPC 错误也一样（`the driver refused the call: …`）。
 
-**时限**：和内置驱动相同：从发送出去到第一条增量、两条增量之间、从最后一条增量到回应，都不能超过空闲时限（180 秒，按照思考强度放大；清单的 `[[driver]]` 写了更长的 `quiet_secs` 时，按照它计算），整次调用不能超过空闲时限的十倍；超时的调用当作 `retryable`（`the driver went quiet`）。扩展崩溃、连接断开时，正在等待的调用当作 `retryable`（`the driver went away`）。你正在退避、等待重新拉起时，这一次调用当作 `retryable`，等待多久按照 `retry_in` 计算；处于关闭状态、没有批准、已经停止的扩展不会被调用，这一家供应商当作不可用，池里换下一个。
+**时限**：和内置驱动相同：从发送出去到第一条增量、两条增量之间、从最后一条增量到回应，都不能超过空闲时限（180 秒，按照思考强度放大；清单的 `[[driver]]` 写了更长的 `quiet_secs` 时，按照它计算），整次调用不能超过空闲时限的十倍；超时的调用当作 `retryable`（`the driver went quiet`）。用 `driver.approve` 等主人回答的那段时间不算进这两种时限。扩展崩溃、连接断开时，正在等待的调用当作 `retryable`（`the driver went away`）。你正在退避、等待重新拉起时，这一次调用当作 `retryable`，等待多久按照 `retry_in` 计算；处于关闭状态、没有批准、已经停止的扩展不会被调用，这一家供应商当作不可用，池里换下一个。
 
 **`driver.cancel`**（核心 → 扩展，通知）：`{"call"}`。人打断了、回合被取消了、超时了、或者增量不对，核心不再等待：不要再为这一次调用发送请求，之后的增量和回应都会被忽略。
+
+## `driver.approve`
+
+一次 `driver.call` 进行中，请核心弹出 Miyu 自己的确认框问主人（扩展 → 核心，带 `id`，需要回应）。用于你的驱动背后的程序（例如通过 ACP 接入的 agent）要在 Miyu 的沙盒之外运行命令、修改文件，需要主人点头的情况。确认框和工具调用的确认是同一种：头照常显示，主人照常用 [`session.answer`](sessions.md#sessionanswer) 回答，只能选「允许这一次」或者「拒绝」。
+
+**谁能调用**：需要 `model.driver`；只能在这个连接上正在进行的那一次 `driver.call` 里调用，带上那一次的 `call`。
+
+**参数** `{"call", "index", "access", "title", "command"?, "text"?, "options"}`：
+
+| 格 | 说明 |
+|---|---|
+| `call` | 正在进行的那一次 `driver.call` 的编号 |
+| `index` | 确认显示在哪一块上：这一次调用里已经开始了的一块供应商侧工具（`hosted_tool`）的编号。先用 `driver.delta` 开这一块，再调用这个方法 |
+| `access` | 要做的事属于哪一类：`read`、`write`、`execute`、`network` |
+| `title` | 给人看的标题，最多 200 个字，超出的部分截掉 |
+| `command` | 要运行的命令原文（最多 4000 个字）。写了它，确认框按照运行命令的样子显示：标题在上，命令在下 |
+| `text` | 没有命令时的说明原文，例如要修改的文件路径（最多 4000 个字）。确认框按照扩展询问的样子显示 |
+| `options` | 你那一边的选项，1 到 16 项，每项 `{"id", "name"?, "kind"}`，`kind` 是 `allow_once`、`allow_always`、`reject_once`、`reject_always` 之一（和 ACP 的选项种类相同） |
+
+**回应**：
+
+| 格 | 说明 |
+|---|---|
+| `decision` | `once`（主人允许这一次）、`deny`（拒绝）、`cancelled`（这一次调用已经没有了：回答了、被打断、超时、会话停了） |
+| `option` | 照 `decision` 挑出的你那一边的选项的 `id`：允许时选 `allow_once`，没有的选 `allow_always`；拒绝时选 `reject_once`，没有的选 `reject_always`；没有对得上的不写。Miyu 不替你那一边记住「总是允许」 |
+| `reason` | 主人拒绝时写的理由，只在主人写了的时候有 |
+| `auto` | Miyu 没有询问主人就拒绝时写原因：`unattended`（会话没有人能确认：群聊、私聊这类场所会话，或者不是由能输入的头开的会话）、`read_only`（会话处于只读状态，要的是 `write` 或 `execute`）、`expired`（到了确认的截止时刻没人回答，见 `session.answer`）、`aside`（压缩、起标题这类辅助请求里询问的） |
+
+```json
+→ {"jsonrpc":"2.0","id":"p1","method":"driver.approve","params":{"call":"d12","index":0,"access":"execute","title":"列出文件","command":"ls -la","options":[{"id":"allow","kind":"allow_once"},{"id":"reject","kind":"reject_once"}]}}
+← {"jsonrpc":"2.0","id":"p1","result":{"decision":"once","option":"allow"}}
+```
+
+**出错**
+
+| `data.reason` | 什么时候 |
+|---|---|
+| `unknown_call` | `call` 不是这个连接上正在进行的一次调用：已经回答了、核心已经不再等待了，或者是其他连接的 |
+| `bad_params`（`-32602`） | 参数写法不对，或者 `index` 不是这一次调用里已经开始了的供应商侧工具；`data.why` 是一句英文的原因 |
+
+- 回答以前，会话里记一条 `tool.approval_requested`（`by` 是你的包，`driver` 写着显示在哪一块上，`call_id` 是核心另外分配的编号，不对应任何一次工具调用，见 [事件](events.md)）；主人回答、到时没人回答、调用没有了，都会记一条 `tool.approval_decided`。
+- 等待主人回答时，这一次调用的时限停止计算，回答以后接着计算。
+- 旧版本的核心没有这个方法，会返回「没有这个方法」（`-32601`）：这时按照「拒绝」处理。
 
 ## `driver.encode`
 

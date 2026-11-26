@@ -20,6 +20,7 @@ mod compaction;
 mod configure;
 mod dispatch;
 mod dream;
+mod driver_ask;
 mod fork;
 mod goal;
 mod grants;
@@ -75,6 +76,7 @@ mod workspace;
 
 pub use action::{Action, Outcome, Reason, StopReason};
 pub use configure::Replaced;
+pub use driver_ask::{AutoDeny, DriverAnswer, DriverAsked};
 pub use fork::{BaseFeed, ForkFeed, ForkPlan};
 pub use input::{
     Answer, Appended, Command, ExtEvent, GoalChange, Injection, Input, Limits, Queued, Received,
@@ -192,6 +194,8 @@ pub struct Session {
     /// 收成了槽（施工 LW-10 下，`shelve.rs`）时算好的「有没有能压的」：收着时答 [`Session::compactable`]。没收着的、收着又送了要看
     /// 历史的输入（读不回来的那段时间）的没有。
     rested: Option<bool>,
+    /// 处理这一条输入时了结的驱动的确认要回的话（施工 ACP-8，`driver_ask.rs`）：[`Session::handle`] 收尾时一起交出去。
+    answering: Vec<(Option<Seq>, Action)>,
 }
 
 impl Session {
@@ -248,6 +252,7 @@ impl Session {
         let mut actions = self.react(input);
         self.splice_nested(&mut actions);
         actions.extend(self.dispatch_nested());
+        actions.extend(self.answers_now());
         actions
     }
 
@@ -262,6 +267,7 @@ impl Session {
         let pushed: Vec<Event> = self.unstored.drain(..split).collect();
         self.stored = pushed.last().map(|event| event.seq);
         let mut actions = vec![Action::Push(pushed)];
+        self.answers_stored(upto);
         actions.extend(self.answer_nested(upto));
         actions.extend(self.todos_changed(at));
         actions.extend(self.states_changed(at));

@@ -60,6 +60,7 @@ impl Session {
             told_states: Default::default(),
             nested: super::nested::Nested::default(),
             rested: None,
+            answering: Vec::new(),
         }
     }
 }

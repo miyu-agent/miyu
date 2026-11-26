@@ -254,6 +254,12 @@ async fn read_all<R: AsyncRead + Unpin>(
             )));
             continue;
         }
+        // 扩展驱动进行中要人确认（施工 ACP-8，`models/approve.rs`）：在后台等人，不挡这个连接上别的请求。
+        if peer.is_some() && request.method == "driver.approve" {
+            let approving = (reverse.clone(), request, locale, out.clone());
+            background.spawn(crate::models::approve::later(approving));
+            continue;
+        }
         let id = || Value::String(request.id.as_str().to_string());
         // 头叫核心停下（施工 DT-4 下）：回应写出去以后才叫，头先收到 `{}`。
         let mut stopping = false;

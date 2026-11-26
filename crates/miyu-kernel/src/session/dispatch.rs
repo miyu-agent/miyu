@@ -34,6 +34,7 @@ impl Session {
             }
             ended @ Input::ModelEnded { .. } => apart::sync(|| self.model_ended_input(ended)),
             Input::Woke { at, seen } => apart::sync(|| self.woke(at, seen)),
+            Input::DriverAsked(asked) => apart::sync(|| self.driver_asked(*asked)),
             expired @ Input::ApprovalExpired { .. } => {
                 apart::sync(|| self.approval_expired(expired))
             }
