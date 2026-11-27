@@ -14,6 +14,7 @@
 //! 第三方许可证清单 `THIRD-PARTY-LICENSES.txt` 是最新的（施工 AU-2，`notices.rs`）；`cargo xtask notices` 重新生成它。
 //! 里面的 cargo 一个接一个跑，不并行。
 
+mod alone;
 mod anchors;
 mod dev_home;
 mod dist;
@@ -199,6 +200,7 @@ fn check() -> ExitCode {
                 true,
             )
         },
+        alone::check(&cargo, &root),
         // 注释里的链接断了、写法坏了，生成文档时才看得出来，所以警告也当错。
         // 私有的也要生成：只生成公开的，私有代码注释里的断链查不出来。
         cargo_step(

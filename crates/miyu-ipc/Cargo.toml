@@ -23,7 +23,7 @@ miyu-store = { path = "../miyu-store" }
 # 数据根的指纹：路径的 SHA-256。
 sha2 = { version = "0.11", default-features = false }
 # 套接字是异步的：核心接连接、头连过去都不堵住别的任务。等核心说好了、等拉起锁，有时限（施工 3-9 上）。
-tokio = { version = "1", features = ["io-util", "net", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
 # 运行日志的门面（施工 3-7 上）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 
