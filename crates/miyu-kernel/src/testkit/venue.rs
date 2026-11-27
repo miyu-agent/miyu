@@ -6,7 +6,7 @@ use super::stage::text;
 use crate::event::{Body, ContextInjected, VenueMessage};
 use crate::id::{CommandId, Seq};
 use crate::origin::By;
-use crate::session::Command;
+use crate::session::{Appended, Command, ExtEvent};
 
 impl Stage {
     /// 旁听记下一句（不开回合），交回它的序号。
@@ -45,6 +45,23 @@ impl Stage {
             .find(|event| matches!(event.body, Body::MessageUser(_)))
             .map(|event| event.seq)
             .unwrap_or_else(|| panic!("旁听的那一句没记成 message.user"))
+    }
+
+    /// 桥用 `events.append` 记一条扩展自己的事件（种类 `kind`，不渲染、不开回合），交回它的序号（施工 LW-36）。
+    ///
+    /// # Panics
+    ///
+    /// `kind` 不是 `ext.` 开头、不合种类的写法；内核没记下。
+    pub fn bridge(&mut self, kind: &str) -> Seq {
+        let event = ExtEvent::new(kind, serde_json::json!({"to": [1]}))
+            .unwrap_or_else(|| panic!("{kind} 不是扩展的种类"));
+        self.command(Command::Append {
+            event: Appended::Ext(event),
+        });
+        self.log()
+            .last()
+            .map(|event| event.seq)
+            .unwrap_or_else(|| panic!("桥记的那一条没记下"))
     }
 
     /// 照记下的 `to` 开一轮（正在跑的并进去），带接在每次请求最末尾的 `tail`。

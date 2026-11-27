@@ -70,7 +70,7 @@ impl Session {
         if let Some(waker) = self.elsewhere(&by) {
             return self.elsewhere_says(id, by, at, (blocks, command), waker);
         }
-        let ambient = venue.as_ref().is_some_and(|venue| venue.ambient);
+        let ambient = self.overheard(&by, venue.as_ref());
         let body = Body::MessageUser(Box::new(MessageUser {
             blocks,
             venue,
@@ -107,6 +107,13 @@ impl Session {
         let mut actions = vec![Action::Append(events)];
         actions.extend(stops);
         actions
+    }
+
+    /// 场所里旁听的一句（施工 O-13 上）：带 `venue.ambient`，发的又不是别处（子代理、别的 harness、别的会话、定时）：别处来的
+    /// 照回报的规矩到，不算旁听。[`Self::send_as`] 照它只记下；收成了槽的会话照它判这一句不看历史、不用先放回（施工 LW-36，
+    /// `shelve.rs` 的 `needs_history`），两处是同一个判法。
+    pub(super) fn overheard(&self, by: &By, venue: Option<&VenueMessage>) -> bool {
+        venue.is_some_and(|venue| venue.ambient) && self.elsewhere(by).is_none()
     }
 
     /// `events.append`（施工 O-13 上）：记一条不带回合编号的事件，任何时候都收，不开回合、不打断。

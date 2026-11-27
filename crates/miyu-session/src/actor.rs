@@ -139,8 +139,8 @@ pub(crate) struct Actor {
     quiet: Instant,
     /// 封存了的退得下了的那面旗，和 `Handle` 共用（施工 V-51，`handle/retire.rs`）：每办完一封照账立起、放下（`life.rs`）。
     bell: Arc<crate::handle::Bell>,
-    /// 歇着满这一刻收成槽（施工 LW-10 下，`shelf.rs`）：没记的不等。
-    shelf_due: Option<tokio::time::Instant>,
+    /// 什么时候收成槽（施工 LW-10 下、LW-36，`shelf.rs`）：照最后一次看历史的那一批算。
+    rest: shelf::Rest,
     /// 收成槽的历史上一次从日志读不回来，为什么（`shelf.rs`）：读回来了就没有。
     unread: Option<String>,
 }
@@ -223,7 +223,7 @@ impl Actor {
             persona: None,
             goal_run: goal::GoalRun::default(),
             quiet: Instant::now(),
-            shelf_due: None,
+            rest: shelf::Rest::new(),
             unread: None,
         })
     }
@@ -256,7 +256,7 @@ impl Actor {
             }
             // 后台命令还在跑、续轮先不开的（施工 X-7 再补，`goal.rs`）：等满保底时长醒一次，回到上面照常开。
             let wake = self.goal_run.wake;
-            let due = self.shelf_due;
+            let due = self.rest.due;
             let input = tokio::select! {
                 biased;
                 Some(back) = self.back.recv() => match self.back(back) {
@@ -282,7 +282,7 @@ impl Actor {
                         false => continue,
                     },
                     // 头要上下文的明细（`session.context`）：收成了槽的先放回来再要（`shelf.rs`）。
-                    Some(Mail::Context(reply)) => match self.unshelve().await {
+                    Some(Mail::Context(reply)) => match self.look().await {
                         Ok(()) => {
                             self.context(reply);
                             self.rest_later();

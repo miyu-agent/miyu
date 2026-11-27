@@ -10,13 +10,17 @@
 //! 派出去的任务、待办、包的状态、重读的原文、编号这几样小账照留：它们不随上下文涨（重读的原文不在日志里，读不回）。分叉出来的
 //! 会话的底子在父会话的日志里：执行器读回时连底子一起读（`miyu-session` 的 `Store::events_from`），所以也收。
 //!
-//! 收着的时候又追加了的（读回失败、执行器照旧送了输入）：任务、待办照常记，整条另放一边（`pending`）；读不回的这段时间投影看到
-//! 的是空的历史，执行器不发请求（`session/actor.md`「闲下来收成槽」）。读回来先照槽放回，再把它们照先后接上，和一直没收一样。
+//! 收着的时候又追加了的：任务、待办照常记，整条另放一边（`pending`），放回时先照槽放回，再把它们照先后接上，和一直没收一样。
+//! 群里旁听的话、`events.append` 记的收着也直接送（施工 LW-36，`session/shelve.rs` 的 `needs_history`），一直有人说话的群
+//! 另放的会一直长：所以落了盘的、只是接在后面的那几种（`history.rs` 的 `follows`）从另放的最前面起并进槽里，只记序号
+//! （[`History::landed`]）。要等落盘：放回时从日志读它们，没落盘的日志里还没有，读回就少一条。压缩、撤销、恢复、撤回、
+//! `turn.started` 不并，它们的输入本来就先放回（读不回、照旧送了的才会留在这里）；夹着它们的，它们和后面的都照旧另放，先后不乱。
+//! 读不回的这段时间投影看到的是空的历史，执行器不发请求（`session/actor.md`「闲下来收成槽」）。
 
 use crate::event::Event;
 use crate::id::Seq;
 
-use super::{History, forget_texts};
+use super::{History, follows, forget_texts};
 
 /// 收起来的有效历史：各是哪几条。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,6 +103,26 @@ impl History {
                 None
             }
             None => Some(event),
+        }
+    }
+
+    /// 落到了第 `upto` 条（施工 LW-36，见模块的说明）：收着时另放的那一份，从最前面起、落了盘的、只是接在后面的，并进槽里只记
+    /// 序号，碰到没落盘的、不是接在后面的那一种就停。没收着的什么都不做。
+    pub(crate) fn landed(&mut self, upto: Seq) {
+        let Some(shelf) = &mut self.shelf else {
+            return;
+        };
+        let ready = shelf
+            .pending
+            .iter()
+            .take_while(|event| event.seq <= upto && follows(&event.body))
+            .count();
+        for event in shelf.pending.drain(..ready) {
+            let seq = event.seq.get();
+            match shelf.events.last_mut() {
+                Some(run) if run.from + run.len == seq => run.len += 1,
+                _ => shelf.events.push(Run { from: seq, len: 1 }),
+            }
         }
     }
 

@@ -4,10 +4,13 @@
 //!
 //! actor 闲够 3 分钟才收；替身每跑到没事可做、歇着就收，收得比 actor 勤，走到的收、放只多不少。只为对照不收的
 //! （[`Stage::hold_history`]）：两个替身照同一份剧本跑，比交出来的请求。
+//!
+//! 收着时直接送的（群里旁听的话、`events.append` 记的、空闲时的「落了盘」，施工 LW-36）追加的也在「磁盘」上：放回以后和
+//! 收起来以前的那一份接上这几条比（[`crate::history::History::append`]，同一直没收时内核收它们）。
 
 use super::stage::Stage;
 use crate::event::Event;
-use crate::session::{Input, Session};
+use crate::session::Input;
 
 impl Stage {
     /// 以后不收成槽：收着的先放回来，有效历史从此一直在内存里，同施工 LW-10 以前的样子。对照收成槽的用。
@@ -21,6 +24,11 @@ impl Stage {
         self.shelf.shelvings
     }
 
+    /// 放回来了几次（测试看：收着时来的旁听的话、`events.append` 不放回，施工 LW-36）。
+    pub fn unshelvings(&self) -> usize {
+        self.shelf.unshelvings
+    }
+
     /// 收着呢（测试看：歇着以后收了没有）。
     pub fn shelved(&self) -> bool {
         self.session.shelved().is_some()
@@ -28,7 +36,7 @@ impl Stage {
 
     /// 要送的这一条要看历史的：收着就先放回来（[`Stage::unshelve`]）。
     pub(super) fn put_back(&mut self, input: &Input) {
-        if Session::needs_history(input) {
+        if self.session.needs_history(input) {
             self.unshelve();
         }
     }
@@ -53,7 +61,11 @@ impl Stage {
         self.session
             .unshelve(&read)
             .unwrap_or_else(|e| panic!("放不回来：{e}"));
-        if let Some(before) = self.shelf.before.take() {
+        self.shelf.unshelvings += 1;
+        if let Some((mut before, len)) = self.shelf.before.take() {
+            for event in &self.log[len..] {
+                before.append(event.clone());
+            }
             assert!(
                 *self.session.history() == before,
                 "放回来的有效历史和收起来以前的不一样"
@@ -68,7 +80,7 @@ impl Stage {
         }
         let before = self.session.history().clone();
         if self.session.shelve().is_some() {
-            self.shelf.before = Some(before);
+            self.shelf.before = Some((before, self.log.len()));
             self.shelf.shelvings += 1;
         }
     }
@@ -81,8 +93,10 @@ pub(super) struct Shelving {
     pub(super) shelving: bool,
     /// 收起来了几次。
     pub(super) shelvings: usize,
-    /// 收起来以前的有效历史：放回来以后和它比。
-    pub(super) before: Option<crate::history::History>,
+    /// 放回来了几次。
+    pub(super) unshelvings: usize,
+    /// 收起来以前的有效历史，和那时「磁盘」上有几条：放回来以后，它接上收着时追加的那几条，和放回来的比。
+    pub(super) before: Option<(crate::history::History, usize)>,
 }
 
 impl Default for Shelving {
@@ -90,6 +104,7 @@ impl Default for Shelving {
         Shelving {
             shelving: true,
             shelvings: 0,
+            unshelvings: 0,
             before: None,
         }
     }

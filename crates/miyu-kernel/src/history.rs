@@ -344,6 +344,10 @@ impl History {
 
     /// 收一条记过任务、待办、包的状态的事件：压缩、撤销、恢复、撤回照 [`History::append`] 说的规矩，其余的照先后留着。
     fn apply(&mut self, event: Event) {
+        if follows(&event.body) {
+            self.events.push(event);
+            return;
+        }
         match &event.body {
             Body::ContextCompacted(_) if self.whole => {
                 self.events.push(event);
@@ -372,6 +376,20 @@ impl History {
             _ => self.events.push(event),
         }
     }
+}
+
+/// 收这一种只是照先后接在有效历史后面（[`History::apply`] 的头一句）：不是压缩、撤销、恢复、撤回，也不是清掉放在一边的撤销的
+/// `turn.started`。收着时追加的这几种落了盘就并进槽里（施工 LW-36，`history/shelf.rs` 的 `landed`）：放回时照序号接在后面，
+/// 和一直没收时收它一样。两处用的是这同一个判法。
+fn follows(body: &Body) -> bool {
+    !matches!(
+        body,
+        Body::ContextCompacted(_)
+            | Body::TurnReverted(_)
+            | Body::TurnUnreverted(_)
+            | Body::MessageWithdrawn(_)
+            | Body::TurnStarted(_)
+    )
 }
 
 /// 压缩以后放掉多出来的容量（施工 V-37 上）：一半以上空着、空着的不止 [`SLACK`] 条的，缩到条数的一倍半，往后长先用留着的

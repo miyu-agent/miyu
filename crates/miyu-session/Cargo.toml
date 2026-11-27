@@ -169,6 +169,11 @@ path = "tests/recap_log.rs"
 name = "shelf_log"
 path = "tests/shelf_log.rs"
 
+# 群里旁听的话不读回历史、不推迟收起（施工 LW-36）：装日志订阅者，照暂停的时钟拨。
+[[test]]
+name = "shelf_overheard"
+path = "tests/shelf_overheard.rs"
+
 # 量尺（施工 LW-10 下）：量整个进程的堆。
 [[test]]
 name = "shelved_bytes"

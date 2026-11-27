@@ -3,7 +3,8 @@
 //! 施工 LW-10 以前的样子）。每一次请求（主请求、摘要、回顾、起标题）照内核的写法逐字节一样，日志一字不差，收的那个真收过。
 //!
 //! 剧本走到的：多轮带工具、自动压缩前后、手动压缩、撤销又恢复、撤销不恢复、重做、换模型、别的会话发来的话、崩了再载入、
-//! 重启接着干。
+//! 重启接着干。群里旁听的话、桥用 `events.append` 记的收着时不放回（施工 LW-36）：照群聊的样子走一遍，分叉出来的支线也走一遍，
+//! 请求、日志照样一样，收着时真的没有放回。
 
 use super::compaction::{after_one_turn, compacting};
 use super::peers::PEER;
@@ -95,5 +96,118 @@ fn manual_compaction_redo_and_reload_while_shelved() {
         shelving.shelvings() >= 4,
         "收的那个只收了 {} 次",
         shelving.shelvings()
+    );
+}
+
+/// 群聊的样子（施工 LW-36）：歇着以后群里接连有人说话、桥记事件，照其中一条开一轮（带工具、带最末尾那一句），再接着说话，
+/// 崩了再载入以后照样有人说话，最后人自己说一句。
+fn group(stage: &mut Stage) {
+    after_one_turn(stage);
+    stage.limits(Some(100_000), None);
+    stage.overhear("第一句");
+    stage.bridge("ext.onebot.chat.decided");
+    let asked = stage.overhear("@她 在吗");
+    stage.overhear("第三句");
+    stage.model([Line::says("在。")]);
+    stage.respond(&[asked], None);
+    for k in 0..5 {
+        stage.overhear(&format!("又一句 {k}"));
+        stage.bridge("ext.onebot.chat.queued");
+    }
+    let asked = stage.overhear("@她 读一下 a");
+    stage.model([
+        Line::calls("我看看。", &[("read", r#"{"path":"/a"}"#)]),
+        Line::says("看完了。"),
+    ]);
+    stage.tools([Play::read("/a", "a 的内容")]);
+    stage.respond(&[asked], Some("（群里的提示）"));
+    stage.overhear("最后一句");
+    stage.crash();
+    stage.overhear("崩了以后");
+    stage.bridge("ext.onebot.chat.decided");
+    stage.model([Line::says("还在。")]);
+    stage.say("人说一句");
+}
+
+/// 群聊的样子：收着时来的旁听的话、桥记的事件不放回，请求、日志和一直不收的逐字节一样。
+#[test]
+fn overheard_messages_while_shelved_ask_byte_for_byte_the_same() {
+    let (shelving, holding) = both(group);
+    same(&shelving, &holding);
+    assert!(
+        shelving.shelvings() >= 4,
+        "收的那个只收了 {} 次",
+        shelving.shelvings()
+    );
+}
+
+/// 收着时接连来旁听的话、桥记的事件：一直收着，一次都不放回；照其中一条开一轮才放回一次。
+#[test]
+fn overheard_messages_do_not_put_the_history_back() {
+    let mut stage = compacting(None);
+    after_one_turn(&mut stage);
+    stage.limits(Some(100_000), None);
+    assert!(stage.shelved(), "歇着就收");
+    let (shelvings, unshelvings) = (stage.shelvings(), stage.unshelvings());
+    stage.overhear("第一句");
+    stage.bridge("ext.onebot.chat.decided");
+    let asked = stage.overhear("@她 在吗");
+    stage.bridge("ext.onebot.chat.queued");
+    assert!(stage.shelved(), "一直收着");
+    assert_eq!(
+        stage.unshelvings(),
+        unshelvings,
+        "旁听的话、桥记的事件不放回"
+    );
+    assert_eq!(stage.shelvings(), shelvings, "一直收着，没有放回再收");
+    stage.model([Line::says("在。")]);
+    stage.respond(&[asked], None);
+    assert_eq!(stage.unshelvings(), unshelvings + 1, "开一轮以前放回一次");
+}
+
+/// 分叉出来的支线（施工 LW-36）：底子在父会话的日志里，从哪条读起早于自己的第一条。收着时来旁听的话、桥记的事件，并进槽里
+/// 的照样连底子一起读回，请求、日志和一直不收的支线一样，收着时没有放回。
+#[test]
+fn a_forked_line_overhears_while_shelved_the_same() {
+    let mut parent = compacting(None);
+    parent.model([Line::says("好。")]);
+    parent.say("你好");
+    parent.overhear("父会话里的一句");
+    let fork = |shelving: bool| {
+        let mut line = Stage::forked(
+            policy,
+            environment("~/src/miyu"),
+            at(30),
+            parent.log(),
+            None,
+        );
+        if !shelving {
+            line.hold_history();
+        }
+        line.model([Line::says("支线在。")]);
+        line.say("支线的第一句");
+        let unshelvings = line.unshelvings();
+        line.overhear("支线里的旁听");
+        line.bridge("ext.onebot.chat.decided");
+        let asked = line.overhear("@她 支线");
+        if shelving {
+            assert!(line.shelved(), "支线歇着也收");
+            assert_eq!(line.unshelvings(), unshelvings, "支线旁听不放回");
+        }
+        line.model([Line::says("支线又在。")]);
+        line.respond(&[asked], None);
+        line
+    };
+    let (shelving, holding) = (fork(true), fork(false));
+    same(&shelving, &holding);
+    assert!(
+        shelving.shelvings() >= 2,
+        "支线只收了 {} 次",
+        shelving.shelvings()
+    );
+    let first = shelving.log().first().expect("有日志").seq;
+    assert!(
+        shelving.requests().len() == 2 && first.get() > 1,
+        "支线自己的第一条是第 {first} 条，底子在父会话的日志里"
     );
 }

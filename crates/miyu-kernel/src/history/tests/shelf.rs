@@ -1,5 +1,8 @@
 //! 闲下来收成槽（施工 LW-10 下，`history/shelf.rs`）：放回的和收起来以前一模一样；读回的少一条、换了一条的不放、照旧收着，之后
 //! 读回的齐了照常放回；收着时追加的放回以后和一直没收一样；留着一切的不收；收着时什么都不剩；从日志重建的放回也一样。
+//!
+//! 收着时追加的落了盘并进槽里（施工 LW-36，[`History::landed`]）：并进去的放回时从日志读（读回的少了它就放不回，可见它不在另放
+//! 的那一份里）；没落盘的、夹在不能并的那一种后面的照旧另放（读回的少了它照样放得回）；放回以后都和一直没收一样。
 
 use super::*;
 
@@ -143,4 +146,123 @@ fn put_back_forgets_file_texts_too() {
     rebuilt.shelve().unwrap();
     rebuilt.unshelve(&read_back(&log, from)).unwrap();
     assert_eq!(rebuilt, before);
+}
+
+/// 群里旁听的一句：不带回合编号的 `message.user`，带着 `venue.ambient`。
+fn overheard(seq: u64) -> Event {
+    event(
+        seq,
+        None,
+        GROUP_MEMBER,
+        "message.user",
+        &format!(
+            r#"{{"blocks":[{{"type":"text","text":"第 {seq} 条"}}],"venue":{{"msg":"m{seq}","ambient":true}}}}"#
+        ),
+    )
+}
+
+/// 桥用 `events.append` 记的一条：扩展自己的种类，不渲染。
+fn bridged(seq: u64) -> Event {
+    event(seq, None, ALICE, "ext.onebot.chat.decided", r#"{"to":[1]}"#)
+}
+
+/// 收着时追加 `more`，落到 `upto`：交回一直没收的那一份、收着的那一份、从哪条读起、整份日志。
+fn shelved_with(more: &[Event], upto: u64) -> (History, History, Seq, Vec<Event>) {
+    let log = busy_log();
+    let mut kept = feed(log.clone());
+    let mut shelved = kept.clone();
+    shelved.shelve().unwrap();
+    let from = shelved.shelved(Seq::new(22).unwrap()).unwrap();
+    for event in more.iter().cloned() {
+        kept.append(event.clone());
+        shelved.append(event);
+    }
+    shelved.landed(Seq::new(upto).unwrap());
+    let mut whole = log;
+    whole.extend(more.iter().cloned());
+    (kept, shelved, from, whole)
+}
+
+/// 日志从 `from` 起读回来，去掉序号是 `gone` 的几条。
+fn read_without(log: &[Event], from: Seq, gone: &[u64]) -> Vec<Event> {
+    let mut read = read_back(log, from);
+    read.retain(|event| !gone.contains(&event.seq.get()));
+    read
+}
+
+/// 收着时旁听、`events.append` 记的，落了盘并进槽里：读回的少了它们放不回（它们不在另放的那一份里了），读回的齐了放回以后
+/// 和一直没收的逐字段一样；从哪条读起不变。
+#[test]
+fn overheard_while_shelved_lands_in_the_shelf() {
+    let more = [overheard(22), bridged(23), overheard(24), overheard(25)];
+    let (kept, mut shelved, from, log) = shelved_with(&more, 25);
+    assert_eq!(
+        shelved.shelved(Seq::new(26).unwrap()),
+        Some(from),
+        "从哪条读起不变"
+    );
+    let missing = shelved
+        .unshelve(&read_without(&log, from, &[23]))
+        .expect_err("并进槽里的要从日志读");
+    assert_eq!(missing.seq.get(), 23);
+    shelved.unshelve(&read_back(&log, from)).unwrap();
+    assert_eq!(shelved, kept);
+}
+
+/// 还没落盘的不并：落到第 23 条，第 24 条照旧另放，读回的没有它也放得回；第 22、23 条并了，读回的少了第 22 条放不回。
+#[test]
+fn what_has_not_landed_is_not_put_into_the_shelf() {
+    let more = [overheard(22), bridged(23), overheard(24)];
+    let (kept, mut shelved, from, log) = shelved_with(&more, 23);
+    assert!(
+        shelved
+            .unshelve(&read_without(&log, from, &[22, 24]))
+            .is_err()
+    );
+    shelved.unshelve(&read_without(&log, from, &[24])).unwrap();
+    assert_eq!(shelved, kept);
+}
+
+/// 夹着一条不能并的（撤回旁听的第 22 条）：它前面的并进槽里，它和它后面的照旧另放、照先后接上，撤回照样拿掉第 22 条，结果和
+/// 一直没收一样。读回的少了它后面的那一条照样放得回，可见那一条没有越过它并进去。
+#[test]
+fn a_kind_that_cannot_land_keeps_what_follows_it_in_order() {
+    let more = [
+        overheard(22),
+        event(23, None, ALICE, "message.withdrawn", r#"{"messages":[22]}"#),
+        overheard(24),
+        bridged(25),
+    ];
+    let (kept, mut shelved, from, log) = shelved_with(&more, 25);
+    assert!(
+        !kept.events().iter().any(|event| event.seq.get() == 22),
+        "撤回拿掉了第 22 条"
+    );
+    assert!(shelved.unshelve(&read_without(&log, from, &[22])).is_err());
+    shelved
+        .unshelve(&read_without(&log, from, &[23, 24, 25]))
+        .unwrap();
+    assert_eq!(shelved, kept);
+}
+
+/// 没收着的落了盘什么都不做；收着时一条都没记的（只剩槽）也照样并、照样放回。
+#[test]
+fn landing_without_a_shelf_changes_nothing() {
+    let mut history = feed(busy_log());
+    let before = history.clone();
+    history.landed(Seq::new(21).unwrap());
+    assert_eq!(history, before);
+    let mut empty = feed([created()]);
+    let mut kept = empty.clone();
+    empty.shelve().unwrap();
+    for event in [overheard(2), bridged(3)] {
+        kept.append(event.clone());
+        empty.append(event);
+    }
+    empty.landed(Seq::new(3).unwrap());
+    let log = [created(), overheard(2), bridged(3)];
+    let from = empty.shelved(Seq::new(4).unwrap()).unwrap();
+    assert_eq!(from.get(), 1);
+    empty.unshelve(&read_back(&log, from)).unwrap();
+    assert_eq!(empty, kept);
 }

@@ -3,13 +3,17 @@
 //! 下一条要看历史的输入送进来以前（[`Session::needs_history`]），执行器照 [`Session::shelved`] 从日志读回那一截交进来
 //! （[`Session::unshelve`]），放回的和收起来以前一条不差。内核不读盘：读的是执行器。
 //!
-//! 收着的时候还要答的几样查询：有没有能压的（[`Session::compactable`]）收的时候算好记下，收着时历史、账本、限额都不会变（变它们
-//! 的输入都要先放回来）；派出去的任务、待办、包的状态本来就不收；这时的上下文用量（[`Session::context_used`]）收着时没有，执行器
-//! 只在回合里要；上下文的明细（[`Session::breakdown`]）执行器先放回来再要。读不回来的那段时间（执行器照旧送了输入）投影看到的是
-//! 空的历史，执行器一律不发请求（`session/actor.md`「闲下来收成槽」第 4 条）。
+//! 群里旁听的话、`events.append` 记的、空闲时的「落了盘」不看历史，收着也直接送（施工 LW-36，[`Session::needs_history`]）：
+//! 追加的先另放着，落了盘并进槽里只记序号（`history/shelf.rs`），所以一直有人说话的群照样收着，内核这一份不随条数长。
+//!
+//! 收着的时候还要答的几样查询：有没有能压的（[`Session::compactable`]）收的时候算好记下，收着时不再重算：限额、压缩、撤销这些
+//! 会改变它的输入都要先放回来；旁听的话、`events.append` 记的不放回，会让它变旧，`compactable.changed` 可能晚到下一次放回以后
+//! 才推（施工 LW-36 接受，真的 `session.compact` 先放回再判，结果不受影响）。派出去的任务、待办、包的状态本来就不收；这时的上下文
+//! 用量（[`Session::context_used`]）收着时没有，执行器只在回合里要；上下文的明细（[`Session::breakdown`]）执行器先放回来再要。
+//! 读不回来的那段时间（执行器照旧送了输入）投影看到的是空的历史，执行器一律不发请求（`session/actor.md`「闲下来收成槽」第 4 条）。
 
 use super::Session;
-use super::input::Input;
+use super::input::{Command, Input, Received};
 use crate::event::Event;
 use crate::history::Missing;
 use crate::id::Seq;
@@ -57,9 +61,27 @@ impl Session {
         Ok(())
     }
 
-    /// 收着的时候能不能直接送这一条，不用先放回来：只改有没有头看着、在哪个目录这两样的，不看历史。别的一律先放回来。
-    pub fn needs_history(input: &Input) -> bool {
-        !matches!(input, Input::Watched { .. } | Input::Environment(_))
+    /// 收着的时候这一条要不要先放回来（`kernel/session.md`「闲下来收成槽」第 5 条）。不看历史、收着也直接送的：
+    ///
+    /// - 只改有没有头看着、在哪个目录的（`Watched`、`Environment`）；
+    /// - 场所里旁听的一句（施工 LW-36）：带 `venue.ambient`、不是别处来的，和 `send_as` 认旁听的是同一个判法
+    ///   （`send.rs` 的 `overheard`），只记下、不开回合；
+    /// - `events.append` 记的一条（施工 LW-36）：不带回合编号、不开回合；
+    /// - 空闲时（[`Session::idle`]）的「落了盘」（施工 LW-36）：推送、回应、并进槽，没有回合要往下走。回合里的、等着
+    ///   `turn.ended` 落盘的要接着拼请求、跑挂接点，照旧先放回。
+    ///
+    /// 别的一律先放回来，`session.note` 也是：它记的事实空闲时排进下一轮开头，回合里跟着这一轮。
+    pub fn needs_history(&self, input: &Input) -> bool {
+        match input {
+            Input::Watched { .. } | Input::Environment(_) => false,
+            Input::Stored { .. } => !self.idle(),
+            Input::Command(Received { by, command, .. }) => match command {
+                Command::Send { venue, .. } => !self.overheard(by, venue.as_deref()),
+                Command::Append { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
     }
 
     /// 有效历史（替身对照用：收起来以前的和放回来的一样，`testkit/shelf.rs`）。
@@ -70,7 +92,7 @@ impl Session {
 
     /// 送进来一条要看历史的：收的时候记下的「有没有能压的」不算数了（读不回来照旧送的，这时投影看到的是空的历史）。
     pub(super) fn forget_rested(&mut self, input: &Input) {
-        if Session::needs_history(input) {
+        if self.needs_history(input) {
             self.rested = None;
         }
     }

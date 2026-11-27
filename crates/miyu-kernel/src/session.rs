@@ -266,6 +266,8 @@ impl Session {
         }
         let pushed: Vec<Event> = self.unstored.drain(..split).collect();
         self.stored = pushed.last().map(|event| event.seq);
+        // 收着时追加的落了盘，并进槽里只记序号（施工 LW-36，`history/shelf.rs`）。
+        self.history.landed(upto);
         let mut actions = vec![Action::Push(pushed)];
         self.answers_stored(upto);
         actions.extend(self.answer_nested(upto));

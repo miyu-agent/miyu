@@ -368,8 +368,7 @@ fn drive(seed: u64) -> Watch {
     let (mut prepares, preparing) = (Rng(seed ^ 0x6110_0000), seed % 3 == 2);
     watch.prepares.seeded = preparing;
     // 清掉待办（施工 D-3 再补）：另一串随机数，原来的输入不跟着错开。
-    let mut todo_clears = Rng(seed ^ 0x70D0_C1EA);
-    let mut dreams = Rng(seed ^ 0xD2EA_3E7D);
+    let (mut todo_clears, mut dreams) = (Rng(seed ^ 0x70D0_C1EA), Rng(seed ^ 0xD2EA_3E7D));
     // 三个种子里有一个跑脚本里的 `miyu call`（施工 M-1）：另一串随机数。
     let (mut nests, nesting) = (Rng(seed ^ 0x2E57_ED00), seed.is_multiple_of(3));
     for _ in 0..300 {
@@ -444,6 +443,7 @@ fn drive(seed: u64) -> Watch {
         if nesting && let Some(input) = nesting::some_nested(&mut nests, &mut watch) {
             watch.feed(&mut session, input);
         }
+        watch.overhear(&mut session, &mut next_id);
         let mut input = some_input(&mut rng, &mut watch, &mut next_id);
         if configuring {
             input = configuring::with_fallback(&mut models, &watch, input);
