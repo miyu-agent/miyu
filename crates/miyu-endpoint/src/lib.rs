@@ -29,6 +29,7 @@ mod attach;
 mod backstage;
 pub mod builtins;
 mod check;
+mod closing;
 mod commands;
 pub mod config;
 mod connection;
@@ -462,25 +463,6 @@ impl Core {
             && !self.extensions.busy()
             && !self.mcp.busy()
             && !self.sessions.busy().await
-    }
-
-    /// 有计划地停下全部在跑的会话：核心收到停的信号时。跑到一半的回合记成「重启了」，下次载入接着干。停完了等记忆在后台的读写
-    /// 做完（[`Core::finish_writes`]，施工 TMP-1 补3）。
-    pub async fn stop_sessions(&self) {
-        self.sessions.stop_all().await;
-        self.finish_writes().await;
-    }
-
-    /// 等记忆在后台还没做完的（施工 TMP-1 补3，`Memory::finish`）：回合开始问记忆、会话没等完的读，回合索引的后台，补齐旧会话的
-    /// 线程。核心停下、放锁以前等：交回以后它们不再碰数据根。在阻塞线程里等。
-    pub async fn finish_writes(&self) {
-        let memory = Arc::clone(&self.memory);
-        if tokio::task::spawn_blocking(move || memory.finish())
-            .await
-            .is_err()
-        {
-            tracing::error!(target: "miyu::endpoint", "memory writes wait panicked");
-        }
     }
 
     /// 核心的记忆（施工 TMP-1 补3）：只给测试，让它的读慢下来。

@@ -208,6 +208,10 @@
 | `endpoint` | WARN | `create failed` | `error` | 造会话失败，人格读不出以外的原因 |
 | `endpoint` | WARN | `load failed` | 带会话编号；`error` | 载入失败，没有这个会话以外的原因 |
 | `endpoint` | DEBUG | `already stopped` | 带会话编号 | 有计划地停下时，会话已经停了 |
+| `endpoint` | DEBUG | `created session already stopped` | | 有计划地停下时，要停的时候还在写 `session.created` 的那个会话写完时已经停了（施工 CS-9） |
+| `endpoint` | ERROR | `create panicked` | | 造会话的任务 panic 了（施工 CS-9：交给 `miyu_session` 的那一段另起任务） |
+| `endpoint` | WARN | `database not closed` | `db`（哪一种库） | 核心放锁以前关库时出了错，连接照样放下了（施工 CS-9） |
+| `endpoint` | ERROR | `closing databases panicked` | | 关库的线程 panic 了（施工 CS-9） |
 | `endpoint` | WARN | `workspace not prepared` | `kind` | 退回默认工作区时建不了它 |
 | `endpoint` | ERROR | `undo report panicked` | `panic`（是不是 panic；原话不写） | 撤销的回应里比改动的任务 panic 了 |
 | `endpoint` | WARN | `undo report not written` | `error` | 撤销的回应里读不了会话日志 |

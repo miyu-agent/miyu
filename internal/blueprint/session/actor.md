@@ -11,6 +11,7 @@
 | `crates/miyu-session/src/open.rs` | 造会话：备好磁盘上的，交给内核，起 actor |
 | `crates/miyu-session/src/open/load.rs` | 载入：打开日志，照快照造策略，交给内核重建，起 actor（施工 R-3 下从 `open.rs` 挪出来：那边放不下了） |
 | `crates/miyu-session/src/open/error.rs` | 造不成、载入不了的几种（施工 3-8 七补从 `open.rs` 挪出来） |
+| `crates/miyu-session/src/open/until.rs`（施工 CS-9） | 核心要停时怎么造：`create_until`，照造到哪一步办（「造会话」第 7 条） |
 | `crates/miyu-session/src/actor.rs` | actor 本身：收件箱、一批批送进内核、每个动作怎么回、停下 |
 | `crates/miyu-session/src/actor/mail.rs` | 人的那条收件箱里的一封怎么办；数着拿着订阅的头，交内核 `Watched`（施工 7-9 从 `actor.rs` 挪出来） |
 | `crates/miyu-session/src/actor/back.rs` | 执行器的那条收件箱里的一封，写成内核的输入（施工 C-6 从 `actor.rs` 挪出来：那个文件到了行数上限） |
@@ -110,6 +111,11 @@
 4. 造权限策略、执行工具的端口（她看过的是空的；任务编号照内核的 `last_job_number()` 往下数，派子代理要照抄的那一份照交进来的，施工 7-5；actor 建它那一份任务表，和派子代理共用这一串编号，施工 7-3）、actor；子会话交回报的那一头（「向上回报」，施工 7-6）；记下造会话的命令在等回应。
 5. 在会话的 span 里记一行 `created`，起 actor。
 6. 等回应：`session.created` 落了盘，内核回应这个命令，交回 `Handle`。actor 在那之前停了的，交回 `CreateError::Stopped`（「出错」一节），在阻塞线程里删掉这个会话的目录：只剩一段空的第一段时才删，别的不动（施工 4-9 再补四下：原来留在磁盘上）。已经存下的快照留着：按内容存，别的会话可能也在用，回收随 blob 回收那一步。
+7. **核心要停了**（施工 CS-9，`create_until(Create, 要停了没有)`；会话表照它造，`protocol.md`「会话表」第 11 条）：照造到哪一步办，不留半个会话。
+   1. 第 1 条的阻塞线程起来以前（读配置、拼工具面这些）要停了的：不起它，交回 `CreateError::Stopped`，什么都没写；正在等这几步的当场放下（只读）。
+   2. 阻塞线程起来了（存快照、建目录写盘停不下来）：等它做完；做完以后、等端口要的都备好（`Models::ready`，模型目录）时要停了的（等的时候来的也算），照第 6 条删掉目录，交回 `CreateError::Stopped`，不写 `session.created`。
+   3. 过了上一款（造端口、起 actor、写 `session.created`）：照常做完，交回 `Handle`，由会话表停下它。
+   - 没有「要停了」的 `create` 照旧，从不停。
 
 **2. 载入**（`load`）
 

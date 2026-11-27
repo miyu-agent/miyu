@@ -1676,6 +1676,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sAUP1"><span class="n">AU-P1</span>外部审计中低危核实<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS6"><span class="n">CS-6</span>等核心和停核心<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS8"><span class="n">CS-8</span>一次 SIGTERM 就停得下<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCS9"><span class="n">CS-9</span>收尾不等锁、不合日志<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66673,6 +66674,64 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/CS-8-压力下的启动和信号.md</code>；蓝图 <code>core.md</code>「停下」、<code>log.md</code>；设计 12 第二节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sCS9" aria-labelledby="h-sCS9">
+  <div class="sheet-head"><h2 id="h-sCS9"><span class="no">CS-9</span>收尾不等锁、不合日志</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">落盘很慢的时候，一次 SIGTERM 也能尽快停下：停会话不等正在造的会话手里的锁，关库不合写前日志、在放锁以前关。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint</span><span class="dir-note">CS-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>停会话先说要停了，再拿会话表的锁</li>
+              <li>造会话读的几步当场不读；写盘那一段另起任务，回 <code>session_stopped</code>、放锁</li>
+              <li>建好目录、没写 <code>session.created</code> 的删目录；在写的写完、一起停下</li>
+              <li>放锁以前关上数据根里的库</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store</span><span class="dir-note">CS-9</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>每个连接设 <code>NO_CKPT_ON_CLOSE</code>：关库不合，下次开库读回、闲下来合</li>
+              <li><code>-wal</code> 已经空的照常删掉 <code>-wal</code>、<code>-shm</code>，不同步</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">不留半个会话</span><span class="rl">要么没写，要么删了目录，要么 session.created 写完</span></div>
+          <div class="tile new"><span class="nm">放锁以前关库</span><span class="rl">放了锁的进程不再碰库文件</span></div>
+          <div class="tile"><span class="nm">30 秒总时限不动</span><span class="rl">CS-6 定的</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CS-9</dd></div>
+        <div><dt>名称</dt><dd>收尾不等锁、不合日志</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">CS-9</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：关库的两条、停会话的两条、放锁前关库、两条真核心的测试</span></li>
+        <li><span class="ok">✓</span><span>复现脚本（每次同步拖 4 秒）：SIGTERM 到退出，修前修后各量一次</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/CS-9-收尾不等锁不合日志.md</code>；蓝图 <code>store.md</code>「怎么走」第 14 条、<code>core.md</code>「停下」、<code>protocol.md</code>「会话表」、<code>session/actor.md</code>「造会话」、<code>log.md</code>；设计 12 第二节。</li>
       </ul>
     </div>
   </div>

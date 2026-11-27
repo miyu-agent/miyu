@@ -1,16 +1,15 @@
 //! 会话表（`internal/designs/07-存储.md` 第七节「会话按需载入」）：照编号找会话；这次运行里没在跑的，从磁盘
 //! 载入；停了的、闲够了退下的拿掉，下次用到再载入（退下在 `sessions/idle.rs`，施工 V-2 再补）。删会话连子会话在
-//! `sessions/delete.rs`（施工 3-8 三补）。
+//! `sessions/delete.rs`（施工 3-8 三补）。造会话在 `sessions/creating.rs`（施工 CS-9 挪出去）。
 //!
 //! 表拿 tokio 的锁护着，载入期间一直拿着：两个连接同时说给同一个没在跑的会话，只载入一次、只起一个
-//! actor（一个会话只能有一个写者，`07-存储.md` 第三节）。
+//! actor（一个会话只能有一个写者，`07-存储.md` 第三节）。造会话也拿着，可核心要停时不拿着它等写盘（`sessions/stopping.rs`）。
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use miyu_kernel::event::Body;
 use miyu_kernel::facts::Environment;
 use miyu_kernel::id::{CommandId, SessionId, VenueId};
 use miyu_kernel::origin::{By, Person, Session};
@@ -18,7 +17,6 @@ use miyu_kernel::time::{Timestamp, UtcOffset};
 use miyu_policy::Profile;
 use miyu_policy::memory::MemoryScope;
 use miyu_session::{Child, Create, ForkedBase, Handle, create, new_id};
-use miyu_store::log::first_event;
 
 use crate::Core;
 use crate::personas;
@@ -29,6 +27,7 @@ use crate::spawn;
 mod advisor;
 mod asked;
 mod confined;
+mod creating;
 mod delete;
 mod dream;
 mod forked;
@@ -43,6 +42,7 @@ pub(crate) mod prefix;
 mod pressure;
 mod setup;
 pub(crate) mod state;
+mod stopping;
 
 pub(crate) use confined::{confined_of, placed, reachable, reaches};
 pub(crate) use opening::Opening;
@@ -51,10 +51,6 @@ pub(crate) use places::{Picked, check_dirs, opening_cwd, pick, roots, to_default
 pub(crate) use setup::Setup;
 #[cfg(test)]
 mod tests;
-
-/// 记住最近多少个造会话的命令编号：断线重发的造会话不再造一个新的（`04-核心协议.md` 第六节第 1 条）。核心重启以后
-/// 第一次造会话时，从最新的这么多个会话的 `session.created` 里补回来（施工 4-9 再补三上）。
-const REMEMBERED: usize = 1024;
 
 /// 放在堆上的一步（施工 LF-12 修；那一步里最深的一条路施工 RM-1 拆了，新开会话、命令分发这几步照旧装箱）：新开会话
 /// 的状态很大，写成普通的 `async fn` 的话，调的一方那一帧里要先放下整份状态；调试版里每一处 `.await` 各占一份，从连接一路
@@ -75,6 +71,8 @@ pub(crate) struct Sessions {
     answering: std::sync::Mutex<BTreeSet<SessionId>>,
     /// 内存紧时把闲着的会话卸出内存（施工 MEM-2，`sessions/pressure.rs`）：怎么读、隔多久看一眼、开了会话叫一声。
     pressure: pressure::Pressure,
+    /// 核心要停了（施工 CS-9，`sessions/stopping.rs`）：正在造的会话不再拿着表的锁等写盘，停的时候还在写的交给它等完、停下。
+    stopping: stopping::Stopping,
 }
 
 #[derive(Debug, Default)]
@@ -136,94 +134,6 @@ pub(crate) struct Found {
 }
 
 impl Sessions {
-    /// 造一个会话：有没有人能确认照 `attended`；`miyu ask` 开的是一次性的。先找预设（`who.preset`，
-    /// 没写的照默认预设，施工 P-2 上，`presets.rs`），再找人格：`persona` 照 [`personas::resolve`]，预设不再参与（施工 P-4
-    /// 上，2026-10-08 项目主人：只去掉预设的「默认人格」）。同一个命令编号重发，交回上一次造的那一个，预设、人格都不再找。
-    pub(crate) fn create<'a>(
-        &'a self,
-        core: &'a Arc<Core>,
-        command: CommandId,
-        persona: Option<Option<&'a str>>,
-        cwd: String,
-        dirs: Vec<String>,
-        who: Opening,
-    ) -> Heaped<'a, Result<Created, Refusal>> {
-        Box::pin(async move {
-            check_dirs(core, &dirs)?;
-            let mut open = self.open.lock().await;
-            if !open.recalled {
-                open.recalled = true;
-                let earlier = recall(core).await;
-                for (made, session) in earlier.into_iter().rev() {
-                    open.created.push_front((made, session, None));
-                }
-                while open.created.len() > REMEMBERED {
-                    open.created.pop_front();
-                }
-            }
-            // 同一个命令编号重发的，交回上一次造的那一个；工作目录照它的默认工作区挑（施工 5-14）。除了 `cwd`、`dirs` 别的参数换了的
-            // 拒（施工 YC-7）：没有指纹的（重启以后补回来的）照旧交回。
-            let made = command.clone();
-            let digest = who.digest(persona);
-            let earlier = match open.created.iter().find(|(seen, ..)| *seen == made) {
-                Some((_, _, Some(seen))) if *seen != digest => return Err(Refusal::ID_REUSED),
-                Some((_, session, _)) => Some(session.clone()),
-                None => None,
-            };
-            let id = earlier.clone().unwrap_or_else(|| new_id(now()));
-            let (workspace, wide) = opening_cwd(core, &who, &cwd, &id);
-            // 开局只读照这个会话实际干活的目录算，带上信任着的项目配置（`config.md` 第二条第 9 条）。
-            let (_, project) = core.config().with_project(&workspace);
-            let untrusted = project.and_then(|project| project.untrusted());
-            if let Some(id) = earlier {
-                return Ok(Created {
-                    id,
-                    cwd: workspace,
-                    wide,
-                    untrusted,
-                });
-            }
-            let mut setup = Setup::resolve(
-                core,
-                (id.clone(), command.clone()),
-                persona,
-                (workspace.clone(), dirs.clone()),
-                who,
-            )
-            .await?;
-            let created = create(setup.create(core)).await;
-            let handle = match created {
-                Ok(handle) => handle,
-                // 人格已经找好了：`core/` 下哪一份读不了（安装坏了），是内部出错（施工 4-9 再补三上）。
-                Err(error) => {
-                    tracing::warn!(target: "miyu::endpoint", error = %error, "create failed");
-                    return Err(Refusal::INTERNAL);
-                }
-            };
-            open.running.insert(
-                id.clone(),
-                Running {
-                    handle,
-                    workspace: workspace.clone(),
-                    dirs,
-                },
-            );
-            open.created.push_back((made, id.clone(), Some(digest)));
-            if open.created.len() > REMEMBERED {
-                open.created.pop_front();
-            }
-            // 内存紧的话先腾地方（施工 MEM-2）：只叫一声，不等、不拒。
-            self.opened();
-            self.sweep(core);
-            Ok(Created {
-                id,
-                cwd: workspace,
-                wide,
-                untrusted,
-            })
-        })
-    }
-
     /// 会话 `id` 在跑的话交回它的把手，没在跑的不载入、交回空的（施工 9-8 补下：算会话树时只看载入了的）。
     pub(crate) async fn loaded(&self, id: &SessionId) -> Option<Handle> {
         let open = self.open.lock().await;
@@ -391,14 +301,19 @@ impl Sessions {
             .collect()
     }
 
-    /// 有计划地停下全部在跑的会话：跑到一半的回合记成「重启了」，下次载入接着干（施工 3-9 上）。
+    /// 有计划地停下全部在跑的会话：跑到一半的回合记成「重启了」，下次载入接着干（施工 3-9 上）。先说要停了（施工 CS-9）：
+    /// 正在造的会话不再等写盘、放开表的锁（`sessions/creating.rs`），这里拿得到锁；停的时候还在写的，和在跑的一起停。
     pub(crate) async fn stop_all(&self) {
+        self.stopping.begin();
         let running = std::mem::take(&mut self.open.lock().await.running);
-        for (id, running) in running {
-            if running.handle.stop().await.is_err() {
-                tracing::debug!(target: "miyu::endpoint", session = id.as_str(), "already stopped");
+        let stop_running = async {
+            for (id, running) in running {
+                if running.handle.stop().await.is_err() {
+                    tracing::debug!(target: "miyu::endpoint", session = id.as_str(), "already stopped");
+                }
             }
-        }
+        };
+        tokio::join!(stop_running, self.stopping.settle());
     }
 }
 
@@ -410,32 +325,6 @@ pub(crate) fn person() -> By {
 /// 主人在种类是 `head` 的头上说的话（施工 VN-1，[`Person::head`]）。
 pub(crate) fn person_on(head: Option<miyu_kernel::id::HeadKind>) -> By {
     By::Person(Person { via: None, head })
-}
-
-/// 核心重启以后补回去重的编号（施工 4-9 再补三上）：最新的 [`REMEMBERED`] 个会话（会话编号是 UUIDv7，[`miyu_store::root::DataRoot::sessions`]
-/// 已经从新到旧），`session.created` 的 `cause` 就是造会话的命令编号。读不了的跳过。在阻塞线程里读，交回的照从旧
-/// 到新。
-async fn recall(core: &Core) -> Vec<(CommandId, SessionId)> {
-    let root = core.root.clone();
-    tokio::task::spawn_blocking(move || {
-        let mut found: Vec<(CommandId, SessionId)> = root
-            .sessions()
-            .unwrap_or_default()
-            .into_iter()
-            .take(REMEMBERED)
-            .filter_map(|id| {
-                let event = first_event(&root.session_dir(&id)).ok()?;
-                match (&event.body, event.cause) {
-                    (Body::SessionCreated(_), Some(cause)) => Some((cause, id)),
-                    _ => None,
-                }
-            })
-            .collect();
-        found.reverse();
-        found
-    })
-    .await
-    .unwrap_or_default()
 }
 
 /// 本机这个场所。

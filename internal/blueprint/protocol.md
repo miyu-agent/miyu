@@ -22,7 +22,9 @@
 | `crates/miyu-endpoint/src/methods.rs` | 握手以后的方法 |
 | `crates/miyu-endpoint/src/job_output.rs` | `job.output`：取最后几行、量上限（施工 7-4 补） |
 | `crates/miyu-endpoint/src/meta.rs` | `session.set_meta` 的参数：标题去掉前后空白、量长短，`null` 是去掉标题（施工 3-8 三补）；`session.retitle`（施工 TT-1） |
-| `crates/miyu-endpoint/src/sessions.rs` | 会话表：造会话、找会话；工作目录照人走、太宽的标上（施工 5-14）；造子会话（施工 7-5） |
+| `crates/miyu-endpoint/src/sessions.rs` | 会话表：找会话；工作目录照人走、太宽的标上（施工 5-14）；造子会话（施工 7-5）；停下全部会话 |
+| `crates/miyu-endpoint/src/sessions/creating.rs`（施工 CS-9 从 `sessions.rs` 挪出来） | 造会话：照命令编号去重、找预设人格、交给 `miyu_session` 造、放进表里（「会话表」第 11 条） |
+| `crates/miyu-endpoint/src/sessions/stopping.rs`（施工 CS-9） | 核心要停了：造会话读的那几步当场不读、交给 `miyu_session` 的那一段另起任务不等，停的时候还在写的等完、停下（「会话表」第 11 条） |
 | `crates/miyu-endpoint/src/sessions/found.rs` | 找会话、载入（施工 7-8 从 `sessions.rs` 挪出来：表的锁在调的一方手里）：在跑的直接交回，没在跑的照 `DataRoot::session_dir` 从磁盘载入；载入交回要认的（施工 V-37 上），在后台收掉派到一半的空子会话 |
 | `crates/miyu-endpoint/src/sessions/opening.rs` | 造会话时定下的几样（施工 P-9 从 `sessions.rs` 挪出来）：`Opening`，带不带「关于你」（施工 P-9）；开局的级别一律是完全放开（施工 LV-1），写在 `sessions/setup.rs` |
 | `crates/miyu-endpoint/src/sessions/orphans.rs` | 载入时收掉派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
@@ -1537,6 +1539,13 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
    - **紧不紧**（`judge`）：读 `miyu_heap::room`（`heap.md`「还剩多少内存」）。门槛（`threshold`，施工 MEM-4，2026-11-13 core1 定）：总量的 10%、最多 2 GiB，不低于总量的 5%，即 max(5%, min(10%, 2 GiB))，照整数往下取整（`FLOOR_PERCENT` 5、`SPARE_PERCENT` 10、`SPARE_CAP` 2 GiB，常量，不做配置项）：1.5 GiB 的是 153.6 MiB，18 GiB 的是 1843.2 MiB，20 到 40 GiB 的是 2 GiB，100 GiB 的是 5 GiB。核心所在的 cgroup 有上限、可用少于上限的门槛的紧；整台机器可用少于物理内存的门槛、而且核心自己的常驻（`miyu_heap::usage::resident`，只在整台机器近线时读）占整台机器已用（总量减可用）的一半以上（`MOSTLY_MINE`，50，正好一半的算）的紧。别的不紧：整台机器紧、核心占得少的（别的程序吃的，卸会话腾不出多少），正好等于门槛的，读不到的（平台不支持、读的那一下崩了，当作不知道）。MEM-2、MEM-3 的门槛是 5%：18 GiB 的上限只剩 921 MiB 才算紧，那时核心已经顶着上限、交换区满着，卸一万个会话卸了 43 秒（2026-11-13 bm 复测，施工单 `MEM-4-大容器提前判紧.md`）。可用少于门槛两倍（`NEAR_TIMES`）的是「近」：cgroup 那一路照可用算，整台机器那一路也要核心是大头才算。Windows 量不出核心自己占多少（`heap.md`「对外的样子」`usage`），又没有 cgroup，等于不卸，量法定了再接。
    - **什么时候看**：表里第一次放进会话时和看空闲的任务一起起一个任务。表里有会话的隔 10 秒看一眼，上一眼近线（含紧）的隔 1 秒（`NEAR_EVERY`，施工 MEM-4），回到两倍门槛以外恢复 10 秒；往表里放进会话（造、载入、子代理、fork 子代理、顾问会话、整理会话）时叫它一声、当场看一眼，不等那 10 秒（一阵开会话是涨得最快的时候）；两次看之间至少隔 1 秒，一阵叫了几百声并成一次。表空着的不读，只等叫（隔会话表的闲置时长醒一下，看核心还在不在）。读在阻塞线程里。不等系统通知：PSI、cgroup 的 `memory.events` 报的是卡了多久、撞没撞 `memory.high`，不是这里要的这两样，醒了还得读一遍数；macOS、Windows 各一套。读一次是 `/proc`、`/sys` 下几个小文件，隔 10 秒的开销不计；每秒一次只在近线时有（18 GiB 的上限是可用少于 3.6 GiB）。
    - **记什么**（施工 MEM-3 改）：判成紧的记一行 `INFO memory tight`：`retired` 卸了几个、`asked` 问了会话的几个、`held` 没卸的照原因各几个（`"turn=939 watched=3"`，照 `Hold` 的先后，只写有的，一个都没有的是 `none`；原因：`turn` 有回合在跑、在重启、在等子代理，`watched` 有头订阅着，`handles` 有别的把手，`replies` 有等着回应的命令，`requests` 有请求在路上，`jobs` 派出去的没回报、没落盘，`memory` 记忆抽取在路上，`peers` 会话之间等着，`mail` 有没办的信，`goal` 长期目标在跑，`slow` 1 秒没答上）、`loaded` 表里还剩几个、`available_mib`、`percent` 卸之前读到紧的那一份还剩多少、`threshold_mib` 那一份的门槛（MiB，往下取整，施工 MEM-4）、`took_ms` 问这一遍花了多久（头一批拿锁起到最后一批放锁，毫秒，施工 MEM-5）；不推给头。卸了会话的、一段紧刚开始的（上一次看不紧、表空着）当场记；同一段紧着、一个都没卸的，隔 60 秒（`REPEAT`）才再记一行，不每 10 秒刷一行一样的。MEM-2 只在卸了会话时记，紧着卸不动的一行都没有（18 GB 那趟日志里一条都没有）。
+11. **核心要停时不拿着锁等造会话写盘**（施工 CS-9，`sessions/stopping.rs`、`sessions/creating.rs`）：造会话一直拿着表的锁（照命令编号去重、只造一个），停下全部会话也要拿这把锁。停的一方先说要停了，再拿锁；造会话的一方照造到哪一步办（`miyu_session::create_until`，`session/actor.md`「造会话」）：
+    1. 读的几步（补去重的编号、找预设人格、拼工具面）当场不读了，回 `session_stopped`，什么都没写；
+    2. 已经在存快照、建会话目录的，那一步交给阻塞线程、停不下来，造会话这一趟另起任务、这里不等，回 `session_stopped`、放开锁；那个任务建完目录就删掉它（只剩空的第一段，`miyu_store::log::abandon`），不写 `session.created`；
+    3. 起了 actor、在写 `session.created` 的照样回 `session_stopped`、放开锁，那个任务写完，停的一方把它当一个完整的会话有计划地停下（和在跑的会话一起停）。头重连以后照同一个命令编号再造，交回的就是它（`session.create` 照命令编号去重，重启以后照 `session.created` 的 `cause` 补回）。
+    4. 停的一方拿到锁以后，停表里的会话，同时等第 2、3 种任务做完：放锁以前不再有在写的。之后来造的都回 `session_stopped`。
+    5. 不留半个会话：要么什么都没写，要么目录删了，要么 `session.created` 写完了。只有收尾过了总时限当场退出（`core.md`「停下」第 5 条）时才可能留下只有空的第一段的目录，和崩了一样：载入是 `session_not_found`，列会话、补去重的编号都跳过它（没有 `session.created`）。
+    6. 原来造会话从找人格一直到 `session.created` 落盘都拿着锁：盘慢的时候建会话几十秒，停会话一直等，连接的处理也卡在这一条 `session.create` 上（2026-11-27 复现：每次同步拖 4 秒，SIGTERM 以后 17.6 秒才记出会话停了）。载入（第 1 条）、造子会话（第 7 条）照旧拿着锁做完。
 
 **工作目录太宽**
 
@@ -1559,7 +1568,7 @@ Markdown 的回应 `{"path" | "text", "bytes", "tokens", "upto", "redacted", "ch
 **空闲和停下**
 
 - `Core::idle`：没有连接，执行器的任务表里没有在跑的后台命令（结束了、记录还没落盘的也算，施工 7-3），会话表里也没有哪个会话忙着：在跑回合、回合结束了 `turn.ended` 还没落盘，都算忙；停了的会话不算。核心照它空闲退出（`core.md`）。
-- `Core::stop_sessions`：有计划地停下表里全部的会话，跑到一半的回合记成「重启了」，下次载入接着干（`kernel/session.md`）；各会话在跑的后台命令先记 `restarted`、落了盘再整组杀（`session/actor.md` 第 9 条，施工 7-3）；会话表清空。
+- `Core::stop_sessions`：有计划地停下表里全部的会话，跑到一半的回合记成「重启了」，下次载入接着干（`kernel/session.md`）；各会话在跑的后台命令先记 `restarted`、落了盘再整组杀（`session/actor.md` 第 9 条，施工 7-3）；会话表清空。正在造的会话照「会话表」第 11 条，不等它手里的锁（施工 CS-9）。
 - 任务表（`miyu_session::Jobs`）是核心的家底里的一张，造会话、载入时交给会话（施工 7-3）。
 - 接不了连接（例如打开的文件太多）：歇 100 毫秒再接，不空转。
 
@@ -1729,6 +1738,8 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `ERROR` | `delete panicked panic=…` | 删会话崩了 |
 | `WARN` | `workspace not prepared kind=…` | 退回的工作区建不成 |
 | `DEBUG` | `already stopped session=…` | 停下全部会话、删会话时，这一个已经停了 |
+| `DEBUG` | `created session already stopped` | 停下全部会话时，要停的时候还在写 `session.created` 的那一个写完时已经停了（施工 CS-9，「会话表」第 11 条） |
+| `ERROR` | `create panicked` | 造会话的任务崩了（施工 CS-9） |
 | `DEBUG` | `stopped before deletion session=… job=…` | 删一个子会话时照人停掉了它，父会话（`session`）记了回报（施工 3-8 三补；施工 7-8 起在表的锁里） |
 | `INFO` | `orphan subagent removed session=… parent=…` | 载入父会话时收掉了一个派到一半的空子会话（施工 7-8，「会话表」第 8 条） |
 | `WARN` | `orphan subagent not removed session=… error=…` | 这一个挪不进回收处 |
@@ -1947,6 +1958,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `crates/miyu-endpoint/tests/workspace_command.rs`（施工 9-7 下） | `/workspace <路径>` 同 `set_workspace` 只换工作目录、加进来的目录照旧，回执是中文那一句，一样的不记换；相对的照 `cwd` 接、没带的照会话的接，路径里的空白照留，`cwd` 不是绝对的参数不对；不带路径的只说现在在哪；不在的、文件、数据根里的照原因拒绝、什么都不记；`~` 太宽回执说一声；场所里管理的人 `owner_only`，主人能换 |
 | `crates/miyu-endpoint/tests/clear.rs` | 协议上清空（施工 6-8 补）：回应是那一轮的开头、订阅的推送里是那一批三条、不请求模型；下一次请求里没有清空以前的；撤掉那一轮回应里撤掉了一次压缩、没有 `said`，再问看得到了；有回合在进行、本来就空的两种拒绝，中文、英文；会话编号不对、没写的参数不对 |
 | `crates/miyu-endpoint/src/sessions/tests.rs` | 父会话不在会话表里的不再造子会话、什么都没建（施工 3-8 三补） |
+| `crates/miyu-endpoint/src/sessions/stopping/tests.rs`（施工 CS-9） | 「会话表」第 11 条：建好目录、等模型目录时要停，停会话当场做完，造会话回 `session_stopped`、目录删掉，之后再造也是 `session_stopped`；起 actor 以前要停，造会话当场回 `session_stopped`、表的锁放开了，停会话等它写完 `session.created`、停下它，留下一个完整的会话 |
 | `crates/miyu-endpoint/tests/workspace.rs` | 太宽的五种（`~`、家目录、根目录、数据根、数据根里面）和读不出家目录时的 `~`；项目目录、默认工作区照旧；回应里的 `cwd`、重发的造会话 |
 | `crates/miyu-endpoint/tests/dirs.rs` | 加进来的目录（施工 5-10 上）：造会话、说话时报的记进这一轮，不写的照旧、写空的就没有；太宽的五种整条命令都不收、什么都没写；核心重启以后照最后一轮的 |
 | `crates/miyu-endpoint/tests/idle.rs` | 连着连接、跑着回合不空闲；停下全部会话，跑到一半的记成重启了 |

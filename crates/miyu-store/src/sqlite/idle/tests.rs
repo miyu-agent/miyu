@@ -26,7 +26,17 @@ fn kept(dir: &Path) -> (PathBuf, Arc<Mutex<Option<Connection>>>) {
     let path = dir.join("t.db");
     let (db, opened) = open(&path, SCHEMA, 1);
     assert!(db.is_some(), "{opened:?}");
-    (path, keep("test", Mutex::new(db)))
+    let kept = keep("test", &path, Mutex::new(db));
+    (path, kept)
+}
+
+/// 合一遍的、要看 `-wal` 合没合的测试排着来（施工 CS-9）：关库的测试量了 `-wal` 再关，这期间别的测试合一遍会把它截成 0 字节。
+pub(super) static MERGES: Mutex<()> = Mutex::new(());
+
+/// 排着合一遍（[`MERGES`]）。
+fn merge_all() -> Checkpointed {
+    let _merging = MERGES.lock().unwrap_or_else(PoisonError::into_inner);
+    checkpoint_all()
 }
 
 /// 写 `rows` 行，每行一次提交。
@@ -59,7 +69,7 @@ fn a_written_wal_is_merged_back_and_cut_to_nothing() {
         write(conn, 0..50);
         assert!(wal(&path) > 0, "写过的在 -wal 里");
     });
-    let done = checkpoint_all();
+    let done = merge_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     with(&db, |conn| {
         assert_eq!(wal(&path), 0, "合回以后截成 0 字节");
@@ -126,10 +136,11 @@ fn a_dropped_database_is_no_longer_merged() {
         assert!(std::time::Instant::now() < deadline, "登记里只有弱引用");
         std::thread::sleep(Duration::from_millis(5));
     }
-    // 关上时 SQLite 自己合回、删掉 -wal；合一遍不碰它，也不出错。
-    let done = checkpoint_all();
+    let written = wal(&path);
+    // 关上时不合（施工 CS-9）：-wal 原样留着（并着的测试先合过的是 0 字节），下次开库再合；合一遍不碰它，也不出错。
+    let done = merge_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
-    assert_eq!(wal(&path), 0);
+    assert_eq!(wal(&path), written);
 }
 
 /// 审计 2026-11-02 第三轮（边缘）：合是拿着写连接的锁做 `wal_checkpoint(TRUNCATE)`。有别的连接还在读老的一截（另一个进程开着库
@@ -149,7 +160,7 @@ fn a_reader_on_an_old_snapshot_does_not_hold_the_write_lock_for_seconds() {
     // 读的那一个停在老的一截上。
     with(&db, |conn| write(conn, 5..10));
     let started = std::time::Instant::now();
-    let done = checkpoint_all();
+    let done = merge_all();
     let took = started.elapsed();
     reader.execute_batch("COMMIT").expect("收得了");
     assert!(
@@ -187,7 +198,7 @@ fn after_merging_lets_go_of_cached_pages_the_database_still_reads_and_writes() {
         write(conn, 0..400);
         assert_eq!(count(conn), 400, "读一遍，页都在缓存里");
     });
-    let done = checkpoint_all();
+    let done = merge_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     with(&db, |conn| {
         assert_eq!(wal(&path), 0, "合回了");
@@ -198,7 +209,7 @@ fn after_merging_lets_go_of_cached_pages_the_database_still_reads_and_writes() {
         write(conn, 400..410);
         assert_eq!(count(conn), 410, "接着写得进");
     });
-    let done = checkpoint_all();
+    let done = merge_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     with(&db, |conn| assert_eq!(count(conn), 410, "再合一遍数据都在"));
 }
@@ -213,11 +224,11 @@ fn a_reader_is_not_merged_and_still_reads_after_its_pages_are_let_go() {
     reader
         .pragma_update(None, "query_only", true)
         .expect("设得了");
-    let reader = keep_reader("test-reader", Mutex::new(Some(reader)));
+    let reader = keep_reader("test-reader", &path, Mutex::new(Some(reader)));
     with(&reader, |conn| {
         assert_eq!(count(conn), 300, "读一遍，页进了缓存")
     });
-    let done = checkpoint_all();
+    let done = merge_all();
     assert!(done.failed.is_empty(), "{:?}", done.failed);
     assert!(done.shrunk >= 2, "写的、只读的都放了：{}", done.shrunk);
     with(&reader, |conn| {
@@ -304,10 +315,13 @@ fn a_write_while_staying_quiet_calls_the_merge_off() {
 /// 接着等的那一阵里一声都没有的交回真（施工 BO-3）。
 #[test]
 fn staying_quiet_to_the_end_lets_the_merge_go_ahead() {
-    // 登记是一个进程一份：并着跑的别的测试随时会叫一声，所以多试几次，有一次安静到头就行。
-    let stayed = (0..200).any(|_| {
-        wait_quiet(Duration::ZERO);
-        stays_quiet(Duration::from_millis(1))
-    });
+    // 登记是一个进程一份：并着跑的别的测试随时会叫一声，所以多试几次，有一次安静到头就行。照时限试、不照次数（施工 CS-9：
+    // 关库的测试并着写，两百次 1 毫秒常常都撞上；别的测试一秒以内写完，之后一试就安静到头）。
+    let deadline = std::time::Instant::now() + Duration::from_secs(30);
+    let stayed =
+        std::iter::from_fn(|| (std::time::Instant::now() < deadline).then_some(())).any(|()| {
+            wait_quiet(Duration::ZERO);
+            stays_quiet(Duration::from_millis(1))
+        });
     assert!(stayed, "一声都没有的那一次安静到了头");
 }

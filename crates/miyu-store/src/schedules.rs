@@ -206,7 +206,7 @@ impl Schedules {
         let (db, opened) = open::open(&path);
         (
             db.map(|db| Schedules {
-                db: idle::keep("schedules", Mutex::new(db)),
+                db: idle::keep("schedules", &path, Mutex::new(db)),
                 path,
             }),
             opened,
