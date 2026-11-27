@@ -24,7 +24,7 @@ pub const QUIET: Duration = Duration::from_secs(2);
 pub const MERGE: Duration = Duration::from_secs(30);
 
 /// 起合的线程；起过的不再起。起不来的记一行 `WARN wal checkpoints not started`：库照旧，`-wal` 照 SQLite 自己的检查点和
-/// `journal_size_limit` 缩，好好退出时 SQLite 自己合回、删掉。
+/// `journal_size_limit` 缩；关库时不合（施工 CS-9），留到下次开库读回。
 pub fn spawn() {
     static STARTED: Once = Once::new();
     STARTED.call_once(|| {

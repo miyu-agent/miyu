@@ -50,6 +50,8 @@ mod stop_kept;
 #[cfg(unix)]
 mod stopping;
 #[cfg(unix)]
+mod stopping_create;
+#[cfg(unix)]
 mod stopping_early;
 #[cfg(unix)]
 mod terminal;

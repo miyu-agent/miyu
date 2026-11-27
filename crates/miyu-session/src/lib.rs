@@ -5,7 +5,7 @@
 //! 照 02 第四节「执行器怎么回动作」的表回。追加的事件写进会话日志、同步到磁盘了，才回应命令、
 //! 才推给订阅的头（`07-存储.md` S4）。
 //!
-//! - [`create()`]：造一个会话，照人格存下策略快照；
+//! - [`create()`]：造一个会话，照人格存下策略快照（核心要停时不造的是 [`create_until`]，施工 CS-9）；
 //! - [`load()`]：从磁盘载入一个会话，照快照重建策略；
 //! - [`Handle`]：发命令、订阅、有计划地停下；[`Backlog`]：订阅时要补发的那一截（施工 3-8 六补）；[`Shown`]：给头看的限额和
 //!   会话接下来请求的模型（[`Next`]，施工 8-10）；
@@ -101,7 +101,7 @@ pub use onlooker::Onlooker;
 pub use open::{
     Create, CreateError, Fork, ForkError, ForkedBase, GroupSettings, Installed, Load, LoadError,
     OfferedFeatures, Placed, PresetPlaces, SwitchedOff, ToolOverrides, Within, Workplace, create,
-    fork, fork_handing, load, load_placed, preview, preview_context,
+    create_until, fork, fork_handing, load, load_placed, preview, preview_context,
 };
 pub use path_text::path_text;
 pub use plugins::VenuePlugins;

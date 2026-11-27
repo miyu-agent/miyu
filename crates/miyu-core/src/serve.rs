@@ -76,8 +76,8 @@ impl Stopped {
 /// 以后才每隔一会儿（`check`：空闲时限的四分之一）看一次（回合、后台命令、扩展忙完没有，没有统一的信号），看到退出为止。
 /// 每次看的时候先看数据根里的锁文件还是不是拿着的这一个（施工 TMP-2）：不是了的有计划地停下，交回 [`Stopped::Gone`]。
 ///
-/// 停之前记一条「停了」：那时锁还在手里，下一个核心起来之前，这一份日志还是它一个人写。交回以后，
-/// 监听器、锁、各个连接都没了。
+/// 停之前记一条「停了」：那时锁还在手里，下一个核心起来之前，这一份日志还是它一个人写。再关上数据根里的库（施工 CS-9），
+/// 才放锁。交回以后，监听器、锁、各个连接、开着的库都没了。
 pub async fn serve(
     listener: Listener,
     core: Arc<Core>,
@@ -188,6 +188,8 @@ pub(crate) async fn serve_watched(
     }
     tracing::info!(target: TARGET, reason = stopped.as_str(), "stopped");
     drop(running);
+    // 库在放锁以前关上（施工 CS-9）：连接都断了、收尾都做完了，之后这一份核心不再碰数据根里的库文件。关的时候不合 `-wal`。
+    core.close_databases().await;
     drop(lock);
     stopped
 }

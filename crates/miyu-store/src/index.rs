@@ -85,7 +85,7 @@ impl SessionIndex {
         let (db, opened) = sqlite::open(path, SCHEMA, VERSION);
         let index = SessionIndex {
             path: path.to_path_buf(),
-            db: idle::keep("sessions", Mutex::new(db)),
+            db: idle::keep("sessions", path, Mutex::new(db)),
         };
         (index, opened)
     }

@@ -55,6 +55,7 @@ impl Sessions {
             due: Arc::default(),
             answering: std::sync::Mutex::default(),
             pressure: super::pressure::Pressure::default(),
+            stopping: super::stopping::Stopping::default(),
         }
     }
 

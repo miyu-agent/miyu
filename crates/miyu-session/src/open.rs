@@ -48,8 +48,10 @@ mod scan;
 mod setup;
 #[cfg(feature = "testkit")]
 mod told;
+mod until;
 #[cfg(feature = "testkit")]
 pub(crate) use told::told;
+use until::Stop;
 
 pub use draft::preview_context;
 pub use error::{CreateError, LoadError};
@@ -62,6 +64,7 @@ pub use setup::{
     Create, GroupSettings, Installed, Load, OfferedFeatures, PresetPlaces, SwitchedOff,
     ToolOverrides, Workplace,
 };
+pub use until::create_until;
 
 /// 造一个会话：先把策略快照存成 blob（先落 blob，再写引用它的事件），再建会话目录和日志，交给内核
 /// 造会话；`session.created` 落了盘，才交回 [`Handle`]。子会话（带着 [`Create::lineage`]）的 system 接上场所说明
@@ -73,11 +76,12 @@ pub use setup::{
 pub async fn create(setup: Create<'_>) -> Result<Handle, CreateError> {
     // 装箱再等：造会话这一段的 future 有三十多 KB，不装箱的话每个调用方的 future 都跟着大，调试构建在 Windows 较深的调用链上
     // 会栈溢出（施工 J-1 上的 CI 在 `route_learned` 上撞到过）。
-    Box::pin(created(setup)).await
+    Box::pin(created(setup, Stop::default())).await
 }
 
-/// [`create`] 干活的那一段。
-async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
+/// [`create`] 干活的那一段。`stop` 是核心要停了（施工 CS-9，[`create_until`]）：开始写盘以前不写，写好目录还没写造会话
+/// 那一条的删掉目录不造，写那一条的写完。
+async fn created(setup: Create<'_>, stop: Stop) -> Result<Handle, CreateError> {
     let config = Turning::start(setup.configs.clone(), setup.environment.cwd.clone()).await;
     let values = config.current().resolved.values();
     let mut opened = face::open(&setup, &values).await;
@@ -186,6 +190,9 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     let place_venue = venue.clone();
     // 那一间里她叫什么照人格的名字记（施工 E-1 修）。
     let persona_book = personas.clone();
+    if !stop.begin() {
+        return Err(CreateError::Stopped);
+    }
     let (snapshot, policy, texts, run, (guard, place), log, (turns, calls)) = blocking(move || {
         let mut snapshot = build(&resources, parts)
             .map_err(CreateError::Persona)?
@@ -224,7 +231,11 @@ async fn created(setup: Create<'_>) -> Result<Handle, CreateError> {
     .await?;
     let room = crate::memory::room_cell(calls.as_ref());
     let (kept, stored) = (blobs.clone(), blobs.clone());
-    models.ready().await;
+    // 目录、空的第一段建好了，造会话那一条还没写：这时要停的（等目录的那一阵也算），删掉目录不造（施工 CS-9）。
+    if !stop.unless(models.ready()).await {
+        error::abandoned(abandoned, &id).await;
+        return Err(CreateError::Stopped);
+    }
     let model = models.port(ForSession {
         id: id.clone(),
         seed: id.clone(),

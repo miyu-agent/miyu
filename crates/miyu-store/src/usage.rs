@@ -127,8 +127,8 @@ impl UsageIndex {
         let rates = Arc::new(rates::RateBook::open(&root.rates_file()));
         let index = UsageIndex {
             root: root.clone(),
+            db: idle::keep("usage", &path, Mutex::new(db)),
             path,
-            db: idle::keep("usage", Mutex::new(db)),
             rates,
         };
         (index, opened)

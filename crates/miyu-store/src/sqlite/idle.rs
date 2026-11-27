@@ -1,7 +1,8 @@
 //! 闲时把写前日志合回主库（施工 V-28，`internal/blueprint/store.md`「怎么走」的「库的写前日志」）。
 //!
 //! 库都是 WAL（`sqlite::connect`）：提交只往 `-wal` 后面追加，SQLite 攒到约 1000 页（约 4 MB）才自己做一次被动的检查点。
-//! 核心一直开着，没合回的那一截就一直在 `-wal` 里；被杀、崩了、断电时它留在数据根里，下次开库才合。
+//! 核心一直开着，没合回的那一截就一直在 `-wal` 里；被杀、崩了、断电时它留在数据根里，下次开库才合。关库时也不合（施工 CS-9，
+//! `sqlite::keep_wal_on_close`）：好好退出时没合的同样留到下次开库。
 //!
 //! 一个进程一份登记：开着的写连接和只读的连接（弱引用，库放下了自己掉）、最后一次提交或者读的时刻。每次提交叫一声
 //! （`sqlite::connect` 装的提交钩子，`wrote`），开库也算一声（上一回被杀留下的 `-wal` 也合），拿只读的连接读也算一声（`read`，
@@ -26,10 +27,13 @@
 //!   一截的（别的进程开着它读），合不完、不截，交回「没合完」，等下一阵写以后再合，不为它再起一次。合的时候忙等的时限是 0：
 //!   不等读的那一方读完，拿着锁干等（审计 R3E-4，原来一等就是开库默认的 5 秒）。
 //! - 合的事不在异步运行时里做：等着的一方是一个自己的线程。
+//! - 核心停下、放数据根的锁以前，把这个数据根里登记着的库都关上（施工 CS-9，[`close_under`]，在 `idle/close.rs`）：关的时候
+//!   不合（`sqlite::keep_wal_on_close`），放了锁以后进程里不再有开着的库。
 
 use std::ffi::OsString;
 use std::fs;
 use std::io;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, TryLockError, Weak};
 use std::time::{Duration, Instant};
 
@@ -37,10 +41,16 @@ use rusqlite::Connection;
 
 use super::DbError;
 
-/// 登记着的一个连接：哪一种库（写进运行日志，不写路径：路径里有人格的编号）、连接、是不是写的连接（只读的连接不合，
-/// 闲下来只放页缓存，施工 LW-29）。
+mod close;
+#[cfg(any(test, feature = "testkit"))]
+pub use close::open_under;
+pub use close::{Closed, close_under};
+
+/// 登记着的一个连接：哪一种库（写进运行日志，不写路径：路径里有人格的编号）、库文件在哪（停下时照数据根关，施工 CS-9）、
+/// 连接、是不是写的连接（只读的连接不合，闲下来只放页缓存，施工 LW-29）。
 struct Kept {
     kind: &'static str,
+    path: PathBuf,
     db: Weak<dyn Wal>,
     writes: bool,
 }
@@ -68,6 +78,13 @@ pub(crate) trait Wal: Send + Sync {
     /// 放掉这个连接攒着的页缓存（施工 LW-29）。正被别人用着的不等、交回假（它用完会再叫一声，下一遍再放）；没开成、
     /// 关上了的也交回假。
     fn shrink(&self) -> bool;
+
+    /// 关上（施工 CS-9，[`close_under`]）：正被用着的等它用完。交回关的时候出的错；没开成、已经关上的什么都不做。
+    fn close(&self) -> Result<(), DbError>;
+
+    /// 还开着库文件没有（测试看停下以后关干净了没有，[`open_under`]）。
+    #[cfg(any(test, feature = "testkit"))]
+    fn is_open(&self) -> bool;
 }
 
 /// 合一个库的结果。
@@ -108,6 +125,19 @@ impl Wal for Mutex<Option<Connection>> {
             None => false,
         }
     }
+
+    /// 拿走连接、关上：之后照「库用不了」读不出、什么都不写。
+    fn close(&self) -> Result<(), DbError> {
+        let taken = self.lock().unwrap_or_else(PoisonError::into_inner).take();
+        taken.map_or(Ok(()), close::close)
+    }
+
+    #[cfg(any(test, feature = "testkit"))]
+    fn is_open(&self) -> bool {
+        self.lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_some()
+    }
 }
 
 impl Wal for Mutex<Connection> {
@@ -117,6 +147,19 @@ impl Wal for Mutex<Connection> {
 
     fn shrink(&self) -> bool {
         free(self).is_some_and(|db| shrink(&db))
+    }
+
+    /// 换上一个内存里的空库、把原来的关上：之后再来的读写报错（没有表），不碰数据根。
+    fn close(&self) -> Result<(), DbError> {
+        let mut db = self.lock().unwrap_or_else(PoisonError::into_inner);
+        let file = std::mem::replace(&mut *db, Connection::open_in_memory()?);
+        close::close(file)
+    }
+
+    #[cfg(any(test, feature = "testkit"))]
+    fn is_open(&self) -> bool {
+        let db = self.lock().unwrap_or_else(PoisonError::into_inner);
+        db.path().is_some_and(|path| !path.is_empty())
     }
 }
 
@@ -134,24 +177,25 @@ fn shrink(db: &Connection) -> bool {
     db.execute_batch("PRAGMA shrink_memory").is_ok()
 }
 
-/// 登记一个开着的写连接，`kind` 是哪一种库；交回包着它的那一份（登记里只留弱引用）。开库也算一次提交：上一回被杀留下的
-/// `-wal` 等安静下来一起合。
-pub(crate) fn keep<W: Wal + 'static>(kind: &'static str, db: W) -> Arc<W> {
-    register(kind, db, true)
+/// 登记一个开着的写连接，`kind` 是哪一种库，`path` 是库文件；交回包着它的那一份（登记里只留弱引用）。开库也算一次提交：
+/// 上一回被杀、好好退出（施工 CS-9：关库时不合）留下的 `-wal` 等安静下来一起合。
+pub(crate) fn keep<W: Wal + 'static>(kind: &'static str, path: &Path, db: W) -> Arc<W> {
+    register(kind, path, db, true)
 }
 
 /// 登记一个开着的只读连接（施工 LW-29，检索库读的那一个）：不合它，库安静下来时只放它的页缓存。交回包着它的那一份。
-pub(crate) fn keep_reader<W: Wal + 'static>(kind: &'static str, db: W) -> Arc<W> {
-    register(kind, db, false)
+pub(crate) fn keep_reader<W: Wal + 'static>(kind: &'static str, path: &Path, db: W) -> Arc<W> {
+    register(kind, path, db, false)
 }
 
-fn register<W: Wal + 'static>(kind: &'static str, db: W, writes: bool) -> Arc<W> {
+fn register<W: Wal + 'static>(kind: &'static str, path: &Path, db: W, writes: bool) -> Arc<W> {
     let db = Arc::new(db);
     let weak: Weak<dyn Wal> = Arc::downgrade(&db) as Weak<dyn Wal>;
     let mut state = lock();
     state.open.retain(|kept| kept.db.strong_count() > 0);
     state.open.push(Kept {
         kind,
+        path: path.to_path_buf(),
         db: weak,
         writes,
     });
@@ -219,12 +263,28 @@ pub fn stays_quiet(longer: Duration) -> bool {
 
 /// 登记着的、还开着的连接：哪一种库、连接、是不是写的。顺手把放下了的从登记里去掉。
 fn open() -> Vec<(&'static str, Arc<dyn Wal>, bool)> {
+    opened(|_| true)
+        .into_iter()
+        .map(|(kind, db, writes, _)| (kind, db, writes))
+        .collect()
+}
+
+/// 登记着的、还开着的、库文件照 `wanted` 挑上的连接：哪一种库、连接、是不是写的、库文件。顺手把放下了的从登记里去掉。
+fn opened(wanted: impl Fn(&Path) -> bool) -> Vec<(&'static str, Arc<dyn Wal>, bool, PathBuf)> {
     let mut state = lock();
     state.open.retain(|kept| kept.db.strong_count() > 0);
     state
         .open
         .iter()
-        .filter_map(|kept| Some((kept.kind, kept.db.upgrade()?, kept.writes)))
+        .filter(|kept| wanted(&kept.path))
+        .filter_map(|kept| {
+            Some((
+                kept.kind,
+                kept.db.upgrade()?,
+                kept.writes,
+                kept.path.clone(),
+            ))
+        })
         .collect()
 }
 
@@ -255,18 +315,28 @@ pub fn checkpoint_all() -> Checkpointed {
     done
 }
 
-/// 合回、截短一个库：`-wal` 不在、是空的不碰（只看一眼文件的大小，不拿 SQLite 的锁）。
-fn truncate(db: &Connection) -> Result<Outcome, DbError> {
+/// 连接 `db` 的库的 `-wal` 有没有东西：不在、是空的、内存里的库都算没有（只看一眼文件的大小，不拿 SQLite 的锁）。
+///
+/// # Errors
+///
+/// 看不了文件的大小。
+fn wal_written(db: &Connection) -> Result<bool, DbError> {
     let Some(path) = db.path().filter(|path| !path.is_empty()) else {
-        return Ok(Outcome::Clean);
+        return Ok(false);
     };
     let mut wal = OsString::from(path);
     wal.push("-wal");
     match fs::metadata(&wal) {
-        Ok(meta) if meta.len() > 0 => {}
-        Ok(_) => return Ok(Outcome::Clean),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Outcome::Clean),
-        Err(error) => return Err(error.into()),
+        Ok(meta) => Ok(meta.len() > 0),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.into()),
+    }
+}
+
+/// 合回、截短一个库：`-wal` 不在、是空的不碰（[`wal_written`]）。
+fn truncate(db: &Connection) -> Result<Outcome, DbError> {
+    if !wal_written(db)? {
+        return Ok(Outcome::Clean);
     }
     // 合的时候不忙等（审计 R3E-4）：TRUNCATE 碰上读老一截的，照忙等的时限（开库默认 5 秒）一直等它读完，这期间拿着写连接
     // 的锁，这个库的写全排在后面。时限设成 0，SQLite 就照被动的那样能抄的抄、交回没合完；合完设回原来的。

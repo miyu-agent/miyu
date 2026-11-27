@@ -10,6 +10,11 @@
 //! - 闲时合回（施工 V-28，[`idle`]）：每个写连接装一个提交钩子，提交一次叫一声；核心等到库最后一次提交过去一阵子，把
 //!   `-wal` 合回主库、截成 0 字节。`journal_size_limit` 是 0：一阵子一直有写、等不到闲的，SQLite 自己做完检查点以后下一次
 //!   提交时 `-wal` 也截回去，不停在最高水位。被杀、断电时留在 `-wal` 里的只有最后那一阵没合的。
+//! - 关库时不合（施工 CS-9，`keep_wal_on_close`）：每个连接都设 `SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE`，最后一个连接关上时
+//!   SQLite 不再把 `-wal` 抄回主库、同步两次。盘慢的时候一个库要等两次同步，核心收尾时三个库一合就过了总时限（2026-11-27
+//!   复现：每次同步拖 4 秒，关库这一步一直跑到 30 秒）。没合的留在 `-wal` 里，下次开库照常读到、闲下来合回（[`idle`]），
+//!   崩溃安全和被杀一样。核心停下、放锁以前关库（[`idle::close_under`]）：`-wal` 已经是空的，照常让 SQLite 删掉 `-wal`、
+//!   `-shm`，不用同步。
 //! - 库所在的目录还没有、要建的，只在数据根里建（`durable::create_dir`，施工 TMP-1）：数据根被删了的不建回来，这一回用不了，
 //!   错误里带着那个目录。所有的库都在数据根里。
 
@@ -19,6 +24,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
+use rusqlite::config::DbConfig;
 
 use crate::durable::create_dir;
 
@@ -75,6 +81,7 @@ pub(crate) fn connect(
         create_dir(dir)?;
     }
     let db = Connection::open(path)?;
+    keep_wal_on_close(&db)?;
     // 先装钩子：新建时建表那一次提交也算一次写（施工 V-28）。
     db.commit_hook(Some(|| {
         idle::wrote();
@@ -104,6 +111,16 @@ pub(crate) fn connect(
     db.pragma_update(None, "synchronous", "NORMAL")?;
     db.pragma_update(None, "journal_size_limit", WAL_LIMIT)?;
     Ok((db, found == 0))
+}
+
+/// 关上连接时不合 `-wal`（施工 CS-9，见这一页开头）：库的每个连接开好就设，最后一个关上的那一个照它。
+///
+/// # Errors
+///
+/// SQLite 不认这一项（3.16.2 以前的版本，编进来的不会）。
+pub(crate) fn keep_wal_on_close(db: &Connection) -> Result<(), DbError> {
+    db.set_db_config(DbConfig::SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, true)?;
+    Ok(())
 }
 
 /// 删掉库文件，连同 SQLite 的 `-wal`、`-shm`。没有的不要紧。

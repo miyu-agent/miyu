@@ -1,6 +1,7 @@
 //! 闲时合回库的写前日志（施工 V-28，`internal/blueprint/store.md`「怎么走」的「库的写前日志」）：真的 `miyu core`，模型是本机
 //! 回环上的假服务器。说过两轮、库安静下来以后，数据根里每个库的 `-wal` 都是 0 字节；这时硬杀核心（Unix 上 `SIGKILL`，
-//! Windows 上结束进程），库照样开得了、没坏、行都在。不等安静就杀的也一样：崩溃安全和以前一样。
+//! Windows 上结束进程），库照样开得了、没坏、行都在。不等安静就杀的也一样：崩溃安全和以前一样。好好停下时关库不合（施工 CS-9）：
+//! 没合的留在 `-wal` 里，下一个核心照样读得到。
 
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -9,7 +10,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::support::{Home, MIYU, within};
+use crate::support::{Home, MIYU, count, within};
 use miyu_http::testkit::{Piece, Reply, Server};
 use miyu_store::index::{FILE, SessionIndex};
 use miyu_store::recall::{Opened, RecallIndex};
@@ -172,4 +173,33 @@ async fn a_core_killed_before_it_is_quiet_loses_nothing_either() {
     })
     .await;
     kill_and_check(&home, &mut core, &["你好"]);
+}
+
+/// 好好停下时关库不合（施工 CS-9，修之前最后一个连接关上时 SQLite 把 `-wal` 合回主库、同步两次、删掉，盘慢时这一步过了收尾的
+/// 总时限）：说过两轮马上 `miyu core stop`（还没安静满 30 秒，`-wal` 里有没合的），核心照常停下、退出码 0，`-wal` 留在数据根里；
+/// 再起一个核心，接着那个会话说一句照常说得了，硬杀以后库照样开得了、没坏，前两轮的行都在。
+#[tokio::test]
+async fn a_stopped_core_leaves_its_wal_for_the_next_one() {
+    let home = Home::new();
+    let server = Server::start((0..8).map(|_| said("好。")).collect()).await;
+    let mut core = start(&home, &server);
+    miyu(&home, &["ask", "你好"]).await;
+    miyu(&home, &["ask", "-c", "再说一句"]).await;
+    miyu(&home, &["core", "stop"]).await;
+    let status = core.wait().expect("收得了");
+    let log = home.core_log();
+    assert_eq!(status.code(), Some(0), "{log}");
+    assert_eq!(count(&log, "stopped reason=request"), 1, "{log}");
+    let left = wals(home.root.path());
+    let sessions = left.iter().find(|(path, _)| {
+        path.file_name()
+            .is_some_and(|name| name == "sessions.db-wal")
+    });
+    assert!(
+        sessions.is_some_and(|(_, size)| *size > 0),
+        "没合的留在 -wal 里：{left:?}"
+    );
+    let mut core = start(&home, &server);
+    miyu(&home, &["ask", "-c", "第三句"]).await;
+    kill_and_check(&home, &mut core, &["你好", "再说一句"]);
 }

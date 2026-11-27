@@ -30,8 +30,8 @@ impl RecallIndex {
     pub(crate) fn absent(path: &Path) -> RecallIndex {
         RecallIndex {
             path: path.to_path_buf(),
-            db: idle::keep("recall", Mutex::new(None)),
-            reader: idle::keep_reader("recall", Mutex::new(None)),
+            db: idle::keep("recall", path, Mutex::new(None)),
+            reader: idle::keep_reader("recall", path, Mutex::new(None)),
         }
     }
 
@@ -117,6 +117,8 @@ impl RecallIndex {
 fn both(path: &Path, db: Connection) -> Result<(Connection, Connection), DbError> {
     add(&db)?;
     let reader = Connection::open(path)?;
+    // 读的连接也不合（施工 CS-9）：两个连接里最后关上的那一个才合，它常常是读的。
+    sqlite::keep_wal_on_close(&reader)?;
     reader.pragma_update(None, "query_only", true)?;
     Ok((db, reader))
 }

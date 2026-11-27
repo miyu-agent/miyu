@@ -61,7 +61,7 @@ impl Cache {
     pub(crate) fn open(path: &Path) -> Cache {
         let (db, _) = sqlite::open(path, SCHEMA, VERSION);
         Cache {
-            db: idle::keep("rates", Mutex::new(db)),
+            db: idle::keep("rates", path, Mutex::new(db)),
         }
     }
 
