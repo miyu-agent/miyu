@@ -1614,6 +1614,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW30"><span class="n">LW-30</span>录清单的剧本照真实使用补全<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW31"><span class="n">LW-31</span>分配器的测试另起进程量<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW32"><span class="n">LW-32</span>录清单的界面语言定成中文<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW36"><span class="n">LW-36</span>旁听的消息不放回历史<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO1"><span class="n">MO-1</span>macOS 排函数：页探针进仓库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO2"><span class="n">MO-2</span>macOS 排函数：量尺带探针录清单<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO3"><span class="n">MO-3</span>macOS 排函数：发行包照起点清单排<span class="st">…</span></a></li>
@@ -63420,6 +63421,57 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/LW-32-录清单的界面语言定成中文.md</code>；蓝图 <code>perf.md</code>「排函数」。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW36" aria-labelledby="h-sLW36">
+  <div class="sheet-head"><h2 id="h-sLW36"><span class="no">LW-36</span>群里旁听的消息不把收起来的历史读回内存</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">一台实际使用的机器上，核心的大头是十几个被平台桥订阅的群会话载入的历史。会话歇满 3 分钟本来会把历史收成槽（施工 LW-10），但群里每来一条旁听的消息都先把整段历史从日志读回内存、再把收起的计时往后推，活跃的群永远收不起来。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-kernel/src/session/shelve.rs、history/shelf.rs　crates/miyu-session/src/actor/shelf.rs</span><span class="dir-note">LW-36</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>旁听的 session.send、events.append、空闲时的「落了盘」不看历史：收着也直接送，不先放回</li>
+              <li>收着时追加的事件落了盘以后并进槽里，只记序号；压缩、撤销、恢复、撤回、turn.started 不并</li>
+              <li>一批里全是不看历史的输入不推迟收起：照最后一次看历史的那一批加 3 分钟算</li>
+              <li>发出去的请求、写下的日志逐字节不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">旁听不放回历史、不推迟收起；收着时「有没有能压的」可能晚到下一次放回才推</span><span class="rl">internal/blueprint/kernel/session.md「闲下来收成槽」第 5、6 条</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-36</dd></div>
+        <div><dt>名称</dt><dd>群里旁听的消息不把收起来的历史读回内存</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-36</dd></div>
+        <div><dt>验收</dt><dd>沙箱里照实际使用的规模：约 3 分钟叫她一次时核心 68.7 → 46.4 MB，每 8 条叫一次时 74.8 → 61.0 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>随机测试（固定种子，平时 60 例、全量 2000 例）、场景测试、暂停时钟的执行器测试：请求和日志与从不收起的逐字节相同</span></li>
+        <li><span class="ok">✓</span><span>收着的群会话再来 1000 句，内核这一份只长 28,608 字节；一直不收的两回 2000 句长 3,060,480 字节</span></li>
+        <li><span class="ok">✓</span><span>12 个群各记过 1500 条、每分钟来 20 条：每 8 条叫一次 74.8 → 61.0 MB，约 3 分钟叫一次 68.7 → 46.4 MB，从不叫 66.0 → 41.8 MB</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-36-旁听的消息不放回历史.md</code>；蓝图 <code>kernel/session.md</code>、<code>kernel/history.md</code>、<code>session/actor.md</code> 各自的「闲下来收成槽」，<code>venues.md</code>。</li>
       </ul>
     </div>
   </div>
