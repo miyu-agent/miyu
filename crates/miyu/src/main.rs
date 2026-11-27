@@ -114,6 +114,10 @@ fn main() -> ExitCode {
     let args: Vec<OsString> = std::env::args_os().collect();
     // 头拉起核心的快路（施工 LW-8，`core.md`「起来的先后」）：认得出的直接进核心，不搭整棵命令行树。
     if let Some(idle) = running_core(args.get(1..).unwrap_or_default()) {
+        // 人在终端前台直接跑的只当前台壳，真正的核心另开会话拉起（施工 CS-11）。
+        if let Some(code) = miyu_core::front::foreground() {
+            return code;
+        }
         tuned::relaunch();
         return miyu_core::main(miyu_core::Options {
             idle: idle.map(Duration::from_secs),
@@ -246,6 +250,9 @@ fn dispatch(args: Vec<OsString>) -> ExitCode {
             ..
         }) => miyu_cli::core_stop(),
         Some(Command::Core { idle_seconds, .. }) => {
+            if let Some(code) = miyu_core::front::foreground() {
+                return code;
+            }
             tuned::relaunch();
             miyu_core::main(miyu_core::Options {
                 idle: idle_seconds.map(Duration::from_secs),

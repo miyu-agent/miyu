@@ -24,6 +24,7 @@
 
 mod cache;
 pub mod embed;
+pub mod front;
 mod kit;
 mod leftovers;
 mod not_started;

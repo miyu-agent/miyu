@@ -52,6 +52,10 @@ rustix = { version = "1", features = ["termios", "pty"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["io-util", "macros", "rt", "time"] }
 
+[target.'cfg(unix)'.dev-dependencies]
+# 测试拉起的核心另开会话（施工 CS-11，`support/mod.rs` 的 `core_staying`）：在终端里跑测试也不当前台壳。
+miyu-pipe = { path = "../miyu-pipe" }
+
 [lints]
 workspace = true
 

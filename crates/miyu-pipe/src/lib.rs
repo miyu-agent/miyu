@@ -16,7 +16,7 @@
 //!
 //! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。macOS 上另有一样：`parent_process`，一个进程的父进程（施工
 //! XG-1 下，同上，`proc_pidinfo`）。Unix（Linux、macOS）上还有 `new_session`：拉起的子进程开一个新会话、不带控制终端（施工
-//! CS-10，`pre_exec` 里调 `setsid()`）。
+//! CS-10，`pre_exec` 里调 `setsid()`），和 `controlling_terminal`：这个进程有没有控制终端（施工 CS-11，人在终端前台跑 `miyu core` 时走前台壳）。
 
 #[cfg(any(windows, target_os = "macos"))]
 mod parent;
@@ -26,6 +26,8 @@ mod process;
 mod session;
 #[cfg(windows)]
 mod stdio;
+#[cfg(unix)]
+mod terminal;
 #[cfg(windows)]
 mod windows;
 
@@ -39,6 +41,8 @@ pub use process::{process_created, process_running};
 pub use session::new_session;
 #[cfg(windows)]
 pub use stdio::uninherit_std_handles;
+#[cfg(unix)]
+pub use terminal::controlling_terminal;
 #[cfg(windows)]
 pub use windows::{client_process, create, create_for_containers, current_user, server_user};
 

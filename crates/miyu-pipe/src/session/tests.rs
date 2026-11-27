@@ -44,3 +44,15 @@ fn a_process_group_as_well_keeps_it_from_starting() {
         "{error}"
     );
 }
+
+/// 同一个命令设了两次（测试夹具设一次、拉起核心的 `detach` 又设一次，施工 CS-11）：照样起得来，照样自己开了会话。
+#[test]
+fn twice_is_once() {
+    let mut command = Command::new("python3");
+    command.args(["-c", "import os; print(os.getsid(0) == os.getpid())"]);
+    new_session(&mut command);
+    new_session(&mut command);
+    let out = command.output().expect("起得来 python3");
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "True");
+}
