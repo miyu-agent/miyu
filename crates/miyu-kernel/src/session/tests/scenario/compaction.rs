@@ -300,6 +300,7 @@ fn used(stage: &Stage, k: usize) -> u64 {
         anchor.as_ref(),
         &crate::testkit::model(),
         &COMPACTION.price,
+        crate::estimate::scale(&history, &crate::testkit::model()),
     )
 }
 

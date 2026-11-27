@@ -100,6 +100,7 @@ impl Session {
             compaction,
             shells,
             asks,
+            estimate,
         } = call;
         let (usage, cost, mut error, stopped, wire) = match ending {
             Ending::Said {
@@ -220,6 +221,8 @@ impl Session {
             request: sent.as_ref().map(|sent| sent.request.clone()),
             sent: wire,
             messages: messages as u64,
+            // 没发出去的不记：没有真值和它配对。
+            estimate: estimate.filter(|_| sent.is_some()),
             first_difference: difference
                 .map(|difference| Box::new(FirstDifference::from(difference))),
             usage,

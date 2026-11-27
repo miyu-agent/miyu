@@ -25,7 +25,6 @@ use super::compaction::{Due, expected, settle};
 use super::input::Reread;
 use super::summary::{Summarized, called_tool};
 use super::turn::Stage;
-use crate::estimate;
 use crate::event::{
     Body, CallError, CompactionProgress, CompactionStarted, Cost, Purpose, Transient,
     TransientBody, Usage,
@@ -391,6 +390,7 @@ impl Session {
         let Some(price) = self.price() else {
             return false;
         };
+        let weigh = self.weigh(&self.history, &price);
         let ordered = self.history.ordered();
         if settle(&ordered, upto) != Some(upto) {
             return false;
@@ -398,9 +398,10 @@ impl Session {
         let tail = ordered
             .iter()
             .filter(|event| event.seq > upto)
-            .map(|event| estimate::event(event, &price))
+            .map(|event| weigh.event(event))
             .fold(0, u64::saturating_add);
-        tail <= room
+        // `room` 是真值的口径（施工 CT-2）。
+        self.scale().apply(tail) <= room
     }
 
     /// 有效历史里第 `upto` 条以前的指纹：检查点的序号，和它后面第 `upto` 条及以前还算数的事件的序号。

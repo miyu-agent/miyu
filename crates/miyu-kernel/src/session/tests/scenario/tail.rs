@@ -9,8 +9,17 @@ use crate::session::Compaction;
 
 /// 一个会压缩的替身，尾巴的上限是 `tail`。
 fn with_tail(tail: u64) -> Stage {
+    with_tail_and(tail, || std::sync::Arc::new(Listing))
+}
+
+/// 同 [`with_tail`]，组装是 `assembler` 造的。
+fn with_tail_and(
+    tail: u64,
+    assembler: impl Fn() -> std::sync::Arc<dyn Assembler + Send + Sync> + 'static,
+) -> Stage {
     let make = move || {
         let mut policy = policy();
+        policy.assembler = assembler();
         policy.compaction = Some(Compaction {
             reserve_cap: 10,
             margin: 10,
@@ -251,4 +260,57 @@ fn the_tail_counts_images_with_the_driver_price() {
     };
     assert_eq!(run(None), 1);
     assert_eq!(run(Some(std::sync::Arc::new(One))), 0);
+}
+
+/// 替身的组装，另外说人的每句话写进请求时前面多一段 30 个 token 的行首（施工 CT-2：群里的一行带着钟点、名字、平台身份、
+/// 编号，常常比正文还长）。
+struct Headed;
+
+impl Assembler for Headed {
+    fn assemble(&self, history: &History) -> Request {
+        Listing.assemble(history)
+    }
+
+    fn summarize(
+        &self,
+        history: &History,
+        upto: Seq,
+        cut: Option<Seq>,
+        instructions: Option<&str>,
+    ) -> Request {
+        Listing.summarize(history, upto, cut, instructions)
+    }
+
+    fn summarize_isolated(
+        &self,
+        history: &History,
+        upto: Seq,
+        cut: Option<Seq>,
+        instructions: Option<&str>,
+    ) -> Request {
+        Listing.summarize_isolated(history, upto, cut, instructions)
+    }
+
+    fn summary(&self, reply: &[Block]) -> Option<String> {
+        Listing.summary(reply)
+    }
+
+    fn rendered(&self, _: &History, event: &Event) -> Option<Vec<Block>> {
+        let Body::MessageUser(message) = &event.body else {
+            return None;
+        };
+        let mut blocks = vec![Block::Text(Text { text: words(30) })];
+        blocks.extend(message.blocks.iter().cloned());
+        Some(blocks)
+    }
+}
+
+#[test]
+fn the_tail_is_weighed_as_the_assembler_writes_it_not_by_the_bare_words() {
+    // 同 `groups_are_kept_from_the_newest_back_until_the_budget`，人的每句话多 30 的行首：第三句 40、第二轮的回复 10、
+    // 第二句 40，一共 90；再加第一轮的回复 50 就超了。尾巴从第二句起，替代到 8。只数正文的话是 5（2026-11-27 主人的群会话：
+    // 尾巴估一万四，实际五万多）。
+    let mut stage = with_tail_and(100, || std::sync::Arc::new(Headed));
+    three_turns(&mut stage, 10_000);
+    assert_eq!(seen(&stage, 2), 8);
 }

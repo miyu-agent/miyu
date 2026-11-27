@@ -12,7 +12,6 @@ use super::Session;
 use super::compaction::{Compacting, Due, cuts};
 use super::overflow::Passive;
 use super::turn::Stage;
-use crate::estimate;
 use crate::event::{Body, CompactTrigger};
 use crate::id::Seq;
 
@@ -111,6 +110,7 @@ impl Session {
     ) -> Option<(Seq, u32)> {
         let price = self.price()?;
         let history = self.history.until(upto);
+        let weigh = self.weigh(&history, &price);
         let ordered = history.ordered();
         let cuts = cuts(&ordered);
         // 上一次截掉的不算：投影的开头一段，序号都不超过它。
@@ -138,9 +138,10 @@ impl Session {
                 .find(|&k| {
                     let dropped: u64 = ordered[from..starts[k].0]
                         .iter()
-                        .map(|event| estimate::event(event, &price))
+                        .map(|event| weigh.event(event))
                         .sum();
-                    dropped >= excess
+                    // `excess` 是供应商报的，真值的口径（施工 CT-2）。
+                    self.scale().apply(dropped) >= excess
                 })
                 .unwrap_or(groups - 1),
             None => {

@@ -5,6 +5,7 @@
 //! 同一条路，只有推给头的和说完了以后不一样。
 
 mod cut;
+mod weigh;
 mod written;
 
 use super::Session;
@@ -14,7 +15,7 @@ use super::input::Reread;
 use super::summary::Summarized;
 use super::turn::Stage;
 use crate::accumulate::Delta;
-use crate::estimate::{self, Price, WithImages};
+use crate::estimate::{self, Price};
 use crate::event::{
     Body, CompactTrigger, CompactionDone, CompactionProgress, ContextCompacted, EndReason, Event,
     Transient, TransientBody,
@@ -210,14 +211,6 @@ impl Session {
         Some(limits.window?.saturating_sub(reserve).saturating_sub(line))
     }
 
-    /// 估算图片、文件的办法：驱动交了图片算法的照它，别的照策略里的固定数。策略里没有压缩、没交限额的，没有。
-    pub(super) fn price(&self) -> Option<WithImages<'_>> {
-        Some(WithImages {
-            images: self.limits.as_ref()?.images.as_deref(),
-            flat: self.policy.compaction.as_ref()?.price,
-        })
-    }
-
     /// 这份请求算出的用量（`compaction.md` 第一条）：`request` 是照这时的有效历史组装的。策略里没有压缩、没交过限额的
     /// 算不了，没有。执行器开着 `DEBUG` 时也照它重估一遍，量用多久（施工 YC-14）。只读，不出动作。
     pub fn used(&self, request: &Request) -> Option<u64> {
@@ -233,6 +226,7 @@ impl Session {
             anchor.as_ref(),
             &limits.model,
             &self.price()?,
+            estimate::scale(history, &limits.model),
         ))
     }
 
@@ -313,8 +307,15 @@ impl Session {
             None => self.stored?,
         };
         let ordered = self.history.ordered();
-        let upto =
-            tail_upto(&ordered, budget, price, keep_last).map_or(upto, |tail| tail.min(upto));
+        // 预算是真值的口径，留尾巴照本地估算数：换成估算的口径再比（施工 CT-2，`estimate::Scale`）。
+        let budget = self.scale().unapply(budget);
+        let upto = tail_upto(
+            &ordered,
+            budget,
+            &self.weigh(&self.history, price),
+            keep_last,
+        )
+        .map_or(upto, |tail| tail.min(upto));
         let upto = settle(&ordered, upto)?;
         // 不比上一次压缩的 `upto` 晚的，有效历史里那以前的早就替代掉了，这里一条都找不到。
         events

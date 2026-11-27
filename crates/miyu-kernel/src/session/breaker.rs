@@ -27,6 +27,14 @@ use crate::time::Timestamp;
 /// 预留取小的。工具调用那几步的回答通常几百 token，整份输出预留（至多 20000）让停下等的点提前了一大截。
 const LEAST_OUTPUT: u64 = 4096;
 
+/// 压完以后的上下文不超过压缩线的几分之几，算这次压缩腾出了地方（施工 CT-2，2026-11-27）：分子、分母。压完还在线的八成以上，
+/// 下一句话、一次工具结果就又到线，和没压一样。
+const HELPED: (u64, u64) = (4, 5);
+
+/// 每次压缩都腾出了地方、只是又被填满的，连着压到策略的 `refills` 的几倍才停（施工 CT-2，2026-11-27 项目主人定：一轮里至多
+/// 压 6 次）：出厂 3 次，就是 6 次。2026-11-27 真机重放里一轮工具接连失败、她连着重试，压了三次次次腾出了地方，照旧的数也停了。
+const LOOSE: u32 = 2;
+
 /// 发主请求之前，熔断这边的结论（[`Session::before_asking`]）。
 pub(super) enum Before {
     /// 照发。
@@ -52,22 +60,20 @@ impl Session {
             return Before::Send;
         };
         let refills = self.refills();
-        match self.pause_numbers() {
-            Some(pause) if refills.is_some_and(|refills| refills >= pause.refills) => {
-                Before::Pause(CompactionPaused {
-                    reason: PauseReason::TooLarge,
-                    failures: None,
-                    entry: self.largest(),
-                })
-            }
-            _ => Before::Compact(Due {
-                upto,
-                used,
-                refills,
-                trigger: CompactTrigger::Auto,
-                instructions: None,
-            }),
+        if self.refilled_too_often(refills) {
+            return Before::Pause(CompactionPaused {
+                reason: PauseReason::TooLarge,
+                failures: None,
+                entry: self.largest(),
+            });
         }
+        Before::Compact(Due {
+            upto,
+            used,
+            refills,
+            trigger: CompactTrigger::Auto,
+            instructions: None,
+        })
     }
 
     /// 写暂停：回到准备好，这一条落了盘再来，那时已经暂停着了。
@@ -87,6 +93,7 @@ impl Session {
     ) -> Vec<Action> {
         let cause = self.turn.as_ref().and_then(|turn| turn.cause.clone());
         let called = ModelCalled {
+            estimate: None,
             sent: None,
             seen,
             endpoint: None,
@@ -231,13 +238,53 @@ impl Session {
             .then(|| previous.refills.unwrap_or(0).saturating_add(1))
     }
 
-    /// 有效历史里检查点后面的，估得最大的那一条，照第一条第 2 条的数法；一样大的取早的。尾巴也算：它也在请求里。
+    /// 这一次「压完很快又到线」是连着的第 `refills` 次，该不该写暂停（第十条第 5 条，施工 CT-2）：上一次压缩没腾出地方的
+    /// （[`Session::compaction_helped`] 是假的），到了策略的 `refills` 就停，再压也一样；腾出了地方的，是新进来的东西（读的文件、
+    /// 群里的话、工具的结果）又把它填满了，照常压，连着到了 `refills` 的 [`LOOSE`] 倍才停，免得一轮里压个没完。快照里没有熔断的数的
+    /// 不停。只管主动压缩：被动压缩照以前的数停（`overflow.rs`）。
+    pub(super) fn refilled_too_often(&self, refills: Option<u32>) -> bool {
+        let (Some(pause), Some(refills)) = (self.pause_numbers(), refills) else {
+            return false;
+        };
+        let limit = if self.compaction_helped() {
+            pause.refills.saturating_mul(LOOSE)
+        } else {
+            pause.refills
+        };
+        refills >= limit
+    }
+
+    /// 最近一次压缩腾出了地方（施工 CT-2）：压完以后第一次说完了的主请求，报的上下文不超过压缩线的 [`HELPED`]。不知道的
+    /// （没有压缩线、压完还没有说完了的主请求、没报用量）算没腾出：照以前的数停。
+    fn compaction_helped(&self) -> bool {
+        let (Some(line), Some(checkpoint)) = (self.line(), self.history.checkpoint()) else {
+            return false;
+        };
+        let after = self
+            .history
+            .events()
+            .iter()
+            .filter(|event| event.seq > checkpoint.seq)
+            .find_map(|event| match &event.body {
+                Body::ModelCalled(called) if called.result == CallResult::Ok && !called.aside() => {
+                    called.usage.as_ref()
+                }
+                _ => None,
+            });
+        after.is_some_and(|usage| {
+            let context = usage.context.unwrap_or_else(|| usage.total());
+            context.saturating_mul(HELPED.1) <= line.saturating_mul(HELPED.0)
+        })
+    }
+
+    /// 有效历史里检查点后面的，估得最大的那一条，照留尾巴的数法（施工 CT-2，`Weigh`）；一样大的取早的。尾巴也算：它也在请求里。
     pub(super) fn largest(&self) -> Option<Seq> {
         let price = self.price()?;
+        let weigh = self.weigh(&self.history, &price);
         self.history
             .events()
             .iter()
-            .max_by_key(|event| (estimate::event(event, &price), Reverse(event.seq)))
+            .max_by_key(|event| (weigh.event(event), Reverse(event.seq)))
             .map(|event| event.seq)
     }
 

@@ -28,6 +28,10 @@ pub struct ModelCalled {
     pub sent: Option<ContentHash>,
     /// 统一的请求里有几条消息。
     pub messages: u64,
+    /// 发这一次主请求时，核心对整份请求（工具面、system、全部消息）的本地估算，不带锚（施工 CT-2）。和 `usage` 配成一对，
+    /// 算这个端点、模型上估算和真值的倍数（`estimate::scale`）。摘要请求、辅助请求、没发出去的、以前的日志没有。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub estimate: Option<u64>,
     /// 和这个会话上一次请求比，第一处不同在哪。只是接着加的、前面没有请求可比的，没有。装在盒子里（施工 3-8 四补）：多半
     /// 没有，放在事件里平白占地方；`purpose` 加进来以后，`model.called` 比别的种类大出两百字节，clippy 的
     /// `large_enum_variant` 拦下了。

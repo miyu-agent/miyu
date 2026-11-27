@@ -1,11 +1,11 @@
 //! 替代到哪、切在哪（`internal/blueprint/compaction.md` 第三条第 2 条，施工 6-2 下）：留尾巴、切得开的地方、一组不拆。截短重试
 //! （`shorten.rs`）也照这里的切法。
 
-use crate::estimate::{self, Price};
+use crate::estimate::Weigh;
 use crate::event::{Body, Event};
 use crate::id::Seq;
 
-/// 留尾巴（`compaction.md` 第三条第 2 条，施工 6-2 下）：照投影的先后（`History::ordered`）看，一组从一条人的消息或者
+/// 留尾巴（`compaction.md` 第三条第 2 条，施工 6-2 下）：一条照它进请求以后写成的块估（`weigh`，施工 CT-2）；照投影的先后（`History::ordered`）看，一组从一条人的消息或者
 /// 一条回复开始，两组之间的别的事件跟着前面那一组。从最新的一组往回，一组一组加进尾巴，加上就超过 `budget` 的停在它
 /// 后面，交回尾巴前面那一条；最新的一组本身就超的，不留尾巴，是 `None`。
 ///
@@ -14,14 +14,14 @@ use crate::id::Seq;
 pub(super) fn tail_upto(
     ordered: &[&Event],
     budget: u64,
-    price: &dyn Price,
+    weigh: &Weigh<'_>,
     keep_last: bool,
 ) -> Option<Seq> {
     let cuts = cuts(ordered);
     let mut size = 0u64;
     let mut upto = None;
     for (index, event) in ordered.iter().enumerate().rev() {
-        size = size.saturating_add(estimate::event(event, price));
+        size = size.saturating_add(weigh.event(event));
         if !matches!(event.body, Body::MessageUser(_) | Body::MessageAssistant(_)) {
             continue;
         }

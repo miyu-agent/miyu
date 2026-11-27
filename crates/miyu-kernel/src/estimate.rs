@@ -5,8 +5,9 @@
 //! 下一次请求就被真值盖过去（Claude Code、codex、pi、dsh 都是这个结构）。
 //!
 //! 这里只有算法；什么时候查、到线怎么压，在会话的 `compaction.rs`（施工 6-2）。压缩留尾巴时，一条事件照同样的数法
-//! 估（[`event`]，施工 6-2 下）。
+//! 估（[`event`]，施工 6-2 下），数的是它进请求以后写成的块（[`Weigh`]，施工 CT-2）。
 
+use crate::assemble::Assembler;
 use crate::block::Block;
 use crate::event::{Body, CallResult, Event};
 use crate::history::History;
@@ -130,13 +131,100 @@ pub fn anchor(history: &History) -> Option<Anchor> {
         })
 }
 
-/// 这一次请求发给 `model` 时，上下文用了多少 token：锚加上锚以后新增的那几条的估算。
+/// 本地估算和供应商真值的倍数（施工 CT-2，`compaction.md` 第一条第 4 款）：千分之几，夹在 [`SCALE_LEAST`] 到 [`SCALE_MOST`]
+/// 之间。字节除以 4 对有的模型系统性偏低（2026-11-27 Antigravity 上的 Gemini：中文约 2.8 字节一个 token，agy 自己还加约
+/// 7000，真值是估算的 1.65 到 1.92 倍），尾巴照估算留到 16000，实际是它的三倍多，压完照真值已经过线。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Scale(u64);
+
+/// 倍数至少多少（千分之几）：一倍。供应商报得比估算少的不往小里收，照估算（宁多勿少，照 dsh，同 [`usage`] 里锚盖住的那一截）：
+/// 往小里收，到线得晚，真超长的就多了。
+pub const SCALE_LEAST: u64 = 1000;
+
+/// 估算至少多大的请求才拿来定倍数（施工 CT-2）：供应商自己加的固定开销（agy 约 7000）在小请求上会把倍数放大到顶，不代表
+/// 快满时的大请求；和尾巴的预算同一个量级。
+pub const SCALE_FROM: u64 = 16_000;
+
+/// 倍数至多多少（千分之几）：真值和估算差得再多，也不信过三倍（一次报错的用量别把尾巴压没了）。
+pub const SCALE_MOST: u64 = 3000;
+
+impl Scale {
+    /// 一倍：没有可比的时候照估算。
+    pub const ONE: Scale = Scale(1000);
+
+    /// 千分之几。
+    #[must_use]
+    pub fn per_mille(self) -> u64 {
+        self.0
+    }
+
+    /// 一份本地估算换成真值的口径（向上取整）。
+    #[must_use]
+    pub fn apply(self, tokens: u64) -> u64 {
+        tokens.saturating_mul(self.0).div_ceil(1000)
+    }
+
+    /// 真值口径的一个数换成本地估算的口径（留尾巴的预算照它，向下取整）。
+    #[must_use]
+    pub fn unapply(self, tokens: u64) -> u64 {
+        tokens.saturating_mul(1000) / self.0
+    }
+}
+
+/// 照有效历史挑倍数（至少一倍）：最近一次发给 `model`、说完了、带着用量和估算（`model.called` 的 `estimate`，至少 [`SCALE_FROM`]）的
+/// 主请求，真值除以估算。
+/// 检查点前面留在尾巴里的也算：压完的头一次请求还没有锚，照它估才不会又一次估少。一条都没有的（新会话、以前的日志）是
+/// [`Scale::ONE`]。只读有效历史，重启以后照日志算回来一样。
+#[must_use]
+pub fn scale(history: &History, model: &Model) -> Scale {
+    history
+        .events()
+        .iter()
+        .rev()
+        .find_map(|event| {
+            let Body::ModelCalled(called) = &event.body else {
+                return None;
+            };
+            if called.result != CallResult::Ok || called.aside() {
+                return None;
+            }
+            if called.endpoint.as_ref() != Some(&model.endpoint)
+                || called.model.as_ref() != Some(&model.model)
+            {
+                return None;
+            }
+            let estimate = called.estimate.filter(|estimate| *estimate >= SCALE_FROM)?;
+            let usage = called.usage.as_ref()?;
+            let reported = usage.context.unwrap_or_else(|| usage.total());
+            Some(Scale(
+                reported
+                    .saturating_mul(1000)
+                    .checked_div(estimate)?
+                    .clamp(SCALE_LEAST, SCALE_MOST),
+            ))
+        })
+        .unwrap_or(Scale::ONE)
+}
+
+/// 这一份请求整份的本地估算，不带锚、不乘倍数（施工 CT-2）：发主请求时记进 `model.called` 的 `estimate`，和真值配对。
+#[must_use]
+pub fn whole(request: &Request, price: &dyn Price) -> u64 {
+    head(request, request.messages.len(), price)
+}
+
+/// 这一次请求发给 `model` 时，上下文用了多少 token：锚加上锚以后新增的那几条的估算，估算都乘上 `scale`（施工 CT-2）。
 ///
 /// - 锚盖住的是工具面、system 和前 `messages + 1` 条（锚那次请求加上它的回复）：请求只追加，它们和锚那一次
-///   一样。本地对它们的估算比供应商报的还大的，取估算（照 dsh，宁多勿少）。
+///   一样。本地对它们的估算（乘过倍数）比供应商报的还大的，取估算（照 dsh，宁多勿少）。
 /// - 整份估：没有锚；锚发给的端点、模型和这一次不一样（换过模型，照 dsh）；这一次的消息没比锚多（不该出现，
 ///   兜底）。
-pub fn usage(request: &Request, anchor: Option<&Anchor>, model: &Model, price: &dyn Price) -> u64 {
+pub fn usage(
+    request: &Request,
+    anchor: Option<&Anchor>,
+    model: &Model,
+    price: &dyn Price,
+    scale: Scale,
+) -> u64 {
     let covered = anchor
         .filter(|anchor| &anchor.model == model)
         .and_then(|anchor| {
@@ -144,14 +232,14 @@ pub fn usage(request: &Request, anchor: Option<&Anchor>, model: &Model, price: &
             (covered <= request.messages.len()).then_some((anchor.reported, covered))
         });
     let Some((reported, covered)) = covered else {
-        return head(request, request.messages.len(), price);
+        return scale.apply(head(request, request.messages.len(), price));
     };
     let added = request.messages[covered..]
         .iter()
         .fold(0u64, |sum, m| sum.saturating_add(message(m, price)));
     reported
-        .max(head(request, covered, price))
-        .saturating_add(added)
+        .max(scale.apply(head(request, covered, price)))
+        .saturating_add(scale.apply(added))
 }
 
 /// 输出预留：min(模型的最大输出, `reserve_cap`)；没报最大输出的，按 `reserve_cap`（`compaction.md` 第二条第 2 条）。
@@ -191,6 +279,27 @@ pub fn event(event: &Event, price: &dyn Price) -> u64 {
         // 人打的命令的输出（施工 SH-1 上）：和那句话拼在一起原样放进请求。
         Body::ShellRan(ran) => tokens(ran.text.len()),
         _ => 0,
+    }
+}
+
+/// 一条事件进请求以后的估算（施工 CT-2）：留尾巴、找最大的那一条、截短重试都照它。组装器交了它写成的块的（群里的一行带着
+/// 行首、名字、编号，群聊近况里的一行，[`Assembler::rendered`]）照那些块数；没交的照它自己的内容块（[`event`]）。
+pub struct Weigh<'a> {
+    /// 这个会话的组装器。
+    pub assembler: &'a dyn Assembler,
+    /// 这条事件所在的有效历史。
+    pub history: &'a History,
+    /// 图片、文件的价钱。
+    pub price: &'a dyn Price,
+}
+
+impl Weigh<'_> {
+    /// 一条事件。
+    pub fn event(&self, event: &Event) -> u64 {
+        match self.assembler.rendered(self.history, event) {
+            Some(blocks) => blocks_of(&blocks, self.price),
+            None => self::event(event, self.price),
+        }
     }
 }
 

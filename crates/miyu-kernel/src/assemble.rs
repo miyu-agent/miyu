@@ -5,6 +5,7 @@
 //! 在第 2 层的 `miyu-assemble` 里，换一种组装不用改内核。
 
 use crate::block::{Block, Image};
+use crate::event::Event;
 use crate::history::History;
 use crate::id::{Seq, TurnId};
 use crate::request::Request;
@@ -105,6 +106,17 @@ pub trait Assembler {
     /// 快照里没有转述的字的是 `None`：不转述，照旧写占位。默认的是 `None`。
     fn describe(&self, image: &Image, said: Option<&str>) -> Option<Request> {
         let _ = (image, said);
+        None
+    }
+
+    /// `history` 里的一条 `event` 进请求时写成的块（施工 CT-2，`internal/blueprint/compaction.md` 第三条第 2 条）：内核留尾巴、
+    /// 找最大的那一条、截短重试时照它估，估法同一条消息（[`crate::estimate::message`]）。组装器把它写成别的样子的（群里的一行、
+    /// 群聊近况里的一行、私聊带东西的记号那一行）交回写出来的块；不进请求的交回空的；照原样放的是 `None`，内核照它自己的内容块
+    /// 估。只用来估大小，不用和请求里的逐字节相同（例如撤回的记号可以不写）。同样是纯函数。
+    ///
+    /// 默认的是 `None`：一律照原样估。
+    fn rendered(&self, history: &History, event: &Event) -> Option<Vec<Block>> {
+        let _ = (history, event);
         None
     }
 

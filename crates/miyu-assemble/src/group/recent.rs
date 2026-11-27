@@ -11,7 +11,7 @@ use miyu_kernel::history::History;
 use miyu_kernel::id::{ExternalId, Seq};
 
 use super::{recall_mark, record, you};
-use crate::texts::{ForwardTexts, GroupChat};
+use crate::texts::{ForwardTexts, GroupChat, Texts};
 
 /// 第 `before` 条开始一轮，上一个由人的消息开的回合从第 `after` 条开始（没有的是没有）：这一块近况，当过触发的
 /// （`answered`）不收。一条都没有、快照里没有近况的字的，没有。转发照 `forward` 写在那一条下面（施工 O-34），连着算预算。
@@ -69,6 +69,19 @@ pub(crate) fn recent(
         block.push('\n');
     }
     Some(block)
+}
+
+/// 估大小用的近况里的一行（施工 CT-2，`weigh.rs`）：照 [`one`] 写，不看撤回（撤回的记号只多几个字）。快照里没有群、没有
+/// 近况的字的，不进近况的，没有。
+pub(crate) fn overheard(history: &History, event: &Event, texts: &Texts) -> Option<String> {
+    let chat = texts.group.as_ref()?;
+    chat.recent.as_ref()?;
+    one(
+        history,
+        event,
+        &BTreeMap::new(),
+        (chat, texts.forward.as_ref()),
+    )
 }
 
 /// 近况里的一条：旁听的人的话（睡着时收到的不要），别的线替她发进群里的话（这条线自己的不要）；别的不算。

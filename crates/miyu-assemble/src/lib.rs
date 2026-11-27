@@ -32,6 +32,7 @@ mod tag;
 mod texts;
 mod title;
 mod vision;
+mod weigh;
 
 #[cfg(test)]
 mod test_support;
@@ -43,6 +44,7 @@ pub use texts::{
 
 use miyu_kernel::assemble::{Assembler, Spoken};
 use miyu_kernel::block::{Block, Image};
+use miyu_kernel::event::Event;
 use miyu_kernel::history::History;
 use miyu_kernel::id::Seq;
 use miyu_kernel::request::{Message, Request, ToolSpec};
@@ -163,6 +165,11 @@ impl Assembler for DefaultAssembler {
     /// 转述一张图的请求（`vision.rs`，施工 8-17）：一条 user，指令、人的话、这张图。快照里没有转述的字的，没有。
     fn describe(&self, image: &Image, said: Option<&str>) -> Option<Request> {
         Some(vision::request(image, said, self.texts.vision.as_ref()?))
+    }
+
+    /// 一条事件进请求以后写成的块（`weigh.rs`，施工 CT-2）：内核留尾巴照它估。
+    fn rendered(&self, history: &History, event: &Event) -> Option<Vec<Block>> {
+        weigh::rendered(history, event, &self.texts)
     }
 
     /// 群里一行的行首（`group/head.rs`，施工 FT-1）：和拼那一行的同一份字。不看是不是群会话：别的会话的请求里没有这样的行，

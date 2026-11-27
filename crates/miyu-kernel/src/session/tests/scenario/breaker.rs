@@ -440,3 +440,5 @@ fn the_third_turn_after_a_compaction_is_still_quick_and_the_fourth_is_not() {
         assert_eq!(refills(&stage), [None, expected], "中间隔了 {quiet} 轮");
     }
 }
+
+mod room;

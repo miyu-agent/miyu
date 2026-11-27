@@ -81,7 +81,14 @@ pub fn anchored(stage: &Stage) -> Result<usize, String> {
         if !matches!(request.messages.get(n), Some(Message::Assistant { .. })) {
             return Err(format!("第 {number} 次请求：锚盖住的第 {n} 条不是它的回复"));
         }
-        if estimate::usage(request, Some(&anchor), &anchor.model, &FLAT) < anchor.reported {
+        if estimate::usage(
+            request,
+            Some(&anchor),
+            &anchor.model,
+            &FLAT,
+            estimate::Scale::ONE,
+        ) < anchor.reported
+        {
             return Err(format!("第 {number} 次请求：算出的用量比供应商报的还少"));
         }
         anchored += 1;

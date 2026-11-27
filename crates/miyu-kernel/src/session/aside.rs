@@ -167,6 +167,7 @@ impl Aside {
         let blocks = self.accumulator.finish(next);
         let sent = self.sent.as_ref();
         let called = ModelCalled {
+            estimate: None,
             seen: self.upto,
             endpoint: sent.map(|(_, model, _)| model.endpoint.clone()),
             model: sent.map(|(_, model, _)| model.model.clone()),

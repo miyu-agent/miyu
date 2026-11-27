@@ -51,6 +51,8 @@ pub(super) struct Call {
     shells: Shells,
     /// 驱动在这一次进行中问的、还在等人的确认（施工 ACP-8，`driver_ask.rs`）：这一次一有结局就了结。
     pub(super) asks: Vec<super::driver_ask::Asking>,
+    /// 发出去时核心对整份请求的本地估算（施工 CT-2）：记进 `model.called` 的 `estimate`。摘要请求没有。
+    pub(super) estimate: Option<u64>,
 }
 
 /// 请求发出去时，执行器报来的。
@@ -78,7 +80,14 @@ impl Call {
             compaction: None,
             shells: Shells::default(),
             asks: Vec::new(),
+            estimate: None,
         }
+    }
+
+    /// 发出去时对整份请求的本地估算（施工 CT-2）。
+    pub(super) fn estimating(mut self, estimate: Option<u64>) -> Call {
+        self.estimate = estimate;
+        self
     }
 
     /// 这一次请求里人这一边出现过的外壳（施工 FT-1）：主请求交出去之前照请求算好带上。

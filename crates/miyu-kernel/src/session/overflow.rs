@@ -60,6 +60,8 @@ impl Session {
             let events = self.finish_turn(at, By::Kernel, cause, EndReason::Error);
             return vec![Action::Append(events)];
         };
+        // 被动压缩照以前的数停（施工 CT-2）：供应商报了超长，本地的压缩线信不过，压完腾没腾出地方也看不出来；压完很快又
+        // 超长，就是放不下。
         if let Some(pause) = self.pause_numbers()
             && due.refills.is_some_and(|refills| refills >= pause.refills)
         {

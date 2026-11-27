@@ -16,6 +16,7 @@ use super::overflow::Passive;
 use super::prepare::Awaiting;
 use super::step::Step;
 use super::summary::Summarized;
+use crate::estimate;
 use crate::event::{Body, EndReason, Event, TurnEnded, TurnStarted};
 use crate::id::{CommandId, ContentHash, Seq, TurnId};
 use crate::origin::{By, Module};
@@ -393,6 +394,8 @@ impl Session {
         request.output_cap = self.output_cap(&request);
         // 挑池里的成员时照它剔掉窗口放不下的，和压缩判线是同一个数（施工 Q-4 上）。
         request.used = self.used(&request);
+        // 整份的本地估算记进这一次的 `model.called`，和真值配成一对算倍数（施工 CT-2，`estimate::scale`）。
+        let estimate = self.price().map(|price| estimate::whole(&request, &price));
         let fingerprint = request.fingerprint();
         let difference = self
             .last_request
@@ -422,8 +425,11 @@ impl Session {
         turn.compacted = false;
         turn.interjected = None;
         turn.reports.clear();
-        turn.stage =
-            Stage::Asking(Call::new(seen, request.messages.len(), difference).facing(shells));
+        turn.stage = Stage::Asking(
+            Call::new(seen, request.messages.len(), difference)
+                .facing(shells)
+                .estimating(estimate),
+        );
         let mut actions = vec![Action::CallModel {
             seen,
             request,

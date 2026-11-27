@@ -290,7 +290,7 @@ mod records;
 pub(crate) use forward::block as forwarded;
 pub(crate) use head::starts as starts_record;
 
-pub(crate) use recent::recent;
+pub(crate) use recent::{overheard, recent};
 pub use records::{
     Picked, Records, Window, on_record, quoted_as, records, records_from, records_in,
 };
