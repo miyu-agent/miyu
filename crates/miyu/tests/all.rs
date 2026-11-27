@@ -46,6 +46,8 @@ mod rescue;
 mod settings;
 mod setup;
 #[cfg(unix)]
+mod stop_kept;
+#[cfg(unix)]
 mod stopping;
 mod tuned;
 mod undo;

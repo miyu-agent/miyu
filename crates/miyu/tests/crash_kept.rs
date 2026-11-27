@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 use crate::support::{Home, MIYU};
 
 /// `miyu` 旁边的测试程序 `name`：不在的说怎么编。
-fn beside(name: &str) -> PathBuf {
+pub(crate) fn beside(name: &str) -> PathBuf {
     let path = Path::new(MIYU).with_file_name(format!("{name}{}", std::env::consts::EXE_SUFFIX));
     assert!(
         path.is_file(),
@@ -29,7 +29,7 @@ fn beside(name: &str) -> PathBuf {
 }
 
 /// 拉起核心（不空闲退出），等它写来 `ready`。
-fn start(home: &Home) -> Child {
+pub(crate) fn start(home: &Home) -> Child {
     let mut core = home
         .core_staying()
         .stdout(Stdio::piped())
@@ -44,7 +44,7 @@ fn start(home: &Home) -> Child {
 }
 
 /// 记下的两个进程号：长住的那一个、它起的睡着的那一个。丢掉时还在的照进程号收拾掉（只杀测试自己起的）。
-struct Pids([String; 2]);
+pub(crate) struct Pids(pub(crate) [String; 2]);
 
 impl Drop for Pids {
     fn drop(&mut self) {
@@ -65,7 +65,7 @@ impl Drop for Pids {
 }
 
 /// 等 `path` 写好两行进程号（最多 60 秒）。
-async fn pids(home: &Home, path: &Path) -> Pids {
+pub(crate) async fn pids(home: &Home, path: &Path) -> Pids {
     let deadline = Instant::now() + Duration::from_secs(60);
     loop {
         let text = std::fs::read_to_string(path).unwrap_or_default();
@@ -79,7 +79,7 @@ async fn pids(home: &Home, path: &Path) -> Pids {
 }
 
 /// 进程 `pid` 还在不在：Unix 上 `kill -0`；Windows 上 `tasklist` 照进程号找。
-fn alive(pid: &str) -> bool {
+pub(crate) fn alive(pid: &str) -> bool {
     #[cfg(unix)]
     return Command::new("kill")
         .args(["-0", pid])
@@ -98,7 +98,7 @@ fn alive(pid: &str) -> bool {
 }
 
 /// 两个都没了（最多等 10 秒）。
-fn gone(pids: &Pids) -> bool {
+pub(crate) fn gone(pids: &Pids) -> bool {
     let deadline = Instant::now() + Duration::from_secs(10);
     while pids.0.iter().any(|pid| alive(pid)) {
         if Instant::now() > deadline {
@@ -174,7 +174,7 @@ async fn an_extension_and_its_child_die_with_a_killed_core() {
 
 /// 一段 `sh`：后台起一个 `sleep`（三个标准流接空的，不拿着核心的管道），`$$`、`$!` 写进 `record`，再 `exec` 成 `program`。
 #[cfg(unix)]
-fn wrapper(record: &Path, program: &Path) -> String {
+pub(crate) fn wrapper(record: &Path, program: &Path) -> String {
     let (record, program) = (record.display(), program.display());
     format!(
         "sleep 600 </dev/null >/dev/null 2>&1 & printf '%s\\n%s\\n' $$ $! > '{record}.part' && mv '{record}.part' '{record}'; exec '{program}' \"$@\""

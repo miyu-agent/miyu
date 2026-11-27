@@ -28,7 +28,8 @@ pub use unix::{Lifeline, WATCHDOG, Watcher, watchdog_beside, watcher};
 pub use windows::Job;
 
 /// 一个长住的子进程拿着的共用的组（[`keep`]）：拿到子进程退出、收掉以后再丢。丢掉时组里的都不杀（有计划地停照旧由调的一方
-/// 先请它退出、等、再杀）；最后一个拿着的丢了，共用的看门的跟着收掉。看门的起不来的、不是 Unix 的是空的（[`Kept::default`]）。
+/// 先请它退出、等、再杀）；最后一个拿着的丢了，组里剩下的（它们起的、留在组里的子进程）整组杀掉，共用的看门的跟着收掉（施工
+/// CS-7）。看门的起不来的、不是 Unix 的是空的（[`Kept::default`]）。
 #[derive(Debug, Default)]
 pub struct Kept {
     /// 共用的组：只拿着，丢掉时放开。

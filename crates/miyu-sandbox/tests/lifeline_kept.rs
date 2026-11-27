@@ -1,7 +1,7 @@
 //! 长住的子进程共用一个看门的（施工 LW-28，`internal/blueprint/core.md`「子进程随核心退出」第 5 条，`lifeline/unix/shared.rs`）：
 //! 一根生命线上 `keep` 几次都进同一个组、同一个看门的，生命线断了全组连孙进程都没了；共用的看门的被杀了，下一次 `keep` 再起一个
 //! 进同一个组，原来组里的照样被收掉；组里已经一个进程都没有了的另起一组；丢掉一个拿着的不收看门的，丢掉最后一个才收掉它、
-//! 不留僵尸进程。`miyu-watchdog`、退回 `/bin/sh` 两种看门的都测。
+//! 不留僵尸进程，组里剩下的孙进程一起杀掉（施工 CS-7）。`miyu-watchdog`、退回 `/bin/sh` 两种看门的都测。
 
 #![cfg(unix)]
 
@@ -144,5 +144,37 @@ fn the_watchdog_stays_until_the_last_holder_is_gone() {
         drop(lifeline);
         assert!(killed(&mut third));
         drop(third_kept);
+    }
+}
+
+/// 只杀长住的子进程本身（核心有计划地停扩展、等不到它退出就是这样杀的）：它的孙进程留在组里。还有别人拿着的时候照旧留着，
+/// 最后一个拿着的丢了，整组杀掉、一个不剩（施工 CS-7：原来只收看门的，孙进程成了一直留着的孤儿）。
+#[test]
+fn the_last_holder_takes_the_leftovers_with_it() {
+    for given in both() {
+        let lifeline = Lifeline::new().expect("建得起管道");
+        let (first_kept, mut first) = kept(&lifeline, given.as_deref());
+        let (second_kept, mut second) = kept(&lifeline, given.as_deref());
+        let (_, watchdog) = ids(&first_kept);
+        kill(&first.pid);
+        first.command.wait().expect("等得到");
+        drop(first_kept);
+        assert!(alive(&first.grandchild), "还有人拿着，留着：{given:?}");
+        kill(&second.pid);
+        second.command.wait().expect("等得到");
+        drop(second_kept);
+        let left: Vec<&String> = [&first.grandchild, &second.grandchild]
+            .into_iter()
+            .filter(|pid| !gone(pid))
+            .collect();
+        for pid in &left {
+            kill(pid);
+        }
+        assert!(
+            left.is_empty(),
+            "孙进程跟着组走了，还剩 {left:?}：{given:?}"
+        );
+        assert!(!alive(&watchdog), "看门的收掉了：{given:?}");
+        drop(lifeline);
     }
 }

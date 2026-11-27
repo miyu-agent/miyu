@@ -7,7 +7,8 @@
 //! - 还有人拿着的时候看门的没了（被别人杀了）：下一次 `keep` 再起一个、`setpgid` 进同一个组（组里还有没收掉的子进程，组号就
 //!   还是这一组的），组里原有的子进程在核心没了时照样被收掉。进不去的（组里已经一个进程都没有了，组号可能被别人占）另起一个
 //!   新组。
-//! - 拿着的都丢了（最后一个长住的子进程退出、收掉了），看门的跟着杀掉、收掉，不留僵尸进程；下一次 `keep` 另起一个新组。
+//! - 拿着的都丢了（最后一个长住的子进程退出、收掉了），先整组杀掉（组里剩的是它们起的、留在组里的子进程，施工 CS-7），
+//!   看门的跟着杀掉、收掉，不留僵尸进程；下一次 `keep` 另起一个新组。
 
 use std::io;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, Weak};
@@ -77,6 +78,34 @@ impl Slot {
         });
         *current = Arc::downgrade(&group);
         Ok(Share(group))
+    }
+}
+
+impl Drop for Group {
+    /// 最后一个拿着的丢了（施工 CS-7）：拿着的长住的子进程都退出、收掉了，组里还剩的只有它们起的、留在组里的子进程（扩展被
+    /// 杀了以后留下的孙进程这类）和看门的。先整组 `SIGKILL`，再照 [`Watcher`] 的丢法收掉看门的。原来只收看门的，剩下的没人
+    /// 看着，核心停了、核心没了都不走，成了一直留着的孤儿。看门的这一刻还没被收（问的这一下没收掉它）才杀：它在组里，组号就
+    /// 不会被别人占，不会杀错；已经没了、收掉了的不杀（组号可能已经是别人的）。
+    fn drop(&mut self) {
+        let watcher = self
+            .watcher
+            .get_mut()
+            .unwrap_or_else(PoisonError::into_inner);
+        if !watcher.gone() {
+            kill_group(self.id);
+        }
+    }
+}
+
+/// `kill(-组号, SIGKILL)`：组里已经没有进程的、杀不了的都不管（看门的跟着 [`Watcher`] 丢掉时照旧杀、收）。
+#[expect(
+    clippy::let_underscore_must_use,
+    reason = "组里已经空了的杀不了也不要紧：只为不留孤儿"
+)]
+fn kill_group(id: u32) {
+    use rustix::process::{Pid, Signal, kill_process_group};
+    if let Some(pid) = i32::try_from(id).ok().and_then(Pid::from_raw) {
+        let _ = kill_process_group(pid, Signal::KILL);
     }
 }
 

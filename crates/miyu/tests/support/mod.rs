@@ -113,13 +113,15 @@ impl Home {
         self.until_stopped().await;
     }
 
-    /// 核心的进程号：运行日志里最后一行「起来了」写的。没起来过的没有。
+    /// 核心的进程号：运行日志里最后一行「起来了」（`starting version=…`）写的。没起来过的没有。只认那一行（施工 CS-7）：原来
+    /// 取整份日志最后一个 `pid=`，装了扩展的拿到的是 `extension started pid=…` 的扩展，停核心的信号打到了扩展身上。
     pub fn core_pid(&self) -> Option<String> {
         let log = self.core_log();
         let pid = log
-            .rsplit("pid=")
-            .next()
-            .filter(|_| log.contains("pid="))?
+            .lines()
+            .rfind(|line| line.contains("starting version="))?
+            .split_once(" pid=")?
+            .1
             .split(|c: char| !c.is_ascii_digit())
             .next()?;
         (!pid.is_empty()).then(|| pid.to_string())

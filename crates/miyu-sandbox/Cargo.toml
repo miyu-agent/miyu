@@ -32,6 +32,11 @@ libc = "0.2"
 # MIT OR Apache-2.0，工作区里本来就有。
 rustix = { version = "1", features = ["fs", "process", "thread"] }
 
+[target.'cfg(unix)'.dependencies]
+# 长住的子进程共用的组，最后一个拿着的丢了先整组杀（施工 CS-7，`lifeline/unix/shared.rs`）：kill(-pgid, SIGKILL) 的安全
+# 接口，macOS 上也要。上面 Linux 那一条是同一个，特性合在一起。
+rustix = { version = "1", features = ["process"] }
+
 [target.'cfg(windows)'.dependencies]
 # Windows 上要调的系统接口：核心进作业对象，核心没了它起的子进程跟着结束（施工 7-8，`lifeline/windows.rs`）；助手查有没有
 # 桌面会话、有哪些盘（施工 5-9 改上）。

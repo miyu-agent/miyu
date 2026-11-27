@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
+use crate::crash_kept::Pids;
 use crate::support::{Home, MIYU, count};
 use crate::waiting::{Watched, signal};
 use miyu_ipc::ConnectError;
@@ -24,8 +25,9 @@ fn beside(name: &str) -> PathBuf {
     path
 }
 
-/// 装一个一起来就 `hang` 的扩展，拉起核心（不空闲退出，`stop_limit` 是收尾总时限的测试口子），等扩展起来。
-fn slow_to_stop(home: &Home, stop_limit: Option<u64>) -> Child {
+/// 装一个一起来就 `hang` 的扩展，拉起核心（不空闲退出，`stop_limit` 是收尾总时限的测试口子），等扩展起来。交回核心和扩展、
+/// 它的孙进程的进程号：丢掉时还在的照进程号收拾掉（施工 CS-7：断言没过、核心又留下了的，也不活过这一趟门禁）。
+fn slow_to_stop(home: &Home, stop_limit: Option<u64>) -> (Child, Pids) {
     beside("miyu-test-extension");
     let record = home.dir.join("hang.pids");
     let package = home.root.packages().join("cs-hang");
@@ -45,12 +47,21 @@ fn slow_to_stop(home: &Home, stop_limit: Option<u64>) -> Child {
         .read_line(&mut line)
         .expect("读得到那一行");
     assert_eq!(line, "ready\n", "核心起来了：{}", home.core_log());
+    let pids = recorded(home, &record);
+    (core, pids)
+}
+
+/// 等扩展往 `record` 写好两行进程号（最多 60 秒）。
+fn recorded(home: &Home, record: &Path) -> Pids {
     let until = Instant::now() + Duration::from_secs(60);
-    while std::fs::read_to_string(&record).map_or(0, |text| text.lines().count()) < 2 {
+    loop {
+        let text = std::fs::read_to_string(record).unwrap_or_default();
+        if let [one, two] = text.lines().map(str::trim).collect::<Vec<_>>().as_slice() {
+            return Pids([(*one).to_string(), (*two).to_string()]);
+        }
         assert!(Instant::now() < until, "扩展没起来：{}", home.core_log());
         std::thread::sleep(Duration::from_millis(20));
     }
-    core
 }
 
 /// 等 `core` 退，最多 `wait`：交回退出码；到时还没退的杀掉、交回空的。
@@ -73,7 +84,7 @@ fn exit_within(core: &mut Child, wait: Duration) -> Option<ExitStatus> {
 #[test]
 fn a_second_stop_signal_ends_the_core_at_once() {
     let home = Home::new();
-    let mut core = slow_to_stop(&home, None);
+    let (mut core, _kept) = slow_to_stop(&home, None);
     let pid = core.id().to_string();
     signal(&pid, "TERM");
     std::thread::sleep(Duration::from_millis(300));
@@ -91,7 +102,7 @@ fn a_second_stop_signal_ends_the_core_at_once() {
 #[test]
 fn stopping_has_a_time_limit() {
     let home = Home::new();
-    let mut core = slow_to_stop(&home, Some(1000));
+    let (mut core, _kept) = slow_to_stop(&home, Some(1000));
     let term = Instant::now();
     signal(&core.id().to_string(), "TERM");
     let status = exit_within(&mut core, Duration::from_secs(15));
@@ -113,7 +124,7 @@ fn stopping_has_a_time_limit() {
 #[tokio::test]
 async fn a_stopping_core_takes_no_new_connections() {
     let home = Home::new();
-    let mut core = slow_to_stop(&home, None);
+    let (mut core, _kept) = slow_to_stop(&home, None);
     signal(&core.id().to_string(), "TERM");
     tokio::time::sleep(Duration::from_millis(500)).await;
     let reached = tokio::time::timeout(Duration::from_secs(3), miyu_ipc::connect(&home.root)).await;
@@ -136,7 +147,7 @@ async fn a_stopping_core_takes_no_new_connections() {
 #[test]
 fn starting_while_the_core_stops_brings_up_a_new_one() {
     let home = Home::new();
-    let mut old = slow_to_stop(&home, None);
+    let (mut old, _kept) = slow_to_stop(&home, None);
     signal(&old.id().to_string(), "TERM");
     std::thread::sleep(Duration::from_millis(300));
     let root = home.root.path();
