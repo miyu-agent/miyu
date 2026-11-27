@@ -1,9 +1,13 @@
 //! 编辑、写入加减的行数，照参数估（结果来之前，`internal/blueprint/view.md`「种类」`tool` 的 `diff`）：写入的全部算加上的，
 //! 编辑的每一处按行比。和终端原来照参数算的一样。
 
+use std::borrow::Cow;
+
 use serde::Deserialize;
 use serde_json::Value;
 use similar::{ChangeTag, TextDiff};
+
+use miyu_kernel::tool::shape;
 
 use crate::entry::Diff;
 
@@ -24,6 +28,20 @@ struct Edit {
 struct Piece {
     old_string: String,
     new_string: String,
+}
+
+/// 编辑、写入的参数规整成标准写法的原文（施工 ED-3，[`shape::standard`]）：顶层直接写一处、`edits` 写成一个对象、
+/// `path`、`oldText` 这些别名的，标题、估的行数照它；本来就是标准写法的、读不懂的没有。条目的 `args` 照旧是原文。
+pub(crate) fn standard(args: &str) -> Option<String> {
+    match shape::standard(args) {
+        Cow::Owned(standard) => Some(standard),
+        Cow::Borrowed(_) => None,
+    }
+}
+
+/// 参数原文解开：读不懂的是 `null`。
+pub(crate) fn parsed(args: &str) -> Value {
+    serde_json::from_str(args).unwrap_or(Value::Null)
 }
 
 /// 照参数估：既不是写入、也不是编辑的样子的，是 `None`。

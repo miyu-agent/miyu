@@ -78,3 +78,8 @@ path = "tests/log.rs"
 [[test]]
 name = "read_memory"
 path = "tests/read_memory.rs"
+
+# 量 `edit` 找旧串多占的堆（施工 ED-3）：换了全局的分配器记账，自己一个程序。
+[[test]]
+name = "edit_memory"
+path = "tests/edit_memory.rs"

@@ -1,14 +1,17 @@
 //! 找 `old_string` 在原文件里的位置（`10-自带软件.md` 第六节「`edit` 的细则」，施工 4-6 中）。
 //!
 //! 两层看法：精确的只把 CRLF 当 LF 看；宽松的另外不管每一行末尾的空白，弯引号、破折号、各种空格当成普通的，逐字做
-//! NFKC（参考 pi）。先给原文造一份看法，记下看法里每个字节来自原文的哪一段；`old_string` 照同样的办法换过，在看法里
-//! 找，找到的照记下的换回原文里的位置。换回来的就是原文里要换掉的那一段，别的地方一个字节不碰。
+//! NFKC（参考 pi）。先给原文造一份看法，记下看法里的字来自原文的哪里；`old_string` 照同样的办法换过，在看法里找，找到的
+//! 照记下的换回原文里的位置。换回来的就是原文里要换掉的那一段，别的地方一个字节不碰。
+//!
+//! 记的只是不照原样搬来的那几个字（施工 ED-3，[`View`]）：原来每个字节记一对来处，改一个 500 kB 的文件这张表就有 8 MB。
 //!
 //! 哪一层对得上几个就是几个：精确的对上两个，就是不唯一，不往宽松那一层找。一个都对不上的，找最接近的那几行。
 //!
 //! 第三层（施工 E-D，空白兜底）：前两层都对不上、不是全部替换的，另外不管每一行开头的空白，从一行的开头对起，对上唯一
 //! 一处才算（[`Found::Indented`]）；新的那段照原文那几行的缩进对齐（[`reindent`]）。
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -64,20 +67,19 @@ enum Level {
 /// 在原文 `text` 里找 `old`。`all` 的：对上的每个地方都要（不重叠的），用不着唯一。
 pub(crate) fn find(text: &str, old: &str, all: bool) -> Found {
     for level in [Level::Exact, Level::Loose] {
-        let view = View::of(text, level);
+        // 先换 `old`：用不着找的这一层，原文的看法不造（施工 ED-3）。
         let needle = View::of(old, level).text;
         // 宽松的规矩只对有正经字的有意义：全是空白、换行的，去掉行尾空白以后每个换行都对得上。精确的照找：换缩进
         // 这类是正当的用法。
         if needle.is_empty() || (level == Level::Loose && needle.trim().is_empty()) {
             continue;
         }
+        let view = View::of(text, level);
+        let needle = needle.as_ref();
         let starts = if all {
-            view.text
-                .match_indices(needle.as_str())
-                .map(|(at, _)| at)
-                .collect()
+            view.text.match_indices(needle).map(|(at, _)| at).collect()
         } else {
-            view.starts(&needle)
+            view.starts(needle)
         };
         match starts.len() {
             0 => continue,
@@ -93,7 +95,7 @@ pub(crate) fn find(text: &str, old: &str, all: bool) -> Found {
                 let lines = starts
                     .iter()
                     .take(LINES)
-                    .map(|at| line_of(text, view.spans[*at].0))
+                    .map(|at| line_of(text, view.start_of(*at)))
                     .collect();
                 return Found::Many { count, lines };
             }
@@ -184,18 +186,40 @@ fn unit<'a>(lines: impl Iterator<Item = &'a str>, base: &str) -> Option<&'a str>
         .min_by_key(|deeper| deeper.len())
 }
 
-/// 一份看法：换过的字，和它每个字节来自原文的哪一段（起、止，都是原文里的字节位置）。
-struct View {
-    text: String,
-    spans: Vec<(usize, usize)>,
+/// 一份看法：换过的字，和它的字节来自原文的哪里（施工 ED-3 改：原来每个字节记一对来处）。看法里大多数的字照原文原样搬来，
+/// 位置只差一个常数（前面 CRLF 并成一个换行、行尾的空白去掉了，差多少）：这样的字不记；不是这样的字（换过的、并过的、
+/// 前面差的数变了的）一个记一项 [`Mark`]。精确的那一层原文里没有 CRLF 的，看法就是原文本身，借着用、一项都不记。
+struct View<'a> {
+    text: Cow<'a, str>,
+    marks: Vec<Mark>,
+    /// 写到这里，照原样搬来的字在原文里的位置比看法里多多少（可以是负的）。
+    shift: isize,
 }
 
-impl View {
+/// 看法里不是照原样搬来的一个字：在看法里从 `at` 到 `end`，来自原文的 `from..to`（同一个原文的字换成了几个的，每个都是
+/// 那一段）。它后面照原样搬来的字，原文里的位置比看法里多 `to - end`。
+#[derive(Debug, Clone, Copy)]
+struct Mark {
+    at: usize,
+    end: usize,
+    from: usize,
+    to: usize,
+}
+
+impl<'a> View<'a> {
     /// 照 `level` 给 `text` 造一份看法。
-    fn of(text: &str, level: Level) -> View {
+    fn of(text: &'a str, level: Level) -> View<'a> {
+        if level == Level::Exact && !text.contains("\r\n") {
+            return View {
+                text: Cow::Borrowed(text),
+                marks: Vec::new(),
+                shift: 0,
+            };
+        }
         let mut view = View {
-            text: String::with_capacity(text.len()),
-            spans: Vec::with_capacity(text.len()),
+            text: Cow::Owned(String::with_capacity(text.len())),
+            marks: Vec::new(),
+            shift: 0,
         };
         // 宽松的：空白先攒着，后面来了别的字才照写；到了行尾、文末就不要了。
         let mut blanks: Vec<(char, (usize, usize))> = Vec::new();
@@ -236,14 +260,39 @@ impl View {
                 }
             }
         }
+        view.marks.shrink_to_fit();
         view
     }
 
-    /// 写一个字：它的每个字节都来自原文的 `span`。
-    fn push(&mut self, c: char, span: (usize, usize)) {
-        self.text.push(c);
-        for _ in 0..c.len_utf8() {
-            self.spans.push(span);
+    /// 写一个字：它来自原文的 `from..to`。照原样搬来的（位置差和前面的一样、长短一样）不记。
+    fn push(&mut self, c: char, (from, to): (usize, usize)) {
+        let text = self.text.to_mut();
+        let at = text.len();
+        text.push(c);
+        let end = text.len();
+        if from.cast_signed() - at.cast_signed() == self.shift && to - from == end - at {
+            return;
+        }
+        self.marks.push(Mark { at, end, from, to });
+        self.shift = to.cast_signed() - end.cast_signed();
+    }
+
+    /// 看法里第 `at` 个字节落在哪：落在记下的一项里的交回它；不然 `at` 是照原样搬来的字，交回它在原文里的位置比看法里
+    /// 多多少。
+    fn near(&self, at: usize) -> Result<Mark, isize> {
+        let before = self.marks.partition_point(|mark| mark.at <= at);
+        match before.checked_sub(1).map(|i| self.marks[i]) {
+            Some(mark) if at < mark.end => Ok(mark),
+            Some(mark) => Err(mark.to.cast_signed() - mark.end.cast_signed()),
+            None => Err(0),
+        }
+    }
+
+    /// 看法里一个字开头的字节，来自原文的哪里（那个字在原文里的开头）。
+    fn start_of(&self, at: usize) -> usize {
+        match self.near(at) {
+            Ok(mark) => mark.from,
+            Err(shift) => at.saturating_add_signed(shift),
         }
     }
 
@@ -261,9 +310,13 @@ impl View {
         starts
     }
 
-    /// 看法里的一段，换回原文里的一段：从第一个字节的来处起，到最后一个字节的来处止。
+    /// 看法里的一段（起止都在字的边界上），换回原文里的一段：从第一个字的来处起，到最后一个字的来处止。
     fn original(&self, range: Range<usize>) -> Range<usize> {
-        self.spans[range.start].0..self.spans[range.end - 1].1
+        let end = match self.near(range.end - 1) {
+            Ok(mark) => mark.to,
+            Err(shift) => range.end.saturating_add_signed(shift),
+        };
+        self.start_of(range.start)..end
     }
 }
 
@@ -357,3 +410,5 @@ fn pairs(text: &str) -> Vec<(char, char)> {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_cross;

@@ -7,13 +7,15 @@
 
 mod blocks;
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use serde_json::Value;
 
 use miyu_kernel::event::Said;
-use miyu_store::human::{Block, clean};
+use miyu_kernel::tool::shape;
+use miyu_store::human::{Block, Face, clean};
 
 use super::Plan;
 use crate::diagnostic::Problem;
@@ -91,6 +93,7 @@ impl Steps {
     ) -> Option<Drawn> {
         let called = self.calls.get(body["call_id"].as_str()?)?;
         let face = plan.human.tool(&called.name);
+        let args = shaped(face, &called.args);
         let icon = face
             .and_then(|face| face.icon.as_deref())
             .unwrap_or(NO_ICON);
@@ -118,13 +121,13 @@ impl Steps {
         };
         let mut title = Line::inked(Ink::Plain, format!("{icon} {name}"));
         if let Some(value) =
-            subject.and_then(|subject| value_of(&called.args, subject, cwd, plan.home.as_deref()))
+            subject.and_then(|subject| value_of(&args, subject, cwd, plan.home.as_deref()))
         {
             title.push(Ink::Plain, format!(" {value}"));
         }
         outcome.tell(&mut title, &plan.language);
         let below = match face.and_then(|face| face.block) {
-            Some(Block::Edits) if outcome.status == "ok" => blocks::edits(&called.args),
+            Some(Block::Edits) if outcome.status == "ok" => blocks::edits(&args),
             _ => Vec::new(),
         };
         Some(Drawn { title, below })
@@ -142,12 +145,12 @@ impl Steps {
             None => cut(&clean(&called.name), NAME_CHARS),
         };
         let subject = face.and_then(|face| face.subject.as_deref());
-        let title = match subject
-            .and_then(|subject| value_of(&called.args, subject, cwd, plan.home.as_deref()))
-        {
-            Some(value) => format!("{name} {value}"),
-            None => name,
-        };
+        let args = shaped(face, &called.args);
+        let title =
+            match subject.and_then(|subject| value_of(&args, subject, cwd, plan.home.as_deref())) {
+                Some(value) => format!("{name} {value}"),
+                None => name,
+            };
         Some((called.name.clone(), title))
     }
 }
@@ -246,6 +249,16 @@ pub(crate) fn moved(plan: &Plan, used: &str) -> Problem {
 pub(crate) fn elsewhere(plan: &Plan, used: &str) -> Line {
     let used = clean(&tilde(used, plan.home.as_deref()));
     Line::gray(plan.language.elsewhere(&used))
+}
+
+/// 参数（施工 ED-3）：对象是 `file_path` 的（读、写、改文件），照标准写法规整过的（`path` 这些别名、顶层直接写一处、
+/// `edits` 写成一个对象的都认，[`shape::standard_value`]）；别的照原样。
+fn shaped<'a>(face: Option<&Face>, args: &'a Value) -> Cow<'a, Value> {
+    let mut args = Cow::Borrowed(args);
+    if face.and_then(|face| face.subject.as_deref()) == Some(PATHS[0]) {
+        shape::standard_value(args.to_mut());
+    }
+    args
 }
 
 /// 参数 `subject` 的值，写成给人看的：只取第一行，有第二行的加 `…`；路径写短；控制字符换掉；太长的截断，

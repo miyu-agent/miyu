@@ -12,6 +12,7 @@ mod background;
 mod budget;
 mod checked;
 mod edit;
+mod edit_shapes;
 mod glob;
 mod grep;
 mod human;

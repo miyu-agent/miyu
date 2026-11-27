@@ -24,7 +24,7 @@
 | `log` | `install`、`LevelFilter` | `miyu-log` |
 | `ids`（施工 S-6 上） | `ExternalId`、`VenueId`、`Seq`、`ContentHash` | `miyu-kernel` 的 `id` |
 | `time`（施工 S-6 上） | `Timestamp`、`UtcOffset` | `miyu-kernel` 的 `time` |
-| `events`（施工 S-6 上） | `Event`、`Body`、`By`、`Block`、`FormatError` | `miyu-kernel` |
+| `events`（施工 S-6 上） | `Event`、`Body`、`By`、`Block`、`FormatError`；`shape`（施工 ED-3：读、写、改文件的调用参数规整成标准写法，`kernel/tools.md`「标准写法」） | `miyu-kernel` |
 | `tooltext`（施工 S-6 上；feature `tool`，默认不开） | `load`（`spec`、`text`，包文件夹自己带字的照 `spec_in`、`text_in`；`say`、`LoadError`）、`Spec`、`Access` | `miyu-tool`、`miyu-kernel` 的 `tool` |
 | `settings`（施工 S-6 上） | `Kind`、`Secret`、`parse::{read, why}`、`problem::{At, Code, Severity, got, nearest, tell}` | `miyu-config` |
 | `http`（施工 S-6 上；feature `http`，默认不开） | `get`、`fetcher`、`Get`、`Got`、`Proxy`、`is_loopback_url` | `miyu-http` |

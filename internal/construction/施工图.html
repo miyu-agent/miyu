@@ -1678,6 +1678,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS8"><span class="n">CS-8</span>一次 SIGTERM 就停得下<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS10"><span class="n">CS-10</span>命令不抢终端<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS9"><span class="n">CS-9</span>收尾不等锁、不合日志<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66782,6 +66783,69 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/CS-9-收尾不等锁不合日志.md</code>；蓝图 <code>store.md</code>「怎么走」第 14 条、<code>core.md</code>「停下」、<code>protocol.md</code>「会话表」、<code>session/actor.md</code>「造会话」、<code>log.md</code>；设计 12 第二节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sED3" aria-labelledby="h-sED3">
+  <div class="sheet-head"><h2 id="h-sED3"><span class="no">ED-3</span>edit 参数写法和找旧串的内存</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>edit</code> 认的每一种参数写法，修正、视图、命令行都和标准写法一样对；找旧串不再给整份原文造逐字节的对照表。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel</span><span class="dir-note">ED-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>tool::shape</code>：别名换标准名、顶层一处收进 <code>edits</code>、对象包成列表</li>
+              <li>读不懂的（同一格两个名字）原样交回</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-basesystem</span><span class="dir-note">ED-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>edit</code> 读参数：规整、再照参数格式修正；读不出来照原文报原错</li>
+              <li>找旧串只记不照原样搬来的字，精确的借原文</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-view · miyu-cli</span><span class="dir-note">ED-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>条目多 <code>standard_args</code>，标题、估的行数照它</li>
+              <li>编辑那一块、ACP 的位置照标准写法</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">用的时候才规整</span><span class="rl">日志、发给模型的请求一个字节不动</span></div>
+          <div class="tile new"><span class="nm">报错照原文</span><span class="rl">规整了还读不出来的，报的和以前一字不差</span></div>
+          <div class="tile"><span class="nm">字符串一个字节不碰</span><span class="rl">修正只还原声明的类型</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">ED-3</dd></div>
+        <div><dt>名称</dt><dd>edit 参数写法和找旧串的内存</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">ED-3</dd></div>
+        <div><dt>验收</dt><dd>门禁、请求形状探针、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红：顶层一处加 <code>"replace_all":"true"</code>、视图两条、命令行两条、改 500 kB 的文件多占 9.0 MB</span></li>
+        <li><span class="ok">✓</span><span>报错照旧：<code>"yes"</code>、两个名字、缺路径逐字一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/ED-3-edit参数写法和找旧串的内存.md</code>；蓝图 <code>kernel/tools.md</code>「标准写法」、<code>tools/edit.md</code>、<code>view.md</code>、<code>cli/ask.md</code>、<code>cli/acp.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -185,9 +185,11 @@ fn locations(tool: &Tool, cwd: &str) -> Vec<Value> {
     if !matches!(tool.name.as_str(), "read" | "edit" | "write") {
         return Vec::new();
     }
-    let Ok(args) = serde_json::from_str::<Value>(&tool.args) else {
+    // 照标准写法的（施工 ED-3）：`path` 这些别名也认。
+    let Ok(mut args) = serde_json::from_str::<Value>(&tool.args) else {
         return Vec::new();
     };
+    miyu_kernel::tool::shape::standard_value(&mut args);
     let Some(written) = args["file_path"].as_str().filter(|path| !path.is_empty()) else {
         return Vec::new();
     };

@@ -14,7 +14,7 @@ use miyu_kernel::event::{
 use miyu_kernel::id::CallId;
 use miyu_kernel::time::Timestamp;
 
-use super::{Job, Projector};
+use super::{Job, Projector, output_head};
 use crate::entry::{
     Answered, Approval, Body, Diff, Entry, EntryId, Picture, SkillUsed, Tool, ToolState, TouchKind,
     Touched,
@@ -98,7 +98,8 @@ impl Projector {
             Some(_) => ToolState::Running,
             None => ToolState::Preparing,
         };
-        let parsed: Value = serde_json::from_str(&args).unwrap_or(Value::Null);
+        let standard_args = self.standard(name, &args, state);
+        let parsed = estimate::parsed(standard_args.as_deref().unwrap_or(&args));
         let tool = Tool {
             group: group.clone(),
             call,
@@ -108,6 +109,7 @@ impl Projector {
             state,
             diff: self.estimate(name, &parsed, state),
             args,
+            standard_args,
             images: Vec::new(),
             job: None,
             to_title: self.to_title(name, &parsed),
@@ -139,21 +141,26 @@ impl Projector {
     /// 参数写完了：照它写标题、估行数，等结果。
     pub(super) fn ready(&mut self, id: &EntryId) {
         let texts = self.texts.clone();
-        let mut estimate = None;
-        let mut to_title = None;
+        let mut ready = None;
         if let Some(Body::Tool(tool)) = self.get(id).map(|e| &e.body)
             && tool.state == ToolState::Preparing
         {
-            let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
-            estimate = Some(self.estimate(&tool.name, &parsed, ToolState::Running));
-            to_title = Some(self.to_title(&tool.name, &parsed));
+            let standard = self.standard(&tool.name, &tool.args, ToolState::Running);
+            let parsed = estimate::parsed(standard.as_deref().unwrap_or(&tool.args));
+            let estimate = self.estimate(&tool.name, &parsed, ToolState::Running);
+            ready = Some((
+                estimate,
+                self.to_title(&tool.name, &parsed),
+                standard,
+                parsed,
+            ));
         }
-        let (Some(diff), Some(to_title)) = (estimate, to_title) else {
+        let Some((diff, to_title, standard, parsed)) = ready else {
             return;
         };
         self.touch(id, |entry| {
             if let Body::Tool(tool) = &mut entry.body {
-                let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
+                tool.standard_args = standard;
                 tool.state = ToolState::Running;
                 tool.title = title::of(
                     &tool.name,
@@ -173,13 +180,19 @@ impl Projector {
     /// 回复落了盘：这一步配上调用编号，参数照落了盘的。
     pub(super) fn named(&mut self, id: &EntryId, call: CallId, args: &str) {
         self.calls.insert(call, id.clone());
-        let needs = matches!(self.get(id).map(|e| &e.body), Some(Body::Tool(tool)) if tool.call != Some(call) || tool.args != args);
-        if needs {
+        let needs = match self.get(id).map(|e| &e.body) {
+            Some(Body::Tool(tool)) if tool.call != Some(call) || tool.args != args => {
+                Some(self.standard(&tool.name, args, tool.state))
+            }
+            _ => None,
+        };
+        if let Some(standard) = needs {
             let args = args.to_string();
             self.touch(id, |entry| {
                 if let Body::Tool(tool) = &mut entry.body {
                     tool.call = Some(call);
                     tool.args = args;
+                    tool.standard_args = standard;
                 }
             });
         }
@@ -190,6 +203,13 @@ impl Projector {
     fn estimate(&self, name: &str, args: &Value, state: ToolState) -> Option<Diff> {
         (state != ToolState::Preparing && self.texts.kinds.of(name) == Some(ToolKind::Edit))
             .then(|| estimate::from_args(args))
+            .flatten()
+    }
+
+    /// 编辑、写入的参数不是标准写法的：规整成标准写法的原文（施工 ED-3）；别的工具、还在写参数的、本来就是的没有。
+    fn standard(&self, name: &str, args: &str, state: ToolState) -> Option<String> {
+        (state != ToolState::Preparing && self.texts.kinds.of(name) == Some(ToolKind::Edit))
+            .then(|| estimate::standard(args))
             .flatten()
     }
 
@@ -324,7 +344,7 @@ impl Projector {
         );
         self.touch(&id, |entry| {
             if let Body::Tool(tool) = &mut entry.body {
-                let parsed: Value = serde_json::from_str(&tool.args).unwrap_or(Value::Null);
+                let parsed = estimate::parsed(tool.standard_args.as_deref().unwrap_or(&tool.args));
                 tool.state = state;
                 tool.title = title::of(
                     &tool.name,
@@ -450,43 +470,4 @@ fn command_of(args: &str) -> Option<String> {
     serde_json::from_str::<Value>(args)
         .ok()
         .and_then(|a| a.get("command").and_then(Value::as_str).map(str::to_string))
-}
-
-/// 条目里的结果原文最多几行、几个字节（施工 9-8 十四补）：一页约 1 MiB，一步 8 KiB 放得下上百步。
-const OUTPUT_LINES: usize = 100;
-const OUTPUT_BYTES: usize = 8 * 1024;
-
-/// 结果原文的前面一段：文字块照先后、块之间空一行（同 `view.detail` 的 `output`），照 [`output_of`] 切。
-pub(crate) fn output_head(blocks: &[Content]) -> (Option<String>, bool) {
-    let whole = blocks
-        .iter()
-        .filter_map(|block| match block {
-            Content::Text(text) => Some(text.text.as_str()),
-            _ => None,
-        })
-        .collect::<Vec<&str>>()
-        .join("\n\n");
-    output_of(&whole)
-}
-
-/// 一段结果原文的前面一段（供应商侧工具的结果也照它切，施工 HT-3）：最多 [`OUTPUT_LINES`] 行、[`OUTPUT_BYTES`] 字节，
-/// 先到的算，切在字的边界上；后面只剩空白的不算切。交回那一段和切没切，没有字的是 `None`。
-pub(crate) fn output_of(whole: &str) -> (Option<String>, bool) {
-    if whole.is_empty() {
-        return (None, false);
-    }
-    let mut end = whole
-        .match_indices('\n')
-        .nth(OUTPUT_LINES - 1)
-        .map_or(whole.len(), |(at, _)| at);
-    if end > OUTPUT_BYTES {
-        end = OUTPUT_BYTES;
-        while !whole.is_char_boundary(end) {
-            end -= 1;
-        }
-    }
-    if whole[end..].trim_end().is_empty() {
-        return (Some(whole.to_string()), false);
-    }
-    (Some(whole[..end].to_string()), true)
 }

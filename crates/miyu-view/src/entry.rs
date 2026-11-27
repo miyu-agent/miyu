@@ -227,6 +227,9 @@ pub struct Tool {
     pub state: ToolState,
     /// 参数原文，流式时边收边接。
     pub args: String,
+    /// 编辑、写入的参数不是标准写法的（施工 ED-3）：规整成标准写法的参数原文，头照参数算差异、取路径先用它。没有的不写。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub standard_args: Option<String>,
     /// 编辑、写入加减的行数。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub diff: Option<Diff>,

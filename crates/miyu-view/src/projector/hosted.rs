@@ -55,6 +55,7 @@ impl Projector {
             images: Vec::new(),
             job: None,
             to_title: None,
+            standard_args: None,
             approval: None,
             took_ms: None,
             files: Vec::new(),
