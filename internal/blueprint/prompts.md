@@ -1588,13 +1588,13 @@ Running in the background is not available here. Foreground runs can take a larg
 
 #### `software/basesystem/shell/no-sleep.txt`
 
-- 什么时候加进来：前台的 `shell` 命令顶层有一段就是 `sleep`（`Start-Sleep`）不短于 2 秒，整条不跑（`shell/waiting.rs`，2026-10-26 项目主人定）
-- token：WK-2 后 23（2026-11-17 照 o200k 数；改前也是 23，原来 14）
-- 为什么加：后台任务办完、别的会话回话都会自己叫醒她，前台干等白占这一轮。原来只说了后台任务，她发完跨会话消息后把 `sleep` 挪到后台去等，起了四个空跑的后台任务（2026-10-30 项目主人撞见），改成说清不用等、这一轮结束后什么会叫醒她（同一天项目主人定；照 J13 写成事实，不写「结束这一轮」的命令口吻；后台的纯 `sleep` 照跑，不拒，施工 4-8 补四）。施工 WK-2（2026-11-17 项目主人定）：「wake you after this turn ends」改「reach you after this turn ends」，不说醒；文件名的 sleep 说的是命令，不改
-- 指纹：`deda3c81`
+- 什么时候加进来：前台的 `shell` 命令顶层第一段就是 `sleep`（`Start-Sleep`）不短于 2 秒，整条不跑：整条只有它的、`sleep 5; curl …` 这种开头就睡的都是，`sleep` 在后面几段的照跑（`shell/waiting.rs`；2026-10-26 项目主人定不许前台干等，2026-11-27 项目主人定只拒开头就睡的，施工 SH-3；2 秒门槛和切段是主会话定的技术细节）
+- token：SH-3 后 32（2026-11-27 照 o200k 数，改前 23）；WK-2 后 23（改前也是 23，原来 14）
+- 为什么加：后台任务办完、别的会话回话都会自己叫醒她，前台干等白占这一轮。原来只说了后台任务，她发完跨会话消息后把 `sleep` 挪到后台去等，起了四个空跑的后台任务（2026-10-30 项目主人撞见），改成说清不用等、这一轮结束后什么会叫醒她（同一天项目主人定；照 J13 写成事实，不写「结束这一轮」的命令口吻；后台的纯 `sleep` 照跑，不拒，施工 4-8 补四）。施工 WK-2（2026-11-17 项目主人定）：「wake you after this turn ends」改「reach you after this turn ends」，不说醒；文件名的 sleep 说的是命令，不改。施工 SH-3（2026-11-27 项目主人定）：去掉「replies from other sessions」，只留后台任务那半句；补一句等服务起来的办法（带检查的循环），照 J13 写成事实。拒的时候不说是哪一段
+- 指纹：`3a6fa933`
 
 ```text
-Not run: no need to wait. Finished background jobs and replies from other sessions reach you after this turn ends.
+Not run: no need to wait. Finished background jobs reach you after this turn ends. A loop with a check can wait for a service to come up.
 ```
 
 #### `software/basesystem/shell/no-cwd.txt`

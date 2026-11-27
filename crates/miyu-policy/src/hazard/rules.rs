@@ -61,6 +61,9 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
             look(&script, places, depth + 1, found);
         }
         for simple in pipeline {
+            if fed::runs_fetched(simple) {
+                found.push(Kind::PipeToShell);
+            }
             one(
                 simple,
                 places,
@@ -76,9 +79,6 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
         }
     }
     for inner in &parsed.inner {
-        if fed::fetches(inner) && fed::pipeline_feeds_shell(&parsed) {
-            found.push(Kind::PipeToShell);
-        }
         look(inner, places, depth + 1, found);
     }
 }

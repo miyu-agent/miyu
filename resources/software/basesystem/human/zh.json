@@ -156,7 +156,7 @@
     "shell/timed-out": "超过 {seconds} 秒，已停止",
     "shell/failed": "无法执行：{error}",
     "shell/no-background": "这里不能放到后台运行",
-    "shell/no-sleep": "不允许在前台用 sleep 等待",
+    "shell/no-sleep": "不允许开头就用 sleep 等待",
     "shell/no-cwd": "工作目录已不存在：{cwd}",
     "shell/hazard-delete_root": "未执行：会删除根目录",
     "shell/hazard-delete_home": "未执行：会删除家目录",

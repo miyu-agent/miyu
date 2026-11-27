@@ -91,7 +91,8 @@ pub(super) fn piped_scripts(pipeline: &[Simple]) -> Vec<String> {
     scripts
 }
 
-/// 一条管道里先下载、后面接着 shell 或者解释器（读标准输入的那种）：`curl … | sh`。
+/// 一条管道里先下载、后面接着 shell 或者解释器（读标准输入的那种）：`curl … | sh`。前面那条是在替换里下载的也算
+/// （`cat <(curl …) | bash`，施工 SH-3）。
 pub(super) fn fetch_into_shell(pipeline: &[Simple]) -> bool {
     let mut fetched = false;
     for simple in pipeline {
@@ -100,7 +101,7 @@ pub(super) fn fetch_into_shell(pipeline: &[Simple]) -> bool {
             continue;
         };
         let name = base(&first.text);
-        if matches!(name, "curl" | "wget") {
+        if matches!(name, "curl" | "wget") || fetches_inside(simple) {
             fetched = true;
         } else if fetched
             && interpreter(name)
@@ -112,18 +113,23 @@ pub(super) fn fetch_into_shell(pipeline: &[Simple]) -> bool {
     false
 }
 
-/// `bash <(curl …)`、`sh -c "$(curl …)"`：替换里在下载，外面是 shell、解释器；在这个 shell 里执行的 `source`、`.`、`eval`
-/// 也算（施工 AS-9）。
-pub(super) fn pipeline_feeds_shell(parsed: &super::lex::Parsed) -> bool {
-    parsed.pipelines.iter().flatten().any(|simple| {
-        unwrap(&simple.words).first().is_some_and(|word| {
+/// `bash <(curl …)`、`sh -c "$(curl …)"`、`bash <<< "$(curl …)"`：这一条的替换里在下载，它自己是 shell、解释器；在这个 shell
+/// 里执行的 `source`、`.`、`eval` 也算（施工 AS-9）。只看装着替换的这一条（施工 SH-3）：原来看整条命令里有没有解释器，
+/// `t=$(curl …); python3 a.py "$t"` 这种拿下载的字当数据的也报。
+pub(super) fn runs_fetched(simple: &Simple) -> bool {
+    fetches_inside(simple)
+        && unwrap(&simple.words).first().is_some_and(|word| {
             let name = base(&word.text);
             interpreter(name) || matches!(name, "source" | "." | "eval")
         })
-    })
 }
 
-pub(super) fn fetches(text: &str) -> bool {
+/// 这一条有一段替换在下载。
+fn fetches_inside(simple: &Simple) -> bool {
+    simple.substitutions.iter().any(|inner| fetches(inner))
+}
+
+fn fetches(text: &str) -> bool {
     parse(text).pipelines.iter().flatten().any(|simple| {
         unwrap(&simple.words)
             .first()

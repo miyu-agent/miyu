@@ -1680,6 +1680,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS9"><span class="n">CS-9</span>收尾不等锁、不合日志<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66895,6 +66896,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/ED-3-edit参数写法和找旧串的内存.md</code>；蓝图 <code>kernel/tools.md</code>「标准写法」、<code>tools/edit.md</code>、<code>view.md</code>、<code>cli/ask.md</code>、<code>cli/acp.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sSH3" aria-labelledby="h-sSH3">
+  <div class="sheet-head"><h2 id="h-sSH3"><span class="no">SH-3</span>开头就睡才拒、下载即执行不误报</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">等服务起来写的 <code>start; sleep 2; status</code> 照跑，开头就睡的照旧不跑、拒的话说清等服务的办法；拿下载的字当数据用的命令不再判成下载即执行。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-basesystem · shell/waiting.rs</span><span class="dir-note">SH-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>照顶层切段，只看第一段：前台、<code>sleep</code> 不短于 2 秒才拒</li>
+              <li><code>no-sleep.txt</code> 去掉别的会话，补带检查的循环（23 → 32 token）</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · hazard/lex.rs · fed.rs · rules.rs</span><span class="dir-note">SH-3</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>每个简单命令记下自己的替换</li>
+              <li>替换里在下载，只看装着它的那一条是不是解释器、<code>source</code>、<code>eval</code></li>
+              <li>前面那条替换里下载、管道接给读标准输入的解释器也算</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">开头就睡才拒</span><span class="rl">项目主人 2026-11-27 定；门槛、切段是技术细节</span></div>
+          <div class="tile new"><span class="nm">替换只看自己那一条</span><span class="rl">技术题：原来看整条命令里有没有解释器</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">SH-3</dd></div>
+        <div><dt>名称</dt><dd>开头就睡才拒、下载即执行不误报</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">SH-3</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>waiting/tests.rs</code>：开头就睡的拒，<code>sleep</code> 在后面的、管道、循环、后台照跑；改前红</span></li>
+        <li><span class="ok">✓</span><span><code>hazard/tests/fed.rs</code>：解释器跑下载的 11 条照报，当数据用的 5 条（含 Terminal-Bench 样本缩写）不报；改前红</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/SH-3-sleep和下载即执行.md</code>；蓝图 <code>tools/shell.md</code>「怎么走」第 4 条、「高危命令」第 5 条，<code>session/guard.md</code>；设计 26 登记簿。</li>
       </ul>
     </div>
   </div>

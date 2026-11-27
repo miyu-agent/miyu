@@ -36,6 +36,9 @@ pub(crate) struct Simple {
     pub(crate) writes: Vec<Word>,
     /// 喂进它标准输入的字（施工 FX-22）：here-string（`<<<`）的词、heredoc 的正文。`bash <<'EOF'` 这类 shell 把它当脚本跑。
     pub(crate) stdin: Vec<String>,
+    /// 这一条里每段替换的原文（施工 SH-3）：词里的、重定向读的（`< <(…)`）、here-string 里的都算。认下载下来交给解释器跑的，只看
+    /// 装着替换的这一条。
+    pub(crate) substitutions: Vec<String>,
 }
 
 /// 拆出来的：几条管道（一条管道是几个接在一起的简单命令），加上替换里面的那几段原文。
@@ -385,6 +388,7 @@ impl Lexer {
     /// 一段替换：里面的另拆，词记成说不清，再记在词上（`command` 见 [`Substitution::command`]）。
     fn substitution(&mut self, inner: String, command: bool) {
         self.parsed.inner.push(inner.clone());
+        self.simple.substitutions.push(inner.clone());
         self.mark('$');
         if let Some(word) = &mut self.word {
             word.substitutions.push(Substitution { command, inner });

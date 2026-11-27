@@ -1,1 +1,1 @@
-Not run: no need to wait. Finished background jobs and replies from other sessions reach you after this turn ends.
+Not run: no need to wait. Finished background jobs reach you after this turn ends. A loop with a check can wait for a service to come up.

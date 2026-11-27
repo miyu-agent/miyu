@@ -1,19 +1,22 @@
 //! 不许前台 `sleep` 干等（项目主人 2026-10-26 定）：后台任务办完会自己回报，她前台 `sleep` 等它只是白白占着这一轮。
 //!
-//! 照顶层把命令切成几段（`;`、`&&`、`||`、换行、单个 `&`；引号、反斜杠、括号、花括号里的不算），有一段就是前台的
-//! `sleep <时长>`（PowerShell 是 `Start-Sleep`），时长合起来不短于 [`SHORTEST`]，整条不跑。管道里的、循环体里的
+//! 只拒开头就睡的（项目主人 2026-11-27 定，施工 SH-3）：照顶层把命令切成几段（`;`、`&&`、`||`、换行、单个 `&`；引号、反斜杠、
+//! 括号、花括号里的不算），第一段就是前台的 `sleep <时长>`（PowerShell 是 `Start-Sleep`），时长合起来不短于 [`SHORTEST`]，整条
+//! 不跑：整条只有这一个 `sleep` 的，和 `sleep 5; curl …`、`sleep 10 && check` 这种先睡再看的。`sleep` 不在第一段的
+//! （`postfix start; sleep 2; postfix status`，多半是在等服务起来）照跑；原来哪一段是 `sleep` 都拒，这些也拦了。管道里的、循环体里的
 //! （`do sleep 1; done` 那一段开头是 `do`）、放到后台的（`sleep 5 &`）、写不出时长的照跑；时长写成变量这类看不出多长的当长的。
+//! 2 秒的门槛和切段的认法是主会话定的技术细节。
 
 use std::time::Duration;
 
 /// 不短于这么久的算干等：一两秒以内的短停（让上一步落盘、限速）照跑。
 const SHORTEST: Duration = Duration::from_secs(2);
 
-/// 这条命令有没有前台干等的一段。
+/// 这条命令是不是开头就前台干等。
 pub(super) fn waits(command: &str) -> bool {
-    segments(command)
-        .into_iter()
-        .any(|(segment, background)| !background && sleeps_long(&segment))
+    segments(command.trim())
+        .first()
+        .is_some_and(|(first, background)| !background && sleeps_long(first))
 }
 
 /// 照顶层切开：每段的字，和它是不是放到了后台（后面跟着单个 `&`）。
@@ -59,13 +62,16 @@ fn segments(command: &str) -> Vec<(String, bool)> {
     segments
 }
 
-/// 这一段就是 `sleep <时长…>`（或 `Start-Sleep`），合起来不短于 [`SHORTEST`]。
+/// 这一段就是 `sleep <时长…>`（或 `Start-Sleep`），合起来不短于 [`SHORTEST`]。接着管道的（`sleep 3 | cat`）不算。
 fn sleeps_long(segment: &str) -> bool {
     let mut words = segment.split_whitespace();
     let Some(first) = words.next() else {
         return false;
     };
     let rest: Vec<&str> = words.collect();
+    if rest.iter().any(|word| word.contains('|')) {
+        return false;
+    }
     if first == "sleep" {
         return total(&rest).is_none_or(|total| total >= SHORTEST);
     }

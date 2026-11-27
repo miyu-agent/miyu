@@ -171,7 +171,7 @@
     "shell/timed-out": "stopped after {seconds} s",
     "shell/failed": "can't run: {error}",
     "shell/no-background": "can't run in the background here",
-    "shell/no-sleep": "foreground sleep isn't allowed",
+    "shell/no-sleep": "starting with a sleep isn't allowed",
     "shell/no-cwd": "working directory no longer exists: {cwd}",
     "shell/hazard-delete_root": "not run: would delete the root directory",
     "shell/hazard-delete_home": "not run: would delete the home directory",
