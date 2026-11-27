@@ -79,12 +79,14 @@ pub mod time {
     pub use miyu_kernel::time::{Timestamp, UtcOffset};
 }
 
-/// 会话日志里的事件（施工 S-6 上）：事件、正文、谁做的、内容块，写法不对时的错误。
+/// 会话日志里的事件（施工 S-6 上）：事件、正文、谁做的、内容块，写法不对时的错误；读、写、改文件的调用参数规整成标准写法
+/// （`shape`，施工 ED-3：头照参数算差异、取路径之前先过它）。
 pub mod events {
     pub use miyu_kernel::FormatError;
     pub use miyu_kernel::block::Block;
     pub use miyu_kernel::event::{Body, Event};
     pub use miyu_kernel::origin::By;
+    pub use miyu_kernel::tool::shape;
 }
 
 /// 工具的字怎么读（施工 S-6 上；feature `tool`，默认不开）：说明和参数格式、输出里给她看的几句（`load`），读好的说明、访问类别。

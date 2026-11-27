@@ -128,7 +128,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 - `kind`：`read` → `read`；`edit`、`write` → `edit`；`trash` → `delete`；`glob`、`grep`、`web_search` 和供应商侧的 `search_web`、`WebSearch` → `search`；`shell` → `execute`；`web_fetch` 和供应商侧的 `read_url_content`、`WebFetch` → `fetch`；`todowrite` → `think`；别的 `other`。
 - `status`：`preparing` → `pending`；`running` 有确认没定的 → `pending`，别的 → `in_progress`；`ok` → `completed`；`error`、`denied`、`cancelled`、`skipped` → `failed`。
 - `rawInput`：参数写完了的（不是 `preparing`）照参数原文解开。
-- `locations`：结果里改了的文件（`files`，真实位置的绝对路径）；还没结果的，`read`、`edit`、`write` 照参数的 `file_path`，相对的照编辑器给的目录补全。
+- `locations`：结果里改了的文件（`files`，真实位置的绝对路径）；还没结果的，`read`、`edit`、`write` 照参数的 `file_path`（先规整成标准写法，`path`、`filePath` 也认，施工 ED-3），相对的照编辑器给的目录补全。
 - `content`（每次整份换）：执行命令的（`shell`，参数写完了的；还有驱动照跑命令问过人的供应商侧工具，命令照确认的 `detail.command`，施工 ACP-12）先是一段代码块 `$ <命令原文>`：标题只有她写的说明，规范要编辑器把命令写全，确认框里尤其要看到；再是结果：有结果的，输出原文的开头一段围进代码块（围栏比字里最长的一串反引号多一个，至少三个）；没有输出的写结果那一句（被拒的为什么）。做成了、新建或者改了文件的，再要 `view.detail {session, call}`，一个文件的每一段 `@@` 写成一项 `{"type": "diff", path, oldText, newText}`（改前是上下文加删的行，改后是上下文加加的行，新建的文件改前是 `null`），有对比的整个 `content` 换成对比；扔进回收站的不要对比。重放时不要对比。
 
 ### 确认和提问
@@ -178,7 +178,7 @@ Miyu 当 ACP（Agent Client Protocol，规范 <https://agentclientprotocol.com>�
 |---|---|
 | `crates/miyu-cli/src/acp/view/tests.rs` | 每段字带它那一条的 `messageId`；不是人说话开的一轮先报一句开头、说是哪件后台任务、一轮只报一次，人说话开的、编辑器在等的不报；正文只报一次（第一次、接上的一截、整份里多出来的）；思考；编辑器自己的话不报、别处的报一次，重放都报、只记下的不报；藏起来的不报；等的那一句听到了换成等它那一轮、别的一轮结束不回；只记下的在跑的工具不记；改了文件的要对比、扔进回收站的不要；等的那一轮没有说明地出错收尾，照怎么结束的回、话照界面语言（施工 ACP-11） |
 | `crates/miyu-cli/src/acp/status/tests.rs` | 待办、用量（两个数、准的金额）、标题、权限和模型变了、在等的交出去和了结了的忘掉 |
-| `crates/miyu-cli/src/acp/tool/tests.rs` | 执行命令的内容先是命令原文、标题不变、写到一半的不报；驱动照跑命令问过人的供应商侧工具同样先是命令原文，包问人的、没问过的不报（施工 ACP-12）；`kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比 |
+| `crates/miyu-cli/src/acp/tool/tests.rs` | 执行命令的内容先是命令原文、标题不变、写到一半的不报；驱动照跑命令问过人的供应商侧工具同样先是命令原文，包问人的、没问过的不报（施工 ACP-12）；`kind`、标题、写参数时 `pending`、等确认 `pending`、只写变了的、围栏、统一格式差异拆成对比；`path` 别名的照样报位置（施工 ED-3） |
 | `crates/miyu-cli/src/acp/prompt/tests.rs` | 内容块照先后、`file://` 解成路径、解不开的整句不收 |
 | `crates/miyu-cli/src/acp/forms/tests.rs`、`options/tests.rs`、`setup/tests.rs` | 表单的格和读回答；能选的模型、配置项的先后、换的值查过；`~` 写成绝对路径、只收绝对的目录 |
 | `crates/miyu-cli/tests/acp.rs`、`tests/acp/{turns,sessions,asking,choosing,relink}.rs` | 真的核心、假模型，测试当编辑器：握手的能力、握手前的请求、新会话（目录、默认权限、斜杠命令）、相对目录、一轮的思考和正文、工具步骤（标题、`kind`、位置、对比）、打断、被拒、斜杠命令；载入重放（先后、往前翻页的长历史、后台任务叫醒的那一轮的开头在它的回答以前、都在回应以前，施工 ACP-11）、接上不重放、没有的会话、照目录列、切模式、别处切的模式报过来、关掉；确认（选项、拒绝回核心）、提问一道一道问、提问走表单；不要密钥的供应商列表后来才拉到：编辑器收到新的配置项、之后开的会话列得出（施工 ACP-9）；核心重启：正在进行的那一轮回出错、话是给人看的（施工 ACP-11）、之后照常开会话、原来的会话重新订阅说得了话，自己重连的那一次连得上的什么都不发也接着报（施工 ACP-9，`tests/support/restart.rs` 在同一个数据根上重启核心） |

@@ -60,6 +60,22 @@ fn a_new_step_is_pending_until_its_arguments_are_written() {
 }
 
 #[test]
+fn a_path_alias_still_names_the_location() {
+    // 施工 ED-3：`path`、`filePath` 这些别名的，照标准写法的 `file_path` 报位置。
+    let args = json!({"path": "notes.md", "edits": {"oldText": "x", "newText": "y"}}).to_string();
+    let call = opened(
+        "b3.1",
+        &step(json!({"name": "edit", "args": args})),
+        "/work",
+    );
+    let path = std::path::Path::new("/work").join("notes.md");
+    assert_eq!(
+        call["locations"][0]["path"],
+        path.to_string_lossy().as_ref()
+    );
+}
+
+#[test]
 fn a_step_waiting_for_approval_is_pending() {
     let waiting = step(json!({"approval": {"access": "execute"}}));
     let call = opened("b3.1", &waiting, "/work");

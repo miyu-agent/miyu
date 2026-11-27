@@ -11,6 +11,7 @@
 | 代码 | 管什么 |
 |---|---|
 | `crates/miyu-kernel/src/tool.rs` | 访问类别 `Access`、内核要知道的一件工具 `ToolRule`、参数修正 `repair` |
+| `crates/miyu-kernel/src/tool/shape.rs` | 读、写、改文件的参数的标准写法 `shape::standard`、`standard_value`（施工 ED-3） |
 | `crates/miyu-kernel/src/tool/texts.rs` | 内核替工具写的十三句 `ToolTexts`、它们的原文 `ToolTextSources`、写成的一句 `Worded` |
 | `crates/miyu-kernel/src/event/tool.rs` | `tool.result`、状态 `ToolStatus`、给人看的说法 `Said`（`kernel/events-bodies.md`） |
 | `crates/miyu-kernel/src/session/policy.rs` | 冻结在会话上的 `tools`（工具名到 `ToolRule`）和 `tool_texts` |
@@ -48,6 +49,13 @@
 会话的策略里照工具名存着每件工具的 `ToolRule`（`Policy.tools`）：不在里面的名字是模型编的。造策略时从策略快照的工具面拆出来，工具面上两件同名的，造不出策略（`policy.md`）。
 
 **参数修正** `repair(parameters, args)`：照参数格式修正模型给的参数原文，交回一个 JSON 对象的原文；参数不是 JSON 对象的，交回 `NotAnObject`。
+
+**标准写法** `shape::standard(args)`、`shape::standard_value(&mut value)`（施工 ED-3）：读、写、改文件这几件（`edit`、`write`，视图里算编辑那一类的；命令行、ACP 里对象是 `file_path` 的）认好几种写法，这里把读得懂的规整成标准写法，修正（只认标准写法的位置）、视图估行数、取路径都照它：
+
+- `path`、`filePath` 换成 `file_path`；每一处的 `oldString`、`oldText` 换成 `old_string`，`newString`、`newText` 换成 `new_string`，`replaceAll` 换成 `replace_all`。值原样，一个字节不碰：写成字符串的布尔规整以后到了声明过的位置，再照参数格式修正还原。
+- 没有 `edits`（或者是 `null`）、顶层 `old_string`、`new_string` 都在的：连着 `replace_all` 收进 `edits` 的一项；缺一样的只换名字。`edits` 是一个对象的：包成只有一项的列表。有 `edits` 的：顶层的 `replace_all` 去掉（本来就不算数）。`edits` 是别的（写成字符串、修正还原不了的）：不动它。
+- 同一格写了两个名字的（顶层的路径、某一处的一格）、不是一个对象的：读不懂，一格不动，交回原文（`standard` 交借来的原文、`standard_value` 交回假）：用的人照原文读，报原文的错。本来就是标准写法的也交回原文。
+- 只在用的时候规整：日志里的参数原文、发给模型的请求一个字节不动。`grep`、`show` 的 `path` 是它们自己的标准名，不给它们用。
 
 **内核替工具写的几句** `ToolTexts`：十三句，各是一份读好的模板（`crates/miyu-kernel/src/template.rs`）。
 

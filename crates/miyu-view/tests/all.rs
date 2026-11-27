@@ -25,6 +25,7 @@ mod progress;
 mod queue;
 mod random;
 mod remembered;
+mod shapes;
 mod shell;
 mod speed;
 mod status;

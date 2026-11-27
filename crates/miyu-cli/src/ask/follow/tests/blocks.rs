@@ -172,3 +172,19 @@ fn a_step_with_nothing_under_it_is_just_a_line() {
         "改一下\n\n← 编辑 notes.md · 出错：第 1 处未找到\n\n没找到。\n"
     );
 }
+
+#[test]
+fn an_edit_in_another_shape_has_its_path_and_block() {
+    // 施工 ED-3：顶层直接写一处、`path`、`oldText` 这些别名的，标题照样有路径、下面照样印改动。
+    let plan = plan(Output::Text, Language::Chinese);
+    let args = json!({"path": "notes.md", "oldText": "x", "newText": "y", "replaceAll": "true"});
+    let messages = turn(
+        vec![
+            replied(json!([call("c1", "edit", args)])),
+            result("c1", "ok", "", edited()),
+        ],
+        "",
+    );
+    let Fed { screen, .. } = feed(&plan, false, &messages);
+    assert_eq!(screen, "← 编辑 notes.md · 编辑了 1 处\n-x\n+y\n");
+}

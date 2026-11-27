@@ -209,7 +209,7 @@ miyu: 警告：1 步需要确认，已跳过
 **编辑那一块**（`block` 是 `edits`）：
 
 1. 标题照「每一步」写。
-2. 状态是 `ok` 的，下面照先后印参数 `edits` 里的每一处：`old_string` 的每一行前面写 `-`，红的；`new_string` 的每一行前面写 `+`，绿的；两处之间一行 `…`，灰的。字末尾的换行不多出一个空行，`\r\n` 当一个换行；控制字符换成 `�`，制表符照留。
+2. 状态是 `ok` 的，下面照先后印参数 `edits` 里的每一处（对象是 `file_path` 的工具，参数先规整成标准写法，施工 ED-3，`kernel/tools.md`「标准写法」：顶层直接写一处、`edits` 写成一个对象、`path`、`oldText` 这些别名的，标题的路径和这一块照样有）：`old_string` 的每一行前面写 `-`，红的；`new_string` 的每一行前面写 `+`，绿的；两处之间一行 `…`，灰的。字末尾的换行不多出一个空行，`\r\n` 当一个换行；控制字符换成 `�`，制表符照留。
 3. 读不出 `edits`，或者某一处的 `old_string`、`new_string` 不是字符串：那一处不印。一处都印不出来的，下面不印。
 4. 别的状态，下面不印。
 
@@ -544,7 +544,7 @@ Examples:
 | 测试 | 守哪几条 |
 |---|---|
 | `crates/miyu-cli/src/ask/follow/tests.rs` | 思考和回答分两条通道、上色、只跟自己那一轮、`--format json`、出错和退出码、重试成了不算出错 |
-| `crates/miyu-cli/src/ask/follow/tests/blocks.rs` | 一块前后的空行：最前面的不空、两块挨着只空一行、后面接回答、接思考、接用量；下面没有东西的照一行印（施工 4-11） |
+| `crates/miyu-cli/src/ask/follow/tests/blocks.rs` | 一块前后的空行：最前面的不空、两块挨着只空一行、后面接回答、接思考、接用量；下面没有东西的照一行印（施工 4-11）；顶层一处带别名的编辑照样有路径和那一块（施工 ED-3） |
 | `crates/miyu-cli/src/ask/follow/tests/asides.rs` | 换行和空行；给脚本的两段回答隔开、没隔着步骤的照原样接上；目录太宽那一句只说一次；路径照会话实际干活的目录写短；沙盒用不了那一句：每种原因、最先印、只说一次、`--format json` 不印（施工 5-4 下） |
 | `crates/miyu-cli/src/ask/follow/tests/compaction.rs` | 压缩那一行：终端里进度原地刷新、换成结果，管道里只有结果，失败的红、调了工具的单说，英文，`--format json` 不印（施工 6-3 下）；`follow/compacting/tests.rs` 守 token 数的写法 |
 | `crates/miyu-cli/src/ask/follow/tests/unattended.rs` | 最后那一句、退出码 4、只算内核那一句 |

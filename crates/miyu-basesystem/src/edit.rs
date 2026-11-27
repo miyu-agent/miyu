@@ -6,6 +6,7 @@
 
 mod find;
 
+use std::borrow::Cow;
 use std::ops::Range;
 use std::path::Path;
 
@@ -13,7 +14,7 @@ use serde::Deserialize;
 
 use miyu_fs::{Kind, OpenError, replace};
 use miyu_kernel::template::Template;
-use miyu_kernel::tool::Access;
+use miyu_kernel::tool::{Access, repair, shape};
 use miyu_tool::{Call, Done, Effect, Progress, Running, Spec, Stop, Target, Tool};
 
 use crate::blocking::blocking;
@@ -46,7 +47,8 @@ struct Texts {
 }
 
 /// 她给的参数。`file_path` 写成 `path`、`filePath` 的也认；照 Claude Code 写成一处的（顶层的 `old_string`、
-/// `new_string`、`replace_all`），当只有一项；opencode、pi 的字段名也认。
+/// `new_string`、`replace_all`），当只有一项；opencode、pi 的字段名也认。读之前先规整成标准写法（施工 ED-3，
+/// [`Edit::args`]）；这里的别名只在规整不了时用上，报的错和原来一个字不差。
 #[derive(Deserialize)]
 struct Args {
     #[serde(alias = "path", alias = "filePath")]
@@ -99,6 +101,18 @@ impl Args {
 }
 
 impl Edit {
+    /// 读她给的参数（施工 ED-3）：先规整成标准写法（[`shape::standard`]），规整过的再照参数格式修正一遍（规整以后才到了
+    /// 声明过的位置的，例如顶层写一处的 `replace_all: "true"`）。这样读不出来的照原文读：报的是原文的错。
+    fn args(&self, raw: &str) -> Result<Args, serde_json::Error> {
+        if let Cow::Owned(standard) = shape::standard(raw)
+            && let Ok(repaired) = repair(&self.spec.parameters, &standard)
+            && let Ok(args) = serde_json::from_str(&repaired)
+        {
+            return Ok(args);
+        }
+        serde_json::from_str(raw)
+    }
+
     /// 照资源目录 `resources` 里的字造，共用的几句是 `common`。
     pub(crate) fn load(resources: &Path, common: Common) -> Result<Edit, LoadError> {
         let text = |name: &str, fields: &[&str]| load::text(resources, "edit", name, fields);
@@ -127,7 +141,7 @@ impl Tool for Edit {
     }
 
     fn targets(&self, call: &Call) -> Vec<Target> {
-        serde_json::from_str::<Args>(&call.args)
+        self.args(&call.args)
             .map(|args| {
                 vec![Target {
                     path: args.file_path,
@@ -140,8 +154,9 @@ impl Tool for Edit {
 
     fn run(&self, call: Call, _progress: Progress) -> Running<'_> {
         let texts = self.texts.clone();
+        let args = self.args(&call.args);
         Box::pin(async move {
-            match serde_json::from_str::<Args>(&call.args) {
+            match args {
                 Ok(args) => {
                     let path = args.file_path.clone();
                     let changes = args.changes();
