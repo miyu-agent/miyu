@@ -88,6 +88,8 @@
 
 进核心之前（施工 LW-8，2026-11-22）：主程序先看参数是不是前台跑核心的三种写法之一：`core`、`core --idle-seconds <秒>`、`core --idle-seconds=<秒>`，秒数照 `u64` 解析得出（同 clap 解析这个参数用的 `str::parse`）。认得出的直接进核心，不搭整棵命令行树、不读界面语言（`crates/miyu/src/main.rs` 的 `running_core`）；认不出的（`start`、`status`、`stop`，要帮助的、写错的、不是 UTF-8 的）照原来整棵树解析，报错的字由 clap 照原样说。原因：核心进程只认这一种写法，原来搭整棵树、解析一遍要执行 266 kB 代码，执行过的函数都留在核心的内存里（`perf.md`「排函数」）。`main.rs` 的测试拿一组参数对照快路和整棵树的结果。
 
+进核心之前先看有没有控制终端（施工 CS-11，`crates/miyu-core/src/front.rs`，Unix）：能打开 `/dev/tty` 就算有，这是人在终端前台直接跑 `miyu core`。这时这个进程不当核心，只当一个很小的「前台壳」：照头拉起核心的同一个办法（新会话，`miyu_pipe::new_session`，施工 CS-10）把真正的核心拉起来，参数、环境变量（数据根、资源目录）原样带过去，标准输出、标准错误还接着这个终端，标准输入接空；之后挂着终端等它。真正的核心没有控制终端，它起的 `zsh -i`、`bash -i` 这类打不开 `/dev/tty`、抢不走前台、也不会把自己停住；V-48 的看门做法一条不动。壳收到 `SIGINT`（终端里按 Ctrl+C 只到前台组，也就是壳）、`SIGTERM`、`SIGHUP`（关掉终端时 shell 转来）、`SIGQUIT`，原样转给核心，处理在拉起核心以前装好；核心退出，壳照它的退出码退出，被信号杀掉的照 shell 的写法交 128 加信号号。壳不开库、不拿锁、不装运行日志，数据根的锁和 `core.log` 照常归真正的核心。壳自己被 `SIGKILL` 了，核心不跟着走，同头拉起的核心（头没了照旧跑，等别的头来连；要停用 `miyu core stop`）。头拉起的（`miyu core start`、终端界面、网页软件）、systemd、launchd 起的核心没有控制终端，不走这里；壳拉起的那一个也没有，不会再套一层。Ctrl+Z 只停住壳，核心照旧在后台跑。Windows 上没有这一层。没选「核心起来时放下控制终端（`TIOCNOTTY`）」：macOS 上终端按键的信号只发给带着控制终端的进程，放下以后 Ctrl+C 打不到核心（施工 CS-11 第一版在 CI 上撞到）。
+
 进核心之前还有一步（施工 LW-12，`heap.md`「线程缓存」）：如果这个进程没有带着「线程缓存少留」的环境变量（不是由 `miyu` 拉起的核心，例如 systemd 托管的、直接运行 `miyu core` 的），主程序带上它、用原来的参数重新执行自己一次，进程号不变；已经带着时直接往下运行。只有 glibc 上有这一步。
 
 0. 进程的堆（施工 V-2 再补，`heap.md`）：起别的线程之前，glibc 上把 arena 限到 8 个、大块的门槛定在 128 KiB；记一行 `DEBUG heap tuned tuned=<真假> arenas=8 mmap_from=131072 huge_pages_off=<真假> tunables=<这个进程带着的 GLIBC_TUNABLES>`（装了日志以后补记）。别的平台什么都不做。
@@ -232,6 +234,7 @@
 | `crates/miyu/tests/stopping_early.rs`（施工 CS-8，Unix） | 真的核心，一次 `SIGTERM` 就退：卡在起来那一段（系统配置换成命名管道，卡在装好信号以后的那一次读）的 10 秒内退、退出码 0、记 `stopped reason=signal ready=false`、没记 `listening`；说了 `ready`、目录还在读（缓存目录里的目录换成命名管道）的 10 秒内退、退出码 0、记 `stopped reason=signal`、没记 `catalog loaded`。修之前两条都红：前一条一直不走，后一条收尾等读目录、去掉放下运行时的那一处也红（记了「停了」不走） |
 | `crates/miyu/tests/stopping_create.rs`（施工 CS-9，Unix） | 真的核心，造会话卡在找人格上（家目录那一层的人格的 `prompts/reminders.md` 换成命名管道，那时拿着会话表的锁）时一次 `SIGTERM`：10 秒内退、退出码 0、记 `stopped reason=signal`、没有 `stopping took too long`，造会话的头收到 `session_stopped`，没留下会话（改前等满测试口子的总时限、退出码 1） |
 | `crates/miyu-core/tests/closing.rs` 的 `the_databases_are_closed_before_the_lock_goes`（施工 CS-9） | 「停下」第 8 条：另一个线程一拿到锁就数，这个数据根里一个开着的库都没有；交回以后核心还在，库照样关着（改前放锁时会话列表的索引、用量汇总都开着） |
+| `crates/miyu/tests/terminal_front.rs`（施工 CS-11，Unix） | 真的伪终端，`python3` 拿它当控制终端换成交互式的 bash，像人一样敲 `miyu core`：前台是壳那一组，一直没被换；人用 `!` 跑的抢终端的几条（`support/grab.rs`：`python3` 小程序、`sh -c 'exec </dev/tty'`、`bash -i`、`bash -lic`、`zsh -i`、`zsh -i -c`、`zsh -lic`，没有的跳过）都跑完、打不开 `/dev/tty`、印出 hi；核心的会话是它自己开的；按 Ctrl+C 核心有计划地停下（`stopped reason=signal`），壳交 0；关掉终端（主端关了）核心退出；核心被 `SIGKILL` 壳交 137 |
 | `crates/miyu-core/tests/tools.rs` | 工具目录里是基础系统的七件；资源目录坏了，说是哪一份 |
 | `crates/miyu-core/src/models/tests.rs` | 出厂的档案读得进来，DeepSeek 那一套开关和请求形状探针用的 `Compat::deepseek()` 一样、收图不收 PDF、图照官方的算法（施工 8-6，原来写在代码里，施工 4-13）；TOML 变成 JSON，写错的说是档案 |
 | `crates/miyu-core/src/sandbox/tests.rs` | 探沙盒的助手：旁边没有的、不知道主程序在哪的记找不到，跑不了的记原因（施工 5-1）；探到了手段的交回能用和助手，手段是空的、找不到、探不成的交回用不了和原因（施工 5-4 上、下） |

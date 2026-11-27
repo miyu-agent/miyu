@@ -212,7 +212,7 @@
 | `crates/miyu-pipe/src/parent/tests.rs`（施工 XG-1 下，Windows、macOS） | 起一个子进程，问出来的父进程是测试进程自己；macOS 上测试进程的父进程和标准库说的一样，没有的进程问不出 |
 | `crates/miyu-pipe/src/windows/tests.rs` | Windows：管道只对本人开放；一个名字只有一个第一个实例；头看到另一头是自己；当前用户是一个 SID |
 | `crates/miyu/tests/core.rs` | 真的主程序：拉起、再连不拉起、两个头同时只拉起一个、起不来的说原因、没说话就退了的、已经在跑还没开始等连接的等着连上它、核心的工作目录是数据根 |
-| `crates/miyu/tests/terminal.rs`（施工 CS-10，Unix） | 真的伪终端，`python3` 当头、拿它当控制终端敲 `miyu core start`：核心的会话是它自己开的（会话号是它的进程号）、不是头的、没有控制终端；人用 `!` 跑的抢终端的小程序、`sh -c 'exec </dev/tty'`、`bash --norc -i`、`zsh -i`、`zsh -i -c 'echo hi'`（没有 bash、zsh 的跳过那几条）30 秒内都跑完、打不开 `/dev/tty`、印出 hi，终端的前台一直是头的组 |
+| `crates/miyu/tests/terminal.rs`（施工 CS-10，Unix） | 真的伪终端，`python3` 当头、拿它当控制终端敲 `miyu core start`：核心的会话是它自己开的（会话号是它的进程号）、不是头的、没有控制终端；人用 `!` 跑的抢终端的小程序、`sh -c 'exec </dev/tty'`、`bash --norc -i`、`bash -lic`、`zsh -i`、`zsh -i -c 'echo hi'`、`zsh -lic`（几条在 `support/grab.rs`，施工 CS-11 起和 `terminal_front.rs` 共用；没有 bash、zsh 的跳过那几条）30 秒内都跑完、打不开 `/dev/tty`、印出 hi，终端的前台一直是头的组 |
 | `crates/miyu/tests/waiting.rs`（施工 CS-6，Unix） | 真的主程序、真的核心，照测试口子缩短时限：核心卡在读配置（系统配置换成命名管道）时 `miyu core start` 过了一会儿说「核心还在启动」、到了上限说超时当场退；等的时候核心被杀当场说没起来；按 Ctrl+C 当场退；绑好套接字、还没开始接连接的连是 `NotRunning`；核心被 `SIGSTOP` 时 `miyu config get` 说「核心还没有回应」、到了上限说没回应当场退 |
 
 ### 出处

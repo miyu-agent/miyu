@@ -55,6 +55,8 @@ mod stopping_create;
 mod stopping_early;
 #[cfg(unix)]
 mod terminal;
+#[cfg(unix)]
+mod terminal_front;
 mod tuned;
 mod undo;
 #[cfg(unix)]

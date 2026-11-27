@@ -1678,6 +1678,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS8"><span class="n">CS-8</span>一次 SIGTERM 就停得下<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS10"><span class="n">CS-10</span>命令不抢终端<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS9"><span class="n">CS-9</span>收尾不等锁、不合日志<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
       </ol>
     </li>
@@ -66783,6 +66784,54 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/CS-9-收尾不等锁不合日志.md</code>；蓝图 <code>store.md</code>「怎么走」第 14 条、<code>core.md</code>「停下」、<code>protocol.md</code>「会话表」、<code>session/actor.md</code>「造会话」、<code>log.md</code>；设计 12 第二节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sCS11" aria-labelledby="h-sCS11">
+  <div class="sheet-head"><h2 id="h-sCS11"><span class="no">CS-11</span>前台壳</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">人在终端前台直接跑 <code>miyu core</code>：这个进程只当前台壳，真正的核心另开会话；她跑的交互式命令抢不到那个终端，Ctrl+C、关掉终端照旧停得下核心。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu · miyu-core · miyu-pipe</span><span class="dir-note">CS-11</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>有控制终端（打得开 <code>/dev/tty</code>）的 <code>miyu core</code> 当前台壳</li>
+              <li>照 <code>new_session</code> 拉起真正的核心，参数、环境原样，输出接着终端</li>
+              <li>INT、TERM、HUP、QUIT 转给核心；照核心的退出码退出</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">壳只转发</span><span class="rl">不开库、不拿锁、不装日志；壳没了核心照旧跑</span></div>
+          <div class="tile"><span class="nm">不放下终端</span><span class="rl">TIOCNOTTY 在 macOS 上让 Ctrl+C 打不到核心</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CS-11</dd></div>
+        <div><dt>名称</dt><dd>前台壳</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">CS-11</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>terminal_front.rs</code>：bash 里敲 <code>miyu core</code>，抢终端的几条都跑完、前台不换；Ctrl+C 停下、交 0；关终端退出；被杀交 137</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/CS-11-前台核心放下终端.md</code>；蓝图 <code>core.md</code>「起来的先后」开头、<code>tools/shell.md</code>。</li>
       </ul>
     </div>
   </div>

@@ -4,6 +4,8 @@
 
 pub mod cli;
 #[cfg(unix)]
+pub mod grab;
+#[cfg(unix)]
 pub mod pty;
 
 use std::path::{Path, PathBuf};
@@ -68,9 +70,12 @@ impl Home {
         command
     }
 
-    /// 同 [`Home::core`]，只是不带空闲时限：同头拉起的一样一直开着（施工 TMP-2）。
+    /// 同 [`Home::core`]，只是不带空闲时限：同头拉起的一样一直开着（施工 TMP-2）。Unix 上另开一个会话（同头拉起的，施工
+    /// CS-10）：在终端里跑测试时测试进程有控制终端，不然拉起的 `miyu core` 会当前台壳（施工 CS-11），杀它杀到的是壳、不是核心。
     pub fn core_staying(&self) -> Command {
         let mut command = Command::new(MIYU);
+        #[cfg(unix)]
+        miyu_pipe::new_session(&mut command);
         command
             .arg("core")
             .env("MIYU_HOME", self.root.path())

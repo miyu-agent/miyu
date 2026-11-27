@@ -68,6 +68,12 @@ toml_edit = { version = "0.25", default-features = false, features = ["parse"] }
 # 运行日志的门面（施工 3-7 上）。
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 
+[target.'cfg(unix)'.dependencies]
+# 前台壳（施工 CS-11，`src/front.rs`）：问有没有控制终端、把真正的核心拉起到新会话里（`pre_exec` 里 `setsid()`，在放开了
+# unsafe 的小 crate 里）；收到的停的信号转给它（`kill` 的安全接口）。
+miyu-pipe = { path = "../miyu-pipe" }
+rustix = { version = "1", default-features = false, features = ["process"] }
+
 [dev-dependencies]
 # 读 `packaging/` 里的 plist、任务计划的 XML（施工 Z-1 上）：依赖图里本来就有的那一版。MIT 或 Apache-2.0。
 roxmltree = "0.20"

@@ -1,6 +1,6 @@
 [package]
 name = "miyu-pipe"
-description = "Windows 的命名管道只对本人开放、问进程：调系统接口，放开 unsafe 的小 crate（施工 3-8 补；XG-1 下加问父进程，macOS 也有这一样；CS-10 加 Unix 上拉起的子进程开新会话）"
+description = "Windows 的命名管道只对本人开放、问进程：调系统接口，放开 unsafe 的小 crate（施工 3-8 补；XG-1 下加问父进程，macOS 也有这一样；CS-10 加 Unix 上拉起的子进程开新会话；CS-11 加问有没有控制终端）"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -28,6 +28,8 @@ libc = "0.2"
 [target.'cfg(unix)'.dependencies]
 # 拉起的子进程开新会话（施工 CS-10，`src/session.rs`）：`setsid()` 的安全封装。MIT OR Apache-2.0，工作区里本来就有。
 rustix = { version = "1", default-features = false, features = ["process"] }
+# 问有没有控制终端（施工 CS-11，`src/terminal.rs`）：`O_NOCTTY`。
+libc = "0.2"
 
 [target.'cfg(windows)'.dev-dependencies]
 # 测试里建管道、连管道要 tokio 的运行时。
