@@ -36,6 +36,9 @@ tokio = { version = "1", features = ["net", "time"] }
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Threading"] }
 
 [target.'cfg(unix)'.dependencies]
+# 拉起的核心开一个新会话、不带控制终端（施工 CS-10，`unix.rs` 的 `detach`）：要在 `pre_exec` 里调 `setsid()`，在放开了 unsafe 的
+# 小 crate 里。
+miyu-pipe = { path = "../miyu-pipe" }
 # 有效用户编号：核对目录的属主、临时目录下的子目录起名。标准库里没有，它是不用 unsafe 的封装。
 rustix = { version = "1", default-features = false, features = ["process"] }
 

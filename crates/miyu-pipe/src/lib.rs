@@ -14,13 +14,16 @@
 //! - `process_parents`：这一刻每个进程的父进程（施工 XG-1 下，脚本调工具的通道认扩展的子孙）；
 //! - `process_created`：一个进程什么时候起的（施工 XG-1补2，同上，认出父进程链上被重用的编号）。
 //!
-//! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。macOS 上只有一样：`parent_process`，一个进程的父进程（施工
-//! XG-1 下，同上，`proc_pidinfo`）。别的平台上这个 crate 只有 [`owner_only`]。
+//! 等连接、管道忙了再连这些用不着 `unsafe` 的，在 `miyu-ipc` 里。macOS 上另有一样：`parent_process`，一个进程的父进程（施工
+//! XG-1 下，同上，`proc_pidinfo`）。Unix（Linux、macOS）上还有 `new_session`：拉起的子进程开一个新会话、不带控制终端（施工
+//! CS-10，`pre_exec` 里调 `setsid()`）。
 
 #[cfg(any(windows, target_os = "macos"))]
 mod parent;
 #[cfg(windows)]
 mod process;
+#[cfg(unix)]
+mod session;
 #[cfg(windows)]
 mod stdio;
 #[cfg(windows)]
@@ -32,6 +35,8 @@ pub use parent::parent_process;
 pub use parent::process_parents;
 #[cfg(windows)]
 pub use process::{process_created, process_running};
+#[cfg(unix)]
+pub use session::new_session;
 #[cfg(windows)]
 pub use stdio::uninherit_std_handles;
 #[cfg(windows)]

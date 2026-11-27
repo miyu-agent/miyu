@@ -13,7 +13,7 @@
 | `crates/miyu-ipc/src/lock.rs` | 单实例锁 `run/core.lock` |
 | `crates/miyu-ipc/src/files.rs` | `run/token`、`run/socket` |
 | `crates/miyu-ipc/src/listener.rs` | 等连接的一头 `Listener`、连上的一个连接 `Connection` |
-| `crates/miyu-ipc/src/unix.rs` | Unix 域套接字：只有自己能进的目录、旧套接字、跟终端脱开 |
+| `crates/miyu-ipc/src/unix.rs` | Unix 域套接字：只有自己能进的目录、旧套接字、跟终端脱开（开新会话，施工 CS-10） |
 | `crates/miyu-ipc/src/windows.rs` | 命名管道：等连接、连过去、核对另一头、跟终端脱开 |
 | `crates/miyu-ipc/src/ready.rs` | 核心说「好了」的那一行 |
 | `crates/miyu-ipc/src/start.rs` | `connect_or_start`：连不上就拉起核心；`connect_or_start_bare` 同样拉起、不读本机令牌（施工 W-8）；`reconnect_or_start`、`reconnect_or_start_bare`：头自己重连用，人停的不拉（施工 CS-5）；带 `_waiting` 的四个同样，慢了叫调用方给的 `Slow`（施工 CS-6）；等拉起锁、等锁在别的核心手里却连不上的那一个 |
@@ -118,7 +118,7 @@
 1. 先看状态，不只看时间：管道里来了一行、管道到头了、拉起的进程退了、锁放了，都当场往下走。
 2. 过了 3 秒（`slow`）还没好：叫一次调用方给的 `Slow`（命令行在标准错误上说「核心还在启动…」，网页把页面换成「还在启动」），接着等。
 3. 最多等 10 分钟（`limit`）：活着却一直不动的（卡死、被 `SIGSTOP`）兜在这里。
-4. 人按了 Ctrl+C：头照系统的默认当场退（等的时候没有装 Ctrl+C 的处理）；拉起的核心自成一组，不跟着停。
+4. 人按了 Ctrl+C：头照系统的默认当场退（等的时候没有装 Ctrl+C 的处理）；拉起的核心另开了一个会话（Unix，施工 CS-10），不跟着停。
 5. 读管道的那一段能当场放下（`heard.rs`）：原来在阻塞线程池里读、外面套时限，时限到了读的线程还堵着，头放下运行时要等它，60 秒到了也要等核心写出那一行才退得了（2026-11-27 量到 138 秒），网页每超时一次漏一个线程。现在 Unix 上把管道交给 tokio 异步地读，放下就关；Windows 上匿名管道不能异步读，另起一条不归运行时管的线程读，放下了只是不再听，那条线程读到那一行、或者拉起的程序退了就走，放下运行时、进程退出都不等它。
 6. 以前（施工 CS-1）照时间判：等那一行、等拉起锁各 60 秒，冷启动慢的机器上起得来的核心被说成起不来。
 
@@ -136,7 +136,7 @@
    1. 命令由调用的一方给：主程序给的是自己加上 `core`（`cli/main.md`）。环境照头的，不另改：没设 key 的 shell 里拉起的核心就没有模型，之后换一个设了 key 的头来连，连上的还是它，一样没有可用的模型，要等它空闲退出（`core.md`）。
    2. 工作目录是数据根，不占着头的当前目录。
    3. 标准输入、标准错误接空；标准输出是一根管道的写端。
-   4. 跟终端脱开：Unix 上自成一个进程组；Windows 上 `DETACHED_PROCESS`、`CREATE_NEW_PROCESS_GROUP`，不带控制台窗口。终端里按 Ctrl+C 打不到它。
+   4. 跟终端脱开：Unix 上开一个新会话（`setsid()`，施工 CS-10，`miyu_pipe::new_session`），不带控制终端，进程组号就是它的进程号；Windows 上 `DETACHED_PROCESS`、`CREATE_NEW_PROCESS_GROUP`，不带控制台窗口。终端里按 Ctrl+C 打不到它。Unix 上原来只自成一个进程组，核心还在头的会话里、拿着头的控制终端，它起的 `zsh -i` 这类命令打开 `/dev/tty`、`tcsetpgrp` 抢走头那个终端的前台（`bash -i` 则 `SIGTTIN` 停住自己）：2026-11-27 网页终端会话实测撞到。现在核心起的命令、扩展、看门的都在核心的会话里，打不开 `/dev/tty`。开新会话和设进程组不能同时做（标准库先 `setpgid`、后跑 `pre_exec`，先当了组长 `setsid()` 回 `EPERM`），所以只做前一样；标准库开新会话的开关没稳定，`pre_exec` 要 `unsafe`，放在 `miyu-pipe`。
    5. 头不等它退出：另起一个线程替它收尸。
 6. 等它写来一行，照「等多久」，最多读 4096 字节：
    - `ready`：连它；连不上的照连不上说。
@@ -208,9 +208,11 @@
 | `crates/miyu-ipc/tests/socket.rs` | 照 `run/socket` 连上、拿到令牌；Linux 在 `$XDG_RUNTIME_DIR` 下；太长的在临时目录下；一个数据根一个核心、走了删套接字、每次换令牌；旧套接字清掉；别的东西不动；别人进得来的目录不用、链接不用；临时目录也要只有自己能进；头不从别人进得来的目录连；没有核心时连不上 |
 | `crates/miyu-ipc/tests/pipe.rs` | Windows：照管道连上、拿到令牌，接走一个以后下一个在等；连上就走的不堵管道；一个数据根一个核心；名字被占了不动；没有核心时连不上 |
 | `crates/miyu-pipe/src/tests.rs` | 安全描述符的写法 |
+| `crates/miyu-pipe/src/session/tests.rs`（施工 CS-10，Unix） | 开了新会话的子进程会话号、进程组号都是它自己的进程号，不在测试进程的会话里；同时设了 `process_group` 的起不来（`EPERM`） |
 | `crates/miyu-pipe/src/parent/tests.rs`（施工 XG-1 下，Windows、macOS） | 起一个子进程，问出来的父进程是测试进程自己；macOS 上测试进程的父进程和标准库说的一样，没有的进程问不出 |
 | `crates/miyu-pipe/src/windows/tests.rs` | Windows：管道只对本人开放；一个名字只有一个第一个实例；头看到另一头是自己；当前用户是一个 SID |
 | `crates/miyu/tests/core.rs` | 真的主程序：拉起、再连不拉起、两个头同时只拉起一个、起不来的说原因、没说话就退了的、已经在跑还没开始等连接的等着连上它、核心的工作目录是数据根 |
+| `crates/miyu/tests/terminal.rs`（施工 CS-10，Unix） | 真的伪终端，`python3` 当头、拿它当控制终端敲 `miyu core start`：核心的会话是它自己开的（会话号是它的进程号）、不是头的、没有控制终端；人用 `!` 跑的抢终端的小程序、`sh -c 'exec </dev/tty'`、`bash --norc -i`、`zsh -i`、`zsh -i -c 'echo hi'`（没有 bash、zsh 的跳过那几条）30 秒内都跑完、打不开 `/dev/tty`、印出 hi，终端的前台一直是头的组 |
 | `crates/miyu/tests/waiting.rs`（施工 CS-6，Unix） | 真的主程序、真的核心，照测试口子缩短时限：核心卡在读配置（系统配置换成命名管道）时 `miyu core start` 过了一会儿说「核心还在启动」、到了上限说超时当场退；等的时候核心被杀当场说没起来；按 Ctrl+C 当场退；绑好套接字、还没开始接连接的连是 `NotRunning`；核心被 `SIGSTOP` 时 `miyu config get` 说「核心还没有回应」、到了上限说没回应当场退 |
 
 ### 出处

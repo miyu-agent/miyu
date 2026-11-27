@@ -1676,6 +1676,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sAUP1"><span class="n">AU-P1</span>外部审计中低危核实<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS6"><span class="n">CS-6</span>等核心和停核心<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCS8"><span class="n">CS-8</span>一次 SIGTERM 就停得下<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCS10"><span class="n">CS-10</span>命令不抢终端<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66673,6 +66674,55 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/CS-8-压力下的启动和信号.md</code>；蓝图 <code>core.md</code>「停下」、<code>log.md</code>；设计 12 第二节。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sCS10" aria-labelledby="h-sCS10">
+  <div class="sheet-head"><h2 id="h-sCS10"><span class="no">CS-10</span>命令不抢终端</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">头拉起的核心不带控制终端：她跑 <code>zsh -i</code>、<code>bash -i</code> 这类交互式命令，抢不走敲命令的那个终端，也不会挂住。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-ipc · miyu-pipe</span><span class="dir-note">CS-10</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>detach</code> 从自成一组换成开新会话（<code>setsid()</code>），不带控制终端</li>
+              <li><code>miyu_pipe::new_session</code>：<code>pre_exec</code> 里调 <code>setsid()</code>，放在放开了 unsafe 的小 crate</li>
+              <li>命令、扩展、看门的照继承在核心的会话里，打不开 <code>/dev/tty</code></li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">核心不带终端</span><span class="rl">终端界面、命令行、托盘、网页软件都走同一个 detach</span></div>
+          <div class="tile"><span class="nm">命令开新会话待拍板</span><span class="rl">和 V-48 的看门做法冲突，三条路写在施工单</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CS-10</dd></div>
+        <div><dt>名称</dt><dd>命令不抢终端</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-27</dd></div>
+        <div><dt>提交</dt><dd class="mono">CS-10</dd></div>
+        <div><dt>验收</dt><dd>门禁、Windows 版 clippy、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>改前红、改后绿：<code>terminal.rs</code> 伪终端里的头拉起核心，抢终端的几条命令都跑完、前台不换</span></li>
+        <li><span class="ok">✓</span><span>沙箱里照 miyu-ui 的探针复跑，修前修后两份</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/CS-10-命令不抢终端.md</code>；蓝图 <code>ipc.md</code>「连不上就拉起」、<code>core.md</code>「停下」、<code>tools/shell.md</code>。</li>
       </ul>
     </div>
   </div>

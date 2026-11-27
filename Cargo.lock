@@ -2321,6 +2321,7 @@ name = "miyu-pipe"
 version = "2026.11.0"
 dependencies = [
  "libc",
+ "rustix",
  "tokio",
  "windows-sys 0.61.2",
 ]

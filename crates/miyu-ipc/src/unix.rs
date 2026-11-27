@@ -83,10 +83,11 @@ pub(crate) fn remove(path: &Path) {
     }
 }
 
-/// 拉起的核心跟终端脱开：自成一个进程组，终端里按 Ctrl+C 打不到它。
+/// 拉起的核心跟终端脱开（施工 CS-10）：开一个新会话（`setsid()`），不带控制终端，进程组号就是它的进程号。终端里按 Ctrl+C
+/// 打不到它，它起的命令（`zsh -i` 这类）也打不开 `/dev/tty`、抢不走拉起它的那个终端的前台。原来只自成一个进程组，还在头的
+/// 会话里，拿着头的控制终端。
 pub(crate) fn detach(command: &mut std::process::Command) {
-    use std::os::unix::process::CommandExt;
-    command.process_group(0);
+    miyu_pipe::new_session(command);
 }
 
 /// 有效用户编号。
