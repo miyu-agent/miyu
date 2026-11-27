@@ -133,16 +133,11 @@ fn read(places: &Places, startup: bool) -> Option<Loaded> {
                 }
                 let catalog = read.catalog;
                 loaded(&catalog, (source, &fetched), started, false, startup);
-                // 写盘的线程登记下来，核心放锁之前等它写完（施工 TMP-1 补2，`crate::pending`）。
-                if let (Some(cache), Some(of)) = (&places.cache, of)
-                    && let Some(writing) = digest::keep(
-                        cache.clone(),
-                        of,
-                        catalog.clone(),
-                        crate::pending::working(),
-                    )
-                {
-                    crate::pending::hold(writing);
+                // 写盘的线程登记下来，核心放锁之前等它写完（施工 TMP-1 补2，`crate::pending`）；核心已经在走的不起（施工 CS-8）。
+                if let (Some(cache), Some(of)) = (&places.cache, of) {
+                    crate::pending::write(|writing| {
+                        digest::keep(cache.clone(), of, catalog.clone(), writing)
+                    });
                 }
                 return Some(Loaded {
                     catalog,

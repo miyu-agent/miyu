@@ -49,6 +49,8 @@ mod setup;
 mod stop_kept;
 #[cfg(unix)]
 mod stopping;
+#[cfg(unix)]
+mod stopping_early;
 mod tuned;
 mod undo;
 #[cfg(unix)]

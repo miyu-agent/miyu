@@ -101,7 +101,7 @@ impl Watched {
 }
 
 /// 系统配置换成一个命名管道：核心读配置时卡住。交回它的位置。
-fn stuck_config(home: &Home) -> PathBuf {
+pub fn stuck_config(home: &Home) -> PathBuf {
     let fifo = home.root.path().join("etc/config.toml");
     std::fs::create_dir_all(fifo.parent().expect("有上一级")).expect("建得了");
     let made = Command::new("mkfifo").arg(&fifo).status().expect("跑得了");
@@ -110,13 +110,13 @@ fn stuck_config(home: &Home) -> PathBuf {
 }
 
 /// 往命名管道里喂一次空的：卡在打开它的那一个读到空的配置，接着走。
-fn feed(fifo: &Path) {
+pub fn feed(fifo: &Path) {
     let fifo = fifo.to_path_buf();
     std::thread::spawn(move || drop(std::fs::OpenOptions::new().write(true).open(fifo)));
 }
 
 /// 等运行日志里有进程号（核心装好日志以后、读配置以前就记了）。
-fn core_pid(home: &Home) -> String {
+pub fn core_pid(home: &Home) -> String {
     let until = Instant::now() + Duration::from_secs(60);
     loop {
         if let Some(pid) = home.core_pid() {
@@ -129,7 +129,7 @@ fn core_pid(home: &Home) -> String {
 
 /// 核心的套接字可能在的两处（测试的核心不用 `$XDG_RUNTIME_DIR`）：数据根的 `run/core.sock`，路径太长的放临时目录下
 /// `miyu-<uid>/<指纹>.sock`（macOS 的临时目录长，常是这一种）。
-fn sockets(home: &Home) -> [PathBuf; 2] {
+pub fn sockets(home: &Home) -> [PathBuf; 2] {
     let uid = Command::new("id").arg("-u").output().expect("跑得了");
     let uid = String::from_utf8_lossy(&uid.stdout).trim().to_string();
     let print = miyu_ipc::fingerprint(&home.root);

@@ -115,7 +115,8 @@ pub fn read_early(
         version.clone(),
         state.as_ref().map(|dirs| dirs.cache.clone()),
     );
-    // 核心放锁之前等它读完（施工 TMP-3）：读完才起写盘的线程、登记，没读完就放锁的会把删掉的数据根建回来。
+    // 记着还在读（施工 TMP-3）：测试的夹具照它等读完再删临时目录（`settled`）。核心走的时候不等它，关了门它读完也不再起写盘的
+    // 线程（施工 CS-8，`pending.rs`）。
     let held = crate::pending::working();
     let thread = std::thread::Builder::new()
         .name("catalog".to_string())
@@ -175,7 +176,8 @@ pub(crate) fn dirs(root: &miyu_store::root::DataRoot) -> ModelDirs {
 
 /// 等后台读目录的、写整理好的那一份的线程都做完（施工 FL-13）：只有测试用（`testkit` 特性）。测试的夹具删临时目录之前调：
 /// 写整理好的那一份的线程（[`digest`]）是读完目录才起的，[`ModelData::wait`] 等到的时候它可能还没写；夹具先删了目录，它会
-/// 把目录一层层建回来、留在临时目录里。核心自己放锁之前等的是同一处（`pending.rs`）。会阻塞到都做完。
+/// 把目录一层层建回来、留在临时目录里。核心自己放锁之前只关门、等已经起了的写完，不等还在读的（`pending.rs`，施工 CS-8）。会阻塞到
+/// 都做完。
 #[cfg(any(test, feature = "testkit"))]
 pub fn settled() {
     crate::pending::finish();

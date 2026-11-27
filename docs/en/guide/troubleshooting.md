@@ -153,6 +153,8 @@ Stop-Process -Id <process id>
 
 After the core receives a stop signal (for example when you stop the startup service, or run `kill <process ID>`), it first stops the running sessions and extensions, then exits. This takes at most 30 seconds; after 30 seconds the core exits anyway. If you do not want to wait, send the stop signal once more: the core exits at once on the second one and writes `second stop signal, exiting now` to `core.log`.
 
+If the core is still starting and not yet ready to accept connections, there are no sessions to stop yet, so the core exits at once on the first stop signal and writes `stopped reason=signal ready=false` to `core.log`.
+
 ### No interface opens at all
 
 If the core is broken and no interface opens, use `miyu rescue` to enter LiteMiyu's rescue mode and repair it; rescue mode does not go through the core. LiteMiyu has only a Linux x86_64 build, and none for macOS or Windows. For details see [Rescue](rescue.md).

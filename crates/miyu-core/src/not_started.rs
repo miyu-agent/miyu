@@ -126,9 +126,9 @@ impl Failure {
 }
 
 /// 起不来：照 `failure` 写那一行交给头，运行日志只记没过的是哪一步 `stage`（原因可能带路径，不进日志，施工 4-9 再补四上）。
-/// 调它的地方接着就走、放锁，所以先等另起线程写盘的写完（施工 TMP-1 补2）。
+/// 调它的地方接着就走、放锁，所以先关门、等已经起了的写盘线程写完（施工 TMP-1 补2；还在读目录的不等，施工 CS-8）。
 pub(crate) fn failed(stage: &'static str, failure: Failure) -> ExitCode {
-    pending::finish();
+    pending::close();
     tracing::warn!(target: TARGET, stage, "not started");
     say(&failure.ready());
     ExitCode::FAILURE

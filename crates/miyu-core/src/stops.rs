@@ -3,7 +3,10 @@
 //! 信号起来时就装（[`watch`]，在开套接字、说「好了」以前）：原来等开始接连接时才装，起来那一段收到的 SIGTERM 照系统的默认当场
 //! 杀掉，收尾那一段第二次来的被吞掉（tokio 装上以后不再还给系统的默认）。现在：
 //!
-//! 1. 第一次（SIGTERM、Ctrl+C 都算）交给 [`crate::serve()`] 有计划地停：起来那一段收到的，等开始接连接时当场停；
+//! 1. 第一次（SIGTERM、Ctrl+C 都算）：说「好了」以前来的（[`Stops::split`] 以前），记一行 `INFO stopped reason=signal
+//!    ready=false`、把运行日志写到盘上，退出码 0 当场退出（施工 CS-8）：还没有会话、没有连着的头，没有要收尾的。原来记着、等开始
+//!    接连接时才停，压力下起来要几分钟，一次 SIGTERM 等不到它（2026-11-27 基准测试 B1，测具只发一次、5 秒后 SIGKILL）。说了
+//!    「好了」以后来的交给 [`crate::serve()`] 有计划地停；
 //! 2. 之后再来一次（不管哪一种），记一行 `WARN second stop signal, exiting now`、把运行日志写到盘上，退出码 1 当场退出
 //!    （2026-11-27 项目主人定）；
 //! 3. 收尾一开头（[`Begun::now`]：信号、头叫停、空闲、数据根没了都算）起表，过了 [`LIMIT`] 还没做完，记一行
@@ -13,6 +16,7 @@
 //! 命令照「子进程随核心退出」由看门的收掉（`core.md`）。
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use tokio::sync::{Notify, oneshot};
@@ -29,6 +33,8 @@ pub(crate) struct Stops {
     first: oneshot::Receiver<()>,
     /// 收尾开始了：起表。
     begun: Begun,
+    /// 说了「好了」（[`Stops::split`] 时立起）：之前来的第一次停的信号当场退（施工 CS-8）。
+    ready: Arc<AtomicBool>,
 }
 
 /// 收尾开始了，从这一刻起算总时限。
@@ -43,8 +49,10 @@ impl Begun {
 }
 
 impl Stops {
-    /// 拆成第一次停的信号（交给 `serve` 当 `stop`）和起表的那一头。
+    /// 说了「好了」以后调：从这一刻起第一次停的信号交给 `serve` 有计划地停（施工 CS-8）。拆成第一次停的信号（交给 `serve` 当
+    /// `stop`）和起表的那一头。
     pub(crate) fn split(self) -> (impl Future<Output = ()>, Begun) {
+        self.ready.store(true, Ordering::SeqCst);
         let first = self.first;
         let first = async move {
             // 装不上信号（发信号的任务没了）的当它不会来。
@@ -61,9 +69,13 @@ pub(crate) fn watch(flush: miyu_log::Flush) -> Stops {
     let mut signals = Signals::install();
     let (arrived, first) = oneshot::channel();
     let begun = Begun(Arc::new(Notify::new()));
-    let stopped = flush.clone();
+    let ready = Arc::new(AtomicBool::new(false));
+    let (stopped, said) = (flush.clone(), Arc::clone(&ready));
     tokio::spawn(async move {
         signals.next().await;
+        if !said.load(Ordering::SeqCst) {
+            exit_now(&stopped, Why::Starting);
+        }
         // 收的一头没了（核心已经在走了）也接着等第二次。
         let _arrived = arrived.send(());
         signals.next().await;
@@ -75,26 +87,44 @@ pub(crate) fn watch(flush: miyu_log::Flush) -> Stops {
         tokio::time::sleep(limit()).await;
         exit_now(&flush, Why::TooLong);
     });
-    Stops { first, begun }
+    Stops {
+        first,
+        begun,
+        ready,
+    }
 }
 
 /// 为什么当场退。
 #[derive(Debug, Clone, Copy)]
 enum Why {
+    /// 说「好了」以前来了停的信号：没有要收尾的（施工 CS-8）。
+    Starting,
     /// 收尾时又来一次停的信号。
     Again,
     /// 收尾过了总时限。
     TooLong,
 }
 
-/// 记一行、把运行日志写到盘上，退出码 1 当场退出。
+/// 记一行、把运行日志写到盘上，当场退出：说「好了」以前停的是做完了要做的，退出码 0；收尾没做完就走的退出码 1。
+///
+/// 不等另起线程读目录、写盘的（`pending.rs`）：读的只读，写的先写到旁边再换过去，进程没了最多留下旁边那一份。
 fn exit_now(flush: &miyu_log::Flush, why: Why) -> ! {
-    match why {
-        Why::Again => tracing::warn!(target: TARGET, "second stop signal, exiting now"),
-        Why::TooLong => tracing::warn!(target: TARGET, "stopping took too long, exiting now"),
-    }
+    let code = match why {
+        Why::Starting => {
+            tracing::info!(target: TARGET, reason = "signal", ready = false, "stopped");
+            0
+        }
+        Why::Again => {
+            tracing::warn!(target: TARGET, "second stop signal, exiting now");
+            1
+        }
+        Why::TooLong => {
+            tracing::warn!(target: TARGET, "stopping took too long, exiting now");
+            1
+        }
+    };
     flush.sync();
-    std::process::exit(1)
+    std::process::exit(code)
 }
 
 /// 这一次的总时限：出厂 [`LIMIT`]；打开 `testkit` 的构建另认测试口子 `MIYU_TEST_STOP_LIMIT_MS`（毫秒）。

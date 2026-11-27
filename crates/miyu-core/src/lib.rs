@@ -157,6 +157,10 @@ pub fn main(options: Options) -> ExitCode {
         (&level, &log),
         catalog,
     ));
+    // 停下了（或者起不来）就走，不等阻塞线程池里还在跑的（施工 CS-8）：要等的收尾在 `serve` 里、放锁以前都等完了（`pending.rs`），
+    // 剩下的是读目录这类只读的。原来放下运行时要等它们跑完，压力下读一份目录一两分钟，「停了」记过了进程还在，收尾的总时限
+    // 也管不到这里（那个计时的任务跟着运行时一起停了）。
+    runtime.shutdown_background();
     drop(log);
     outcome
 }

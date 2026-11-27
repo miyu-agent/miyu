@@ -65,7 +65,7 @@ fn recorded(home: &Home, record: &Path) -> Pids {
 }
 
 /// 等 `core` 退，最多 `wait`：交回退出码；到时还没退的杀掉、交回空的。
-fn exit_within(core: &mut Child, wait: Duration) -> Option<ExitStatus> {
+pub fn exit_within(core: &mut Child, wait: Duration) -> Option<ExitStatus> {
     let until = Instant::now() + wait;
     loop {
         if let Some(status) = core.try_wait().expect("问得了") {

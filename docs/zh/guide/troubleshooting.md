@@ -153,6 +153,8 @@ Stop-Process -Id <进程号>
 
 核心收到停止信号（例如停止开机启动服务，或者运行 `kill <进程号>`）以后，会先停下正在运行的会话和扩展，再退出。这一步最多用 30 秒，超过 30 秒核心会直接退出。如果不想等，再发一次停止信号即可，核心收到第二次会立即退出，并在 `core.log` 里记下 `second stop signal, exiting now`。
 
+如果核心还在启动、还没有准备好接受连接，这时还没有需要停下的会话，所以核心收到第一次停止信号就会立即退出，并在 `core.log` 里记下 `stopped reason=signal ready=false`。
+
 ### 所有界面都打不开
 
 如果核心坏了、所有界面都打不开，就用 `miyu rescue` 进入 LiteMiyu 的应急模式来修复，应急模式不经过核心。LiteMiyu 只有 Linux x86_64 的版本，macOS、Windows 上没有。详细的见 [应急修复](rescue.md)。
