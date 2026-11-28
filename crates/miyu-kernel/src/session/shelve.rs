@@ -68,13 +68,16 @@ impl Session {
     ///   （`send.rs` 的 `overheard`），只记下、不开回合；
     /// - `events.append` 记的一条（施工 LW-36）：不带回合编号、不开回合；
     /// - 空闲时（[`Session::idle`]）的「落了盘」（施工 LW-36）：推送、回应、并进槽，没有回合要往下走。回合里的、等着
-    ///   `turn.ended` 落盘的要接着拼请求、跑挂接点，照旧先放回。
+    ///   `turn.ended` 落盘的要接着拼请求、跑挂接点，照旧先放回；
+    /// - 没有回合在进行时的「要重启了」（施工 PERF-5）：`restart.rs` 只记下要关了，不碰历史。有回合的要照打断收拾那一轮，
+    ///   照旧先放回。
     ///
     /// 别的一律先放回来，`session.note` 也是：它记的事实空闲时排进下一轮开头，回合里跟着这一轮。
     pub fn needs_history(&self, input: &Input) -> bool {
         match input {
             Input::Watched { .. } | Input::Environment(_) => false,
             Input::Stored { .. } => !self.idle(),
+            Input::Restarting { .. } => self.turn.is_some(),
             Input::Command(Received { by, command, .. }) => match command {
                 Command::Send { venue, .. } => !self.overheard(by, venue.as_deref()),
                 Command::Append { .. } => false,

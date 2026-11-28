@@ -43,7 +43,7 @@
 | `crates/miyu-kernel/src/session/recast.rs` | 中途换人格、预设（施工 P-13）：收命令、记下要换成的、马上单开一轮压缩（「换人格、预设」） |
 | `crates/miyu-kernel/src/session/send.rs` | 发一条消息（施工 8-10 从 `session.rs` 挪出来，那边放不下了） |
 | `crates/miyu-kernel/src/session/restart.rs`、`load.rs` | 有计划的重启；从日志载入（认出哪次压缩还算数，`history.md`「载入」）、崩了的收尾、重启后接着干 |
-| `crates/miyu-kernel/src/session/shelve.rs` | 闲下来收成槽（施工 LW-10 下）：歇着没有（`resting()`）、收、从哪条读回、放回、哪些输入要先放回（施工 LW-36：旁听的话、`events.append`、空闲时的「落了盘」不放回） |
+| `crates/miyu-kernel/src/session/shelve.rs` | 闲下来收成槽（施工 LW-10 下）：歇着没有（`resting()`）、收、从哪条读回、放回、哪些输入要先放回（施工 LW-36：旁听的话、`events.append`、空闲时的「落了盘」不放回；施工 PERF-5：没有回合时的「要重启了」不放回） |
 | `crates/miyu-kernel/src/session/status.rs` | 两样纯查询：落了盘的最后一条（`landed()`）、删得了没有（`deletable()`）（施工 LW-10 下从 `session.rs` 挪来：那个文件到了行数上限） |
 | `crates/miyu-kernel/src/accumulate.rs` | 增量拼成回复 |
 | `crates/miyu-kernel/src/tool.rs`、`tool/texts.rs` | 访问类别、参数修正；内核替工具写的几句 |
@@ -705,6 +705,7 @@
    - 场所里旁听的一句（施工 LW-36）：带 `venue.ambient` 的 `Send`，并且发命令的不是别处（「发一条消息」第 2 条）。这里的判法和「发一条消息」第 5 条认旁听的是同一个函数（`send.rs` 的 `overheard`）。这一句只记下，不开回合。
    - `events.append` 记的一条（`Append`，施工 LW-36）：不带回合编号，不开回合。
    - 会话空闲（`idle()`）时的「落了盘」（`Stored`，施工 LW-36）：这时只推送、回应，并把收着时追加的事件并进槽里（`history.md`「闲下来收成槽」第 7 条），没有回合要往下走。如果有回合在运行，或者有回合结束了、`turn.ended` 还没落盘，「落了盘」以后要接着拼请求、跑挂接点，所以仍然要先放回。
+   - 没有回合在运行时的「要重启了」（`Restarting`，施工 PERF-5）：这时 `restart` 只记下要关了，不碰历史（`02-内核.md` 第六节「载入、崩溃、重启」第 3 条）。核心停下时每个收着的会话都会收到它，原来每个都要把整份历史读回来一遍，77 MB 的群要多花约 0.3 秒。如果有回合在运行，要照打断收拾那一轮，所以仍然要先放回。
 
    其他输入一律要先放回，`session.note`（`Note`）也要先放回：它记的事实在空闲时排进下一轮的开头，在回合里跟着这一轮。执行器在送这些输入之前先放回历史。如果放不回来，执行器仍然会送进输入，此时投影看到的是空的历史，所以执行器不发请求（`session/actor.md`「闲下来收成槽」第 4 条）。
 6. 收着时仍然要回答的查询：`compactable()` 使用收的时候记下的结果，收着时不重新计算。限额、压缩、撤销这些会改变结果的输入都要先放回，记下的结果随之作废；但是旁听的话、`events.append` 记的不放回，会让记下的结果变旧，所以 `compactable.changed` 可能要等到下一次放回以后才推（施工 LW-36 接受这一点：真的 `session.compact` 会先放回再判断，结果不受影响）。`context_used()` 没有结果，因为执行器只在回合里查询，那时历史已经放回；`breakdown()` 由执行器先放回历史再查询。派出去的任务、待办、包的状态不会被收起来，所以可以正常回答。

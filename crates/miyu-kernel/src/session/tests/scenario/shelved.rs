@@ -99,6 +99,40 @@ fn manual_compaction_redo_and_reload_while_shelved() {
     );
 }
 
+/// 收着的会话有计划地停下（施工 PERF-5）：没有回合在进行，「要重启了」不碰历史，一次都不放回，停下以前一直收着。
+#[test]
+fn a_shelved_session_restarts_without_putting_the_history_back() {
+    let mut stage = compacting(None);
+    after_one_turn(&mut stage);
+    stage.limits(Some(100_000), None);
+    stage.overhear("停下以前的一句");
+    assert!(stage.shelved(), "歇着就收");
+    let unshelvings = stage.unshelvings();
+    stage.restarting();
+    assert!(stage.shelved(), "停下时一直收着");
+    assert_eq!(stage.unshelvings(), unshelvings, "停下时不放回");
+}
+
+/// 收着时停下、再起来接着说话（施工 PERF-5）：请求、日志和一直不收的逐字节一样。
+#[test]
+fn restarting_while_shelved_asks_byte_for_byte_the_same() {
+    let (shelving, holding) = both(|stage| {
+        after_one_turn(stage);
+        stage.limits(Some(100_000), None);
+        stage.overhear("停下以前的一句");
+        stage.restart();
+        stage.overhear("起来以后的一句");
+        stage.model([Line::says("又在。")]);
+        stage.say("重启以后");
+    });
+    same(&shelving, &holding);
+    assert!(
+        shelving.shelvings() >= 2,
+        "收的那个只收了 {} 次",
+        shelving.shelvings()
+    );
+}
+
 /// 群聊的样子（施工 LW-36）：歇着以后群里接连有人说话、桥记事件，照其中一条开一轮（带工具、带最末尾那一句），再接着说话，
 /// 崩了再载入以后照样有人说话，最后人自己说一句。
 fn group(stage: &mut Stage) {
