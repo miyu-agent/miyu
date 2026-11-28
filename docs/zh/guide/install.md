@@ -132,12 +132,12 @@ AUR 上有这几个包：
 
 ## 使用 Homebrew 安装（macOS）
 
-macOS 上可以用 Homebrew 安装 Miyu。Miyu 的 tap（Homebrew 的第三方软件源）是 `miyu-agent/miyu`，依次运行：
+macOS 上可以用 Homebrew 安装 Miyu。Miyu 的 tap（Homebrew 的第三方软件源）是 `miyu-agent/tap`，和 LiteMiyu 共用同一个。依次运行：
 
 ```sh
-brew tap miyu-agent/miyu
-brew install miyu-agent
-brew install --cask miyu-applet
+brew tap miyu-agent/tap
+brew install miyu-agent/tap/miyu-agent
+brew install --cask miyu-agent/tap/miyu-applet
 ```
 
 这几条命令装上的内容：

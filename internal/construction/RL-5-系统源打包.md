@@ -17,7 +17,7 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
    自己在换掉它，让 pacman 问一次。
 4. **paru、yay 在 AUR 上那一问**：包得真在 AUR 上才测得到（对外发布），写进「发版那天」，到时照着测。
 5. **实测**：rc.5 出来以后用它的分包真装、真卸；在那之前做静态检查。
-6. **tap 仓库**：新的是 `miyu-agent/homebrew-miyu`，主人在发版前建。旧版 Miyu 的是 `SHORiN-KiWATA/homebrew-miyu`，名字一样、组织不同，
+6. **tap 仓库**：新的是 `miyu-agent/homebrew-tap`，和 LiteMiyu 共用（2026-11-28 主人定，施工 RL-7；原来写的是另建 `miyu-agent/homebrew-miyu`）。旧版 Miyu 的是 `SHORiN-KiWATA/homebrew-miyu`，
    别弄混。
 
 ### AUR 上的名字（2026-11-05 用 aur.archlinux.org 的 RPC 匿名查）
@@ -125,8 +125,8 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
    - 先装旧的 `miyu`（AUR 上 0.7.4）；
    - 再 `paru -Syu`、`yay -Syu`，看会不会提到 `miyu-agent`：`miyu-core` 不写 `replaces`，预计不会；
    - 再 `paru -S miyu-agent`、`yay -S miyu-agent`，看冲突那一问长什么样，答 y 以后 `/usr/bin/miyu` 是不是新的、旧的数据在不在。
-5. **tap**：主人先建 `miyu-agent/homebrew-miyu`（不是旧版的 `SHORiN-KiWATA/homebrew-miyu`）。把 `homebrew/Formula/` 下四个推进它的 `Formula/`。
-   装法写进发行说明：`brew install miyu-agent/miyu/miyu-agent`。
+5. **tap**：用已有的 `miyu-agent/homebrew-tap`（2026-11-28 主人定，施工 RL-7；不是旧版的 `SHORiN-KiWATA/homebrew-miyu`）。把 `homebrew/Formula/` 下四个推进它的 `Formula/`。
+   装法写进发行说明：`brew tap miyu-agent/tap`、`brew install miyu-agent/tap/miyu-agent`。具体命令见 `internal/发版手册.md` 第十一节第 4 项第 5 步。
 6. 照设计 59 第五节，主人装机脚本的分支合进去以后，再从 AUR、旧 tap 删旧的 `miyu`。
 
 ### 坑
@@ -156,7 +156,7 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
 - **`packaging/homebrew/miyu-applet.cask.rb.in`**：下载 `miyu-applet-<版本>-macos-aarch64.zip`，`app "Miyu.app"`，`depends_on formula:` `miyu-core`、`miyu-webui`。
   填出来放 `homebrew/Casks/`。
 - **合集**：AUR 的 `miyu-agent` 依赖加上 `miyu-applet`。Homebrew 的 formula 依赖不了 cask，`miyu-agent` 在 caveats 里说
-  `brew install --cask miyu-agent/miyu/miyu-applet`。
+  `brew install --cask miyu-agent/tap/miyu-applet`（tap 名 2026-11-28 改，施工 RL-7）。
 - **`cargo xtask packaging`** 多 `--applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>`：
   - 两个要一起写；托盘那两份照托盘的发布填，版本照托盘的标签，macOS 的产物是 `.zip`；
   - 没写的，这两份不填，说一句（核心发了、托盘还没发的时候也能填核心的）。
@@ -248,5 +248,5 @@ AUR、Homebrew 上的 Miyu 照设计 60 分包：`miyu-core`、`miyu-tui`、`miy
 - AUR 的 `miyu` 不删：主人维护着它，填好的 `aur/miyu/PKGBUILD`、`miyu.install` 推进去（在 `miyu-agent` 那几个都推上去以后，
   不然 `-Syu` 找不到依赖），旧用户 `-Syu` 就换过来了；`miyu-git` 照旧删。
 - paru、yay 那一问换成：装旧的 `miyu` 0.7.4，`paru -Syu`、`yay -Syu`，看是不是不问冲突就换成一整套、印了 `miyu migrate`。
-- Homebrew：旧 tap（`SHORiN-KiWATA/homebrew-miyu`）的 `miyu` formula 改成提示换新 tap（`brew install miyu-agent/miyu/miyu-agent`），
+- Homebrew：旧 tap（`SHORiN-KiWATA/homebrew-miyu`）的 `miyu` formula 改成提示换新 tap（`brew install miyu-agent/tap/miyu-agent`，tap 名 2026-11-28 改，施工 RL-7），
   等新 tap 建好再做，不在这一步。

@@ -1,5 +1,5 @@
 # Miyu 的核心和命令行（施工 RL-5，设计 60 第二节、第五节第 2 条）：装 GitHub Release 上的 miyu-core-<版本>-macos-aarch64.tar.gz。
-# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希，再推到 tap 仓库 miyu-agent/homebrew-miyu
+# 这个文件是模板，由 `cargo xtask packaging <标签> --sums <SHA256SUMS>` 填好版本、哈希，再推到 tap 仓库 miyu-agent/homebrew-tap
 # （不是旧版 Miyu 的 SHORiN-KiWATA/homebrew-miyu）。
 #
 # 整层放进 libexec/（程序照自己真实位置的旁边找 resources/），bin/miyu 链过去；旁边写 install.toml（channel = "brew"，

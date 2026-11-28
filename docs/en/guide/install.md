@@ -132,12 +132,12 @@ These are the packages on the AUR:
 
 ## Installing with Homebrew (macOS)
 
-On macOS you can install Miyu with Homebrew. Miyu's tap (a third-party Homebrew repository) is `miyu-agent/miyu`; run these in order:
+On macOS you can install Miyu with Homebrew. Miyu's tap (a third-party Homebrew repository) is `miyu-agent/tap`, the same one LiteMiyu uses. Run these in order:
 
 ```sh
-brew tap miyu-agent/miyu
-brew install miyu-agent
-brew install --cask miyu-applet
+brew tap miyu-agent/tap
+brew install miyu-agent/tap/miyu-agent
+brew install --cask miyu-agent/tap/miyu-applet
 ```
 
 What these commands install:

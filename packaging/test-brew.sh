@@ -4,7 +4,7 @@
 #   sh packaging/test-brew.sh <填好的目录> [static|install]
 #
 # static：brew style 四个 formula，填了托盘的加上 cask（RL-5补）。
-# install：照真的发布建一个本地 tap（local/miyu-test，不是 miyu-agent/homebrew-miyu），brew install miyu-agent，查：
+# install：照真的发布建一个本地 tap（local/miyu-test，不是 miyu-agent/homebrew-tap），brew install miyu-agent，查：
 #   - miyu --version 报这一版，install.toml 写 brew，miyu upgrade 说用 brew 升级；
 #   - 隔离的数据根里 miyu pkg list：包 tui、webui 是系统加装那一层、程序找得到；brew test 四个都过；
 #   - 填了托盘的：brew install --cask 托盘，/Applications/Miyu.app 在，卸掉以后没了；
