@@ -10611,3 +10611,1344 @@ core::ptr::drop_glue::<h2::hpack::encoder::Encoder>
 tokio::runtime::task::raw::drop_join_handle_slow::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#2}>, tokio::runtime::blocking::schedule::BlockingSchedule>
 <alloc::vec::Vec<miyu_source::index::Entry> as core::ops::drop::Drop>::drop
 tokio::runtime::task::raw::dealloc::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<(alloc::vec::Vec<std::path::PathBuf>, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>>, core::option::Option<miyu_kernel::session::input::Injection>), miyu_store::resources::SourceError>, <miyu_session::actor::Actor>::skills_turn::{closure#2}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_core::front::foreground
+core::ptr::drop_glue::<mermaid_rs_renderer::ir::NodeLink>
+miyu_core::stops::installed::<tokio::signal::unix::Signal>
+miyu_ipc::files::forget_location
+<alloc::sync::Arc<alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>>> as core::default::Default>::default
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, miyu_config::words::ItemWords, alloc::collections::btree::node::marker::LeafOrInternal>>::find_key_index::<alloc::string::String>
+<alloc::vec::into_iter::IntoIter<(alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>)> as core::iter::traits::iterator::Iterator>::fold::<(), core::iter::traits::iterator::Iterator::for_each::call<(alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>), <alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>> as core::iter::traits::collect::Extend<(alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>)>>::extend<alloc::vec::Vec<(alloc::string::String, alloc::sync::Arc<miyu_store::human::Phrase>)>>::{closure#0}>::{closure#0}>
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>>::remove::<alloc::string::String>
+<alloc::boxed::Box<alloc::collections::btree::node::LeafNode<alloc::string::String, miyu_store::human::shelf::Held>>>::new_uninit_in
+core::ptr::drop_glue::<miyu_store::human::Packaged>
+core::ptr::drop_glue::<core::option::Option<miyu_config::package::theme::Theme>>
+core::ptr::drop_glue::<core::option::Option<miyu_assemble::texts::Vision>>
+<alloc::raw_vec::RawVec<miyu_store::logins::Login>>::grow_one
+<rusqlite::inner_connection::InnerConnection>::open_with_flags
+miyu_store::sqlite::keep_wal_on_close
+sqlite3_db_config
+sqlite3ExprListSetSortOrder
+<tokio::sync::watch::Sender<bool>>::new
+core::ptr::drop_glue::<std::sync::once_lock::OnceLock<alloc::sync::Arc<dyn miyu_net::search::extension::SearchPort>>>
+<alloc::collections::btree::map::IntoIter<alloc::string::String, miyu_endpoint::appends::Placed>>::dying_next
+miyu_store::watch::real
+<std::sync::poison::condvar::Condvar>::wait_timeout::<miyu_store::sqlite::idle::State>
+OUTLINED_FUNCTION_11
+<core::pin::Pin<alloc::boxed::Box<miyu_endpoint::listen::run_until<tokio::sync::oneshot::Receiver<()>>::{closure#0}>> as core::future::future::Future>::poll
+<miyu_kernel::session::Session>::needs_history
+<core::iter::adapters::rev::Rev<core::slice::iter::Iter<miyu_kernel::event::Event>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find_map::check<&miyu_kernel::event::Event, miyu_kernel::estimate::Scale, miyu_kernel::estimate::scale::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<miyu_kernel::estimate::Scale>>
+<alloc::collections::btree::map::IntoIter<alloc::string::String, miyu_store::human::shelf::Held>>::dying_next
+core::ptr::drop_glue::<alloc::vec::Vec<(core::option::Option<miyu_kernel::id::Seq>, miyu_kernel::session::action::Action)>>
+core::ptr::drop_glue::<[(core::option::Option<miyu_kernel::id::Seq>, miyu_kernel::session::action::Action)]>
+<tokio::sync::broadcast::Receiver<alloc::string::String>>::recv_ref
+<alloc::raw_vec::RawVec<alloc::sync::Arc<miyu_kernel::event::Event>>>::grow_one
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::sessions::creating::recall::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::sync::watch::changed_impl::<bool>::{closure#0}
+serde_json::de::from_trait::<serde_json::read::StrRead, miyu_kernel::origin::Person>
+core::ptr::drop_glue::<(miyu_endpoint::sessions::creating::recall::{closure#0}, <tokio::sync::watch::Receiver<bool>>::wait_for<<miyu_endpoint::sessions::stopping::Stopping>::unless<alloc::vec::Vec<(miyu_kernel::id::CommandId, miyu_kernel::id::SessionId)>, miyu_endpoint::sessions::creating::recall::{closure#0}>::{closure#0}::{closure#0}>::{closure#0})>
+<miyu_session::open::until::Stop>::fired::{closure#0}
+<miyu_session::open::until::Stop>::now
+core::ptr::drop_glue::<<miyu_view::projector::Projector>::named::{closure#1}>
+core::ptr::drop_glue::<(core::pin::Pin<alloc::boxed::Box<dyn core::future::future::Future<Output = ()> + core::marker::Send>>, <miyu_session::open::until::Stop>::fired::{closure#0})>
+<miyu_session::actor::durable::later::Later>::go
+miyu_session::actor::store::dispatch
+<miyu_kernel::session::Session>::overheard
+miyu_session::project_docs::render
+<miyu_kernel::event::model::Usage>::plus
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::CommandId, u64, alloc::collections::btree::node::marker::LeafOrInternal>>::find_key_index::<miyu_kernel::id::CommandId>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::CommandId, u64, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+<h2::proto::streams::send::Send>::recv_stream_window_update::<hyper::proto::h2::SendBuf<bytes::bytes::Bytes>>
+tokio::runtime::task::raw::poll::<<miyu_endpoint::sessions::stopping::Stopping>::make::{closure#0}::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<miyu_endpoint::sessions::stopping::Stopping>::make::{closure#0}::{closure#0}
+core::ptr::drop_glue::<<miyu_session::open::until::Stop>::fired::{closure#0}>
+sqlite3ColumnColl
+<miyu_kernel::session::Session>::scale
+<miyu_assemble::DefaultAssembler as miyu_kernel::assemble::Assembler>::rendered
+core::ptr::drop_glue::<(&mut core::pin::Pin<alloc::boxed::Box<miyu_endpoint::listen::run_until<tokio::sync::oneshot::Receiver<()>>::{closure#0}>>, &mut core::pin::Pin<&mut <miyu_core::stops::Stops>::split::{closure#0}>, &mut core::pin::Pin<&mut <miyu_endpoint::activity::Activity>::stop_requested::{closure#0}>, <tokio::sync::watch::Receiver<u64>>::changed::{closure#0}, tokio::time::sleep::Sleep)>
+<miyu_session::guard::Guard>::verdict
+<alloc::raw_vec::RawVec<mermaid_rs_renderer::ir::MindmapNode>>::grow_one
+<alloc::sync::Arc<tokio::sync::notify::Notify>>::drop_slow
+<alloc::raw_vec::RawVec<miyu_store::recall::Hit>>::grow_one
+<miyu_basesystem::edit::Edit>::args
+miyu_kernel::tool::shape::standard
+<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&&str>, core::slice::iter::Iter<&str>> as core::iter::traits::iterator::Iterator>::fold::<usize, core::iter::adapters::map::map_fold<&&str, usize, usize, <core::iter::adapters::filter::Filter<_, _> as core::iter::traits::iterator::Iterator>::count::to_usize<&&str, miyu_kernel::tool::shape::understood::{closure#0}::{closure#0}>::{closure#0}, <usize as core::iter::traits::accum::Sum>::sum<core::iter::adapters::map::Map<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&&str>, core::slice::iter::Iter<&str>>, <core::iter::adapters::filter::Filter<_, _> as core::iter::traits::iterator::Iterator>::count::to_usize<&&str, miyu_kernel::tool::shape::understood::{closure#0}::{closure#0}>::{closure#0}>>::{closure#0}>::{closure#0}>
+<miyu_basesystem::edit::find::View>::near
+<miyu_basesystem::edit::find::View>::start_of
+<alloc::vec::Vec<aho_corasick::util::primitives::PatternID> as alloc::vec::spec_from_elem::SpecFromElem>::from_elem::<alloc::alloc::Global>
+<alloc::collections::btree::map::BTreeMap<alloc::boxed::Box<[u8]>, usize> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<aho_corasick::packed::api::Builder>
+<aho_corasick::nfa::noncontiguous::Builder>::build::<&[regex_syntax::hir::literal::Literal], &regex_syntax::hir::literal::Literal>
+<aho_corasick::nfa::noncontiguous::Compiler>::new
+<aho_corasick::nfa::noncontiguous::NFA>::alloc_state
+<alloc::raw_vec::RawVec<mermaid_rs_renderer::layout::routing::GridEntry>>::grow_one
+<aho_corasick::util::prefilter::Builder>::build
+<alloc::vec::Vec<regex_automata::util::primitives::StateID>>::shrink_to_fit
+core::ptr::drop_glue::<(alloc::vec::Vec<u8>, alloc::vec::Vec<usize>)>
+core::ptr::drop_glue::<miyu_source::index::File>
+core::ptr::drop_glue::<(<miyu_endpoint::sessions::setup::Setup>::resolve::{closure#0}, <tokio::sync::watch::Receiver<bool>>::wait_for<<miyu_endpoint::sessions::stopping::Stopping>::unless<core::result::Result<miyu_endpoint::sessions::setup::Setup, miyu_endpoint::refusal::Refusal>, <miyu_endpoint::sessions::setup::Setup>::resolve::{closure#0}>::{closure#0}::{closure#0}>::{closure#0})>
+<std::sync::poison::mutex::Mutex<alloc::vec::Vec<alloc::boxed::Box<alloc::vec::Vec<usize>>>>>::try_lock
+<aho_corasick::packed::teddy::builder::aarch64::SlimNeon<4> as aho_corasick::packed::teddy::builder::SearcherT>::find
+<regex_automata::util::pool::inner::Pool<regex_automata::meta::regex::Cache, alloc::boxed::Box<dyn core::ops::function::Fn<(), Output = regex_automata::meta::regex::Cache> + core::marker::Send + core::panic::unwind_safe::UnwindSafe + core::marker::Sync + core::panic::unwind_safe::RefUnwindSafe>>>::put_value
+tokio::runtime::task::raw::poll::<miyu_session::actor::store::dispatch::{closure#1}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<alloc::boxed::Box<alloc::collections::btree::node::LeafNode<alloc::string::String, miyu_endpoint::appends::Placed>>>::new_uninit_in
+miyu_sandbox::lifeline::unix::lifeline
+<std::sync::once_lock::OnceLock<core::option::Option<std::path::PathBuf>>>::initialize::<<std::sync::once_lock::OnceLock<core::option::Option<std::path::PathBuf>>>::get_or_init<miyu_sandbox::lifeline::unix::watchdog::{closure#0}>::{closure#0}, !>
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<core::option::Option<std::path::PathBuf>>>::initialize<<std::sync::once_lock::OnceLock<core::option::Option<std::path::PathBuf>>>::get_or_init<miyu_sandbox::lifeline::unix::watchdog::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+<miyu_sandbox::lifeline::unix::Lifeline>::watcher_in
+miyu_basesystem::shell::results::chromium
+<u32>::_fmt
+<miyu_tool::run::Done>::error::<alloc::string::String>
+<alloc::sync::Arc<alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_store::human::Face>>>::drop_slow
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_core::pending::close>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_store::sqlite::idle::open
+<&mut miyu_store::sqlite::idle::opened<miyu_store::sqlite::idle::open::{closure#0}>::{closure#2} as core::ops::function::FnMut<(&miyu_store::sqlite::idle::Kept,)>>::call_mut
+core::ptr::drop_glue::<[(&str, alloc::sync::Arc<dyn miyu_store::sqlite::idle::Wal>, bool, std::path::PathBuf)]>
+<std::sync::poison::mutex::Mutex<core::option::Option<rusqlite::Connection>> as miyu_store::sqlite::idle::Wal>::shrink
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, miyu_store::human::shelf::Held, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+core::ptr::drop_glue::<miyu_ipc::unix::Socket>
+<miyu_store::human::Human as core::clone::Clone>::clone
+miyu_store::sqlite::idle::register::<std::sync::poison::mutex::Mutex<core::option::Option<rusqlite::Connection>>>
+core::ptr::drop_glue::<<miyu_session::actor::Actor>::look::{closure#0}>
+<core::iter::adapters::cloned::Cloned<core::iter::adapters::flatten::Flatten<core::slice::iter::Iter<core::option::Option<alloc::string::String>>>> as core::iter::traits::iterator::Iterator>::next
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, core::option::Option<f64>>
+std::fs::write::<&std::path::PathBuf, alloc::string::String>
+<miyu_core::pending::Writing as core::ops::drop::Drop>::drop
+ring_core_0_17_14__x25519_fe_isnegative
+core::ptr::drop_glue::<futures_channel::mpsc::Receiver<core::convert::Infallible>>
+core::ptr::drop_glue::<h2::hpack::decoder::Decoder>
+<tokio::runtime::task::harness::Harness<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::sync::sync_feed::{closure#0}::{closure#2}>, tokio::runtime::blocking::schedule::BlockingSchedule>>::dealloc
+core::ptr::drop_glue::<miyu_source::index::Entry>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_seq::<<alloc::vec::Vec<_> as serde_core::de::Deserialize>::deserialize::VecVisitor<miyu_kernel::event::effect::Todo>>
+<<miyu_kernel::event::effect::Todo as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::react::{closure#15}>
+<<miyu_kernel::event::question::Question as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_kernel::ledger::shape::asked_call
+<alloc::boxed::Box<miyu_kernel::event::tool::ApprovalRequested>>::new_uninit_in
+<miyu_kernel::session::Session>::driver_asking
+core::ptr::drop_glue::<std::sync::poison::mutex::Mutex<std::sync::mpsc::Receiver<(usize, alloc::vec::Vec<miyu_kernel::event::Event>)>>>
+serde_json::de::from_trait::<serde_json::read::StrRead, miyu_kernel::origin::Session>
+tokio::runtime::task::raw::dealloc::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::option::Option<miyu_kernel::session::input::Injection>, <miyu_session::memory::port::Calls>::card::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::SessionId, miyu_kernel::id::Seq>>::get::<miyu_kernel::id::SessionId>
+miyu_store::sweep::bones::hash
+<miyu_store::recall::RecallIndex>::reading
+<&mut miyu_store::packages::install::recover::{closure#0} as core::ops::function::FnMut<(std::fs::DirEntry,)>>::call_mut
+<miyu_config::package::reader::Reader>::needs_command
+<miyu_config::package::capability::Capability>::parse
+miyu_config::package::side::read::{closure#3}
+miyu_config::package::slash::read
+serde_json::de::from_trait::<serde_json::read::StrRead, miyu_store::packages::local::Desc>
+core::ptr::drop_glue::<miyu_store::packages::local::Desc>
+core::slice::sort::stable::quicksort::quicksort::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_endpoint::knowledge::carried<&[miyu_store::packages::Found]>::{closure#1}>::{closure#0}>
+core::slice::sort::shared::smallsort::bidirectional_merge::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_endpoint::knowledge::carried<core::iter::adapters::copied::Copied<core::slice::iter::Iter<&miyu_store::packages::Found>>>::{closure#1}>::{closure#0}>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_map::<<alloc::collections::btree::map::BTreeMap<_, _> as serde_core::de::Deserialize>::deserialize::MapVisitor<alloc::string::String, alloc::vec::Vec<alloc::string::String>>>
+core::slice::sort::stable::quicksort::quicksort::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_store::scripts::find::{closure#1}>::{closure#0}>
+core::iter::adapters::try_process::<core::iter::adapters::map::Map<alloc::boxed::Box<dyn core::iter::traits::iterator::Iterator<Item = &toml_edit::value::Value>>, miyu_config::package::mcp::texts::{closure#0}>, alloc::string::String, core::option::Option<core::convert::Infallible>, <core::option::Option<alloc::vec::Vec<alloc::string::String>> as core::iter::traits::collect::FromIterator<core::option::Option<alloc::string::String>>>::from_iter<core::iter::adapters::map::Map<alloc::boxed::Box<dyn core::iter::traits::iterator::Iterator<Item = &toml_edit::value::Value>>, miyu_config::package::mcp::texts::{closure#0}>>::{closure#0}, alloc::vec::Vec<alloc::string::String>>
+<core::iter::adapters::GenericShunt<core::iter::adapters::map::Map<alloc::boxed::Box<dyn core::iter::traits::iterator::Iterator<Item = &toml_edit::value::Value>>, miyu_config::package::mcp::texts::{closure#0}>, core::option::Option<core::convert::Infallible>> as core::iter::traits::iterator::Iterator>::next
+miyu_config::package::mcp::fields
+<&mut miyu_endpoint::extensions::processes_of::{closure#1} as core::ops::function::FnMut<(&(&str, &miyu_config::package::Manifest),)>>::call_mut
+core::slice::sort::shared::smallsort::insert_tail::<(&str, &miyu_store::knowledge::Skipped), <[(&str, &miyu_store::knowledge::Skipped)]>::sort_by<<alloc::collections::btree::map::BTreeMap<&str, &miyu_store::knowledge::Skipped> as core::iter::traits::collect::FromIterator<(&str, &miyu_store::knowledge::Skipped)>>::from_iter<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::slice::iter::Iter<miyu_store::knowledge::Skipped>, <miyu_store::knowledge::Knowledge>::listing::{closure#0}>, <miyu_store::knowledge::Knowledge>::listing::{closure#1}>>::{closure#0}>::{closure#0}>
+<alloc::collections::btree::map::BTreeMap<&str, &miyu_config::package::Manifest>>::bulk_build_from_sorted_iter::<alloc::vec::Vec<(&str, &miyu_config::package::Manifest)>>
+<miyu_endpoint::Core>::start_one
+miyu_endpoint::extensions::approval::holds
+<core::iter::adapters::copied::Copied<core::slice::iter::Iter<miyu_config::package::capability::Capability>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<miyu_config::package::capability::Capability, &mut miyu_endpoint::extensions::approval::holds::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<miyu_config::package::capability::Capability>>
+core::ptr::drop_glue::<(miyu_store::extensions::Switches, core::option::Option<alloc::string::String>)>
+<<miyu_endpoint::provide::ProvideParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::provide::register
+<alloc::collections::btree::set::BTreeSet<alloc::string::String> as core::iter::traits::collect::FromIterator<alloc::string::String>>::from_iter::<core::iter::adapters::cloned::Cloned<core::slice::iter::Iter<alloc::string::String>>>
+<alloc::vec::Vec<alloc::string::String>>::extend_trusted::<core::iter::adapters::cloned::Cloned<core::slice::iter::Iter<alloc::string::String>>>
+<miyu_endpoint::sessions::state::Declared>::of
+<alloc::vec::into_iter::IntoIter<miyu_endpoint::provide::ToolParams> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<[miyu_endpoint::provide::ToolParams]>
+<miyu_tool::catalog::Catalog>::replacing
+<&mut <miyu_tool::catalog::Catalog>::take_out_where<<miyu_tool::catalog::Catalog>::replacing::{closure#0}>::{closure#0} as core::ops::function::FnMut<(&(&alloc::string::String, &alloc::string::String),)>>::call_mut
+<miyu_endpoint::extensions::Extensions>::slot
+<miyu_store::root::DataRoot>::extension_stderr
+miyu_endpoint::extensions::supervise::run::{closure#0}
+miyu_fs::plain::usable
+core::ptr::drop_glue::<alloc::vec::Vec<(&[&str], std::path::PathBuf)>>
+miyu_endpoint::extensions::stderr::open
+miyu_sandbox::lifeline::keep
+<&mut miyu_endpoint::extensions::guards::entries::{closure#1} as core::ops::function::FnMut<((&str, &miyu_config::package::Manifest),)>>::call_mut
+<[&str] as core::fmt::Debug>::fmt
+<&mut serde_json::de::Deserializer<serde_json::read::SliceRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_mcp::client::Era as serde_core::de::Deserialize>::deserialize::__Visitor>
+miyu_endpoint::mcp::cache::key
+<miyu_mcp::content::Tool>::read
+<miyu_endpoint::mcp::tool::Texts>::load
+<tokio::process::Command>::build_child
+<tokio::sync::watch::Receiver<bool>>::changed::{closure#0}
+miyu_endpoint::extensions::config::prefix_of
+<tokio::io::util::buf_reader::BufReader<tokio::io::split::ReadHalf<tokio::io::join::Join<tokio::process::ChildStdout, tokio::process::ChildStdin>>> as tokio::io::async_buf_read::AsyncBufRead>::poll_fill_buf
+<tokio::io::poll_evented::PollEvented<mio::sys::unix::pipe::Receiver>>::poll_read
+<miyu_tool::Venues>::of
+<miyu_store::resources::ResourceRoot>::tool_text
+miyu_endpoint::mcp::supervise::run::{closure#0}
+<miyu_mcp::client::Client>::shake::{closure#0}
+tokio::runtime::task::raw::poll::<miyu_mcp::link::read<alloc::boxed::Box<dyn tokio::io::async_read::AsyncRead + core::marker::Unpin + core::marker::Send>>::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+tokio::runtime::task::raw::poll::<miyu_mcp::link::write<alloc::boxed::Box<dyn tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send>>::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+tokio::io::split::split::<tokio::io::util::mem::DuplexStream>
+<tokio::io::split::ReadHalf<tokio::io::util::mem::DuplexStream> as tokio::io::async_read::AsyncRead>::poll_read
+<tokio::io::split::Inner<tokio::io::util::mem::DuplexStream>>::with_lock::<core::task::poll::Poll<core::result::Result<(), std::io::error::Error>>, <tokio::io::split::ReadHalf<tokio::io::util::mem::DuplexStream> as tokio::io::async_read::AsyncRead>::poll_read::{closure#0}>
+miyu_mcp::http::relay::{closure#0}
+tokio::runtime::task::raw::try_read_output::<miyu_mcp::http::relay::{closure#0}::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>
+<core::option::Option<&serde_json::value::Value>>::cloned
+<reqwest::async_impl::client::Client>::request::<&alloc::string::String>
+miyu_endpoint::mcp::home::same
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::Seq, usize, alloc::collections::btree::node::marker::LeafOrInternal>>::choose_parent_kv
+core::ptr::drop_glue::<tokio::sync::oneshot::Receiver<core::result::Result<serde_json::value::Value, serde_json::value::Value>>>
+<tokio::sync::oneshot::Receiver<core::result::Result<serde_json::value::Value, serde_json::value::Value>> as core::ops::drop::Drop>::drop
+<serde_json::map::Map<alloc::string::String, serde_json::value::Value>>::entry::<&str>
+<alloc::raw_vec::RawVec<miyu_store::slash::Command>>::grow_one
+<miyu_endpoint::connection::handing::Handing>::now
+miyu_endpoint::extensions::config::given
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, serde_json::value::Value> as core::iter::traits::collect::FromIterator<(alloc::string::String, serde_json::value::Value)>>::from_iter::<core::iter::adapters::filter_map::FilterMap<core::iter::adapters::filter::Filter<core::slice::iter::Iter<miyu_config::item::Item>, miyu_endpoint::extensions::config::own::{closure#0}>, miyu_endpoint::extensions::config::own::{closure#1}>>
+core::ptr::drop_glue::<alloc::vec::Vec<(alloc::string::String, serde_json::value::Value)>>
+<hashbrown::raw::RawTable<(miyu_endpoint::extensions::instance::Instance, miyu_endpoint::reverse::Peer)>>::reserve_rehash::<hashbrown::map::make_hasher<miyu_endpoint::extensions::instance::Instance, miyu_endpoint::reverse::Peer, std::hash::random::RandomState>::{closure#0}>
+<<tokio::util::idle_notified_set::IdleNotifiedSet<_>>::drain::AllEntries<tokio::runtime::task::join::JoinHandle<core::option::Option<(alloc::string::String, miyu_models::logos::Logo)>>, <tokio::task::join_set::JoinSet<core::option::Option<(alloc::string::String, miyu_models::logos::Logo)>> as core::ops::drop::Drop>::drop::{closure#0}>>::pop_next
+core::ptr::drop_glue::<alloc::vec::Vec<u8>>
+<alloc::collections::btree::set::BTreeSet<miyu_endpoint::widgets::Key>>::difference
+<alloc::collections::btree::set::Difference<miyu_endpoint::widgets::Key> as core::iter::traits::iterator::Iterator>::next
+miyu_endpoint::content::providers
+<alloc::sync::Arc<tokio::sync::watch::Shared<bool>>>::drop_slow
+<&mut miyu_endpoint::extensions::config::own::{closure#1} as core::ops::function::FnMut<(&miyu_config::item::Item,)>>::call_mut
+miyu_kernel::apart::sync::<core::option::Option<miyu_endpoint::refusal::Refusal>, miyu_endpoint::connection::checks::refuse::{closure#0}::{closure#0}>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#40}, miyu_endpoint::methods::call::{closure#40}::{closure#0}>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::string::String, alloc::collections::btree::node::marker::LeafOrInternal>>::choose_parent_kv
+core::ptr::drop_glue::<miyu_tool::Spec>
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<serde_json::value::Value>>>
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, core::option::Option<serde_json::value::Value>>
+<miyu_endpoint::extensions::Extensions>::status
+<hashbrown::raw::RawTable<(miyu_endpoint::extensions::instance::Instance, (miyu_endpoint::reverse::Peer, core::option::Option<u32>))>>::reserve_rehash::<hashbrown::map::make_hasher<miyu_endpoint::extensions::instance::Instance, (miyu_endpoint::reverse::Peer, core::option::Option<u32>), std::hash::random::RandomState>::{closure#0}>
+<alloc::raw_vec::RawVec<miyu_source::archive::Item>>::grow_one
+miyu_endpoint::methods::call::{closure#48}::{closure#0}
+miyu_endpoint::methods::answer::<miyu_endpoint::packages::methods::call::{closure#21}, miyu_endpoint::packages::methods::call::{closure#21}::{closure#0}>
+miyu_endpoint::packages::methods::call::{closure#21}::{closure#0}
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, core::time::Duration>>::get::<alloc::string::String>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::venues::mains<miyu_endpoint::venues::sessions::sessions::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+core::ptr::drop_glue::<alloc::vec::Vec<(miyu_kernel::id::SessionId, alloc::string::String)>>
+<alloc::vec::Vec<(miyu_kernel::id::SessionId, alloc::string::String)> as core::ops::drop::Drop>::drop
+miyu_endpoint::methods::call::{closure#20}::{closure#0}
+<miyu_models::side::Tier>::parse
+core::ptr::drop_glue::<miyu_config::package::side::SideRequest>
+<alloc::collections::btree::map::BTreeMap<_, _, _> as core::clone::Clone>::clone::clone_subtree::<alloc::string::String, alloc::collections::btree::set::BTreeSet<alloc::string::String>, alloc::alloc::Global>
+<&mut <miyu_endpoint::mcp::Servers>::instructions::{closure#0} as core::ops::function::FnMut<((&(alloc::string::String, alloc::string::String), &miyu_endpoint::mcp::Slot),)>>::call_mut
+core::slice::sort::stable::quicksort::quicksort::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_endpoint::packages::folders::{closure#1}>::{closure#0}>
+<alloc::collections::btree::node::BalancingContext<alloc::string::String, alloc::string::String>>::bulk_steal_left
+<alloc::collections::btree::node::BalancingContext<alloc::string::String, alloc::collections::btree::set_val::SetValZST>>::bulk_steal_left
+<miyu_endpoint::mcp::tool::McpTool as miyu_tool::Tool>::spec
+<miyu_endpoint::provide::remote::RemoteTool as miyu_tool::Tool>::spec
+core::slice::sort::stable::quicksort::quicksort::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_store::skills::find::{closure#1}>::{closure#0}>
+serde_json::value::to_value::<&core::option::Option<&alloc::string::String>>
+miyu_endpoint::session_context::named::<miyu_endpoint::session_context::usage_parts::{closure#0}::{closure#1}>::{closure#2}
+<miyu_memory::forget::Forget as miyu_tool::Tool>::subject
+<miyu_endpoint::commands::registry::Commands>::find_present
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_endpoint::mcp::prompts::Offered>>
+<miyu_endpoint::mcp::Shared>::client
+core::ptr::drop_glue::<miyu_endpoint::commands::prompts::Usable>
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_mcp::prompt::Argument>>
+miyu_endpoint::widgets::entry::on_screen
+<alloc::collections::btree::map::BTreeMap<miyu_endpoint::widgets::Key, alloc::collections::btree::set_val::SetValZST>>::bulk_build_from_sorted_iter::<core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<miyu_endpoint::widgets::Key>, <alloc::collections::btree::set::BTreeSet<miyu_endpoint::widgets::Key>>::from_sorted_iter<alloc::vec::into_iter::IntoIter<miyu_endpoint::widgets::Key>>::{closure#0}>>
+<alloc::vec::into_iter::IntoIter<miyu_endpoint::widgets::Key> as core::ops::drop::Drop>::drop
+<hashbrown::raw::RawTable<(miyu_endpoint::widgets::Key, usize)>>::reserve_rehash::<hashbrown::map::make_hasher<miyu_endpoint::widgets::Key, usize, std::hash::random::RandomState>::{closure#0}>
+tokio::runtime::task::raw::poll::<miyu_endpoint::widgets::watch::tell::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_endpoint::connection::read_all::<tokio::io::split::ReadHalf<tokio::io::join::Join<tokio::process::ChildStdout, tokio::process::ChildStdin>>>::{closure#0}
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#16}, miyu_endpoint::methods::call::{closure#16}::{closure#0}>
+miyu_endpoint::methods::call::{closure#16}::{closure#0}
+miyu_endpoint::extensions::methods::status
+<miyu_config::package::capability::Capability>::as_str
+miyu_endpoint::extensions::approval::unapproved
+miyu_endpoint::mcp::methods::one
+<alloc::vec::Vec<&str> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<&str, core::str::iter::Lines>>::from_iter
+miyu_kernel::apart::sync::<core::result::Result<serde_json::value::Value, miyu_endpoint::refusal::Refusal>, miyu_endpoint::connection::streams::subscribe::{closure#0}::{closure#2}>
+tokio::runtime::task::raw::poll::<miyu_endpoint::extensions::supervise::run::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_endpoint::methods::answer::<miyu_endpoint::packages::methods::call::{closure#34}, miyu_endpoint::packages::methods::call::{closure#34}::{closure#0}>
+<<miyu_endpoint::extensions::offers::OfferParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<serde::private::de::content::ContentVisitor as serde_core::de::DeserializeSeed>::deserialize::<serde_json::value::Value>
+<serde::private::de::content::ContentRefDeserializer<serde_json::error::Error>>::invalid_type
+serde::private::de::content::content_unexpected
+<serde_core::de::impls::StringVisitor as serde_core::de::Expected>::fmt
+<serde_json::error::Error as serde_core::de::Error>::invalid_type
+serde_json::de::from_trait::<serde_json::read::StrRead, miyu_kernel::origin::Module>
+<core::option::Option<miyu_kernel::event::session::Dream> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+miyu_endpoint::venues::bridge::bridge_of
+miyu_endpoint::from::harness
+<miyu_endpoint::provide::Provided>::peer
+tokio::time::timeout::timeout::<<miyu_endpoint::reverse::Peer>::call::{closure#0}>
+<miyu_store::log::SessionLog>::open_each::<<miyu_store::log::SessionLog>::open::{closure#0}>::{closure#0}
+<hashbrown::raw::RawTable<(alloc::string::String, tokio::sync::oneshot::Sender<core::result::Result<serde_json::value::Value, serde_json::value::Value>>)>>::erase_no_drop
+<miyu_endpoint::reverse::Peer>::answer
+<tokio::sync::oneshot::Sender<core::result::Result<serde_json::value::Value, serde_json::value::Value>>>::send
+<alloc::sync::Arc<tokio::sync::oneshot::Inner<core::result::Result<serde_json::value::Value, serde_json::value::Value>>>>::drop_slow
+<<miyu_endpoint::responding::FactParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_assemble::tag::tagged
+<miyu_config::package::after::After>::covers
+<alloc::boxed::Box<alloc::collections::btree::node::LeafNode<miyu_kernel::id::Seq, miyu_kernel::origin::By>>>::new_uninit_in
+miyu_endpoint::provide::declared::targets
+serde_json::value::to_value::<&core::option::Option<&str>>
+miyu_fs::plain::handed
+<miyu_endpoint::provide::remote::RemoteTool as miyu_tool::Tool>::run::{closure#0}
+<<miyu_endpoint::provide::remote::Answer as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<alloc::boxed::Box<serde_json::raw::RawValue> as serde_core::de::Deserialize>::deserialize::<serde_json::value::Value>
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, &serde_json::raw::RawValue>>::get::<str>
+<serde_json::number::Number as serde_core::de::Deserializer>::deserialize_any::<<serde_json::value::Value as serde_core::de::Deserialize>::deserialize::ValueVisitor>
+miyu_tool::detail::read
+<miyu_tool::detail::Detail as serde_core::de::Deserialize>::deserialize::<serde_json::value::Value>
+<<miyu_tool::detail::Detail as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<serde::private::de::content::SeqDeserializer<serde_json::error::Error>>::end
+<alloc::vec::into_iter::IntoIter<serde_core::private::content::Content> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<alloc::vec::Vec<alloc::vec::Vec<serde_json::value::Value>>>
+<miyu_tool::run::Done>::ok::<&str>
+<alloc::vec::Vec<miyu_kernel::id::ContentHash> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<miyu_kernel::id::ContentHash, core::iter::adapters::filter_map::FilterMap<core::slice::iter::Iter<miyu_kernel::block::Block>, miyu_endpoint::attach::blobs_of::{closure#0}>>>::from_iter
+<miyu_kernel::raw::RawJson>::of
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::call::CallId, (alloc::string::String, alloc::string::String), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<miyu_kernel::id::call::CallId, (alloc::string::String, alloc::string::String)>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::call::CallId, (alloc::string::String, alloc::string::String), alloc::collections::btree::node::marker::LeafOrInternal>>::choose_parent_kv
+tokio::sync::mpsc::chan::channel::<serde_json::value::Value, tokio::sync::mpsc::bounded::Semaphore>
+<tokio::sync::mpsc::list::Rx<serde_json::value::Value>>::pop
+core::ptr::drop_glue::<miyu_endpoint::extensions::guards::Entry>
+tokio::runtime::task::raw::drop_join_handle_slow::<<miyu_session::actor::Actor>::guarded::{closure#1}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+core::ptr::drop_glue::<tokio::runtime::task::core::Stage<<miyu_session::actor::Actor>::guarded::{closure#1}>>
+<alloc::vec::Vec<(miyu_session::actor::guarding::Waiting, tokio::runtime::task::abort::AbortHandle)>>::retain_mut::<<alloc::vec::Vec<(miyu_session::actor::guarding::Waiting, tokio::runtime::task::abort::AbortHandle)>>::retain<<miyu_session::actor::guarding::Guarding>::drop_one::{closure#0}>::{closure#0}>
+core::ptr::drop_glue::<(miyu_session::actor::guarding::Waiting, tokio::runtime::task::abort::AbortHandle)>
+signal_hook_registry::handler
+signal_hook_registry::register::<tokio::signal::unix::signal_enable::{closure#0}::{closure#0}>::{closure#0}
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#34}, miyu_endpoint::methods::call::{closure#34}::{closure#0}>
+miyu_endpoint::methods::call::{closure#34}::{closure#0}
+miyu_kernel::session::aside::failed
+<serde_json::de::MapAccess<serde_json::read::StrRead> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<miyu_kernel::event::model::CallError>>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<miyu_kernel::raw::RawJson>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<miyu_kernel::event::model::CallError>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeMap>::serialize_value::<core::option::Option<miyu_kernel::event::model::CallError>>
+miyu_endpoint::methods::call::{closure#35}::{closure#0}
+<miyu_kernel::session::input::command::ExtEvent>::new
+miyu_endpoint::appending::recorder
+<miyu_kernel::id::EventKind as core::fmt::Debug>::fmt
+<core::fmt::builders::DebugTuple>::finish
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#4}>
+miyu_endpoint::methods::call::{closure#62}::{closure#0}
+<<miyu_endpoint::sessions::state::SetParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_policy::overrides::model_text
+core::ptr::drop_glue::<miyu_kernel::event::package::State>
+<core::option::Option<&miyu_kernel::event::package::State>>::cloned
+miyu_endpoint::packages::methods::call::{closure#22}::{closure#0}
+miyu_config::widget::check
+miyu_config::widget::required
+<std::hash::random::RandomState as core::hash::BuildHasher>::hash_one::<&miyu_endpoint::widgets::Key>
+<miyu_endpoint::widgets::head::Follow>::push
+miyu_endpoint::widgets::head::entry
+miyu_endpoint::memory::call::{closure#0}
+miyu_endpoint::memory::read::<miyu_endpoint::memory::params::Search>
+<serde::private::de::FlatMapDeserializer<serde_json::error::Error> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_endpoint::memory::params::Where as serde_core::de::Deserialize>::deserialize::__Visitor>
+<<miyu_endpoint::memory::params::Where as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::personas::resolve::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_endpoint::memory::using
+tokio::task::spawn::spawn::<<miyu_session::memory::vectors::Vectors>::query::{closure#0}::{closure#0}>
+tokio::runtime::task::raw::try_read_output::<<miyu_session::memory::vectors::Vectors>::query::{closure#0}::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>
+<miyu_session::memory::vectors::Way>::embed::{closure#0}
+<miyu_session::route::shared::ModelData>::asking::<core::result::Result<miyu_session::route::endpoint::Reached, miyu_session::route::endpoint::Unreached>, <miyu_session::embed::remote::Remote>::ask::{closure#0}::{closure#1}>
+<miyu_session::route::shared::ModelData>::recalling_only::<core::result::Result<miyu_session::route::endpoint::Reached, miyu_session::route::endpoint::Unreached>, <miyu_session::embed::remote::Remote>::ask::{closure#0}::{closure#1}>
+tokio::time::timeout::timeout::<miyu_http::post::exchange::{closure#0}>
+<tokio::time::timeout::Timeout<miyu_http::post::exchange::{closure#0}> as core::future::future::Future>::poll
+<serde_json::de::Deserializer<serde_json::read::SliceRead>>::parse_decimal
+<miyu_models::catalog::recall::ModelAsk as core::cmp::Ord>::cmp
+core::ptr::drop_glue::<miyu_session::embed::remote::Remote>
+core::ptr::drop_glue::<tokio::time::timeout::Timeout<tokio::runtime::task::join::JoinHandle<core::result::Result<alloc::vec::Vec<f32>, miyu_session::embed::Unavailable>>>>
+tokio::runtime::blocking::pool::spawn_blocking::<miyu_endpoint::memory::search::{closure#0}::{closure#0}, core::result::Result<(alloc::vec::Vec<miyu_recall::memory::book::Entry>, alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_store::recall::uses::Used>), miyu_tool::memory::Refused>>
+<tokio::runtime::task::join::JoinHandle<core::result::Result<(alloc::vec::Vec<miyu_recall::memory::book::Entry>, alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_store::recall::uses::Used>), miyu_tool::memory::Refused>> as core::future::future::Future>::poll
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::memory::search::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_recall::associate::Thresholds>::of
+<miyu_store::recall::RecallIndex>::nearest
+<alloc::vec::into_iter::IntoIter<miyu_store::recall::vectors::Near>>::forget_allocation_drop_remaining
+<miyu_session::memory::keeper::Keeper>::used
+core::ptr::drop_glue::<core::option::Option<miyu_session::memory::vectors::Query>>
+miyu_endpoint::methods::call::{closure#33}::{closure#0}
+core::ptr::drop_glue::<<miyu_session::memory::merge::MergeJob>::ask::{closure#0}::{closure#4}>
+<alloc::sync::Arc<std::sync::poison::mutex::Mutex<miyu_session::memory::keeper::heard::Heard>>>::drop_slow
+tokio::runtime::task::raw::poll::<<miyu_session::memory::vectors::Vectors>::fill::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<miyu_session::memory::vectors::Vectors>::fill::{closure#0}
+existsToJoin
+<<miyu_kernel::event::model::CallError as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<core::iter::adapters::GenericShunt<rusqlite::row::MappedRows<<miyu_store::recall::RecallIndex>::missing::{closure#0}>, core::result::Result<core::convert::Infallible, rusqlite::error::Error>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::try_for_each::call<(i64, alloc::string::String, alloc::string::String), core::ops::control_flow::ControlFlow<(i64, alloc::string::String, alloc::string::String)>, core::ops::control_flow::ControlFlow<(i64, alloc::string::String, alloc::string::String)>::Break>::{closure#0}, core::ops::control_flow::ControlFlow<(i64, alloc::string::String, alloc::string::String)>>
+core::ptr::drop_glue::<alloc::vec::Vec<(i64, alloc::string::String, alloc::string::String)>>
+<alloc::collections::btree::map::entry::OccupiedEntry<alloc::string::String, alloc::collections::btree::set_val::SetValZST>>::remove_kv
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<alloc::string::String, alloc::collections::btree::set_val::SetValZST>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_kernel::event::package::PackageState as serde_core::de::Deserialize>::deserialize::__Visitor>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_kernel::event::package::State as serde_core::de::Deserialize>::deserialize::__Visitor>
+miyu_endpoint::methods::answer::<miyu_endpoint::packages::methods::call::{closure#31}, miyu_endpoint::packages::methods::call::{closure#31}::{closure#0}>
+miyu_endpoint::packages::methods::call::{closure#31}::{closure#0}
+miyu_endpoint::config::project::shown
+miyu_endpoint::skills::from
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#28}, miyu_endpoint::methods::call::{closure#28}::{closure#0}>
+miyu_endpoint::methods::call::{closure#28}::{closure#0}
+miyu_endpoint::methods::call::{closure#37}::{closure#0}
+miyu_endpoint::methods::call::{closure#21}::{closure#0}
+core::ptr::drop_glue::<miyu_endpoint::extensions::ports::Holder>
+miyu_endpoint::methods::call::{closure#39}::{closure#0}
+core::ptr::drop_glue::<miyu_session::memory::vectors::Query>
+<&alloc::string::String as rusqlite::types::to_sql::ToSql>::to_sql
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<serde::private::de::content::ContentVisitor>
+<alloc::raw_vec::RawVec<miyu_endpoint::provide::Checked>>::grow_one
+<miyu_endpoint::hooks::Hooks as miyu_tool::hooks::HooksPort>::after
+<tokio::sync::mpsc::bounded::Sender<serde_json::value::Value>>::try_send
+<alloc::vec::into_iter::IntoIter<miyu_tool::hooks::AfterNote> as core::ops::drop::Drop>::drop
+miyu_endpoint::commands::split
+miyu_endpoint::commands::declared::named
+core::ptr::drop_glue::<miyu_endpoint::commands::declared::Declared>
+<miyu_endpoint::hello::Caller as core::clone::Clone>::clone
+tokio::runtime::task::raw::drop_abort_handle::<core::pin::Pin<alloc::boxed::Box<miyu_endpoint::connection::call_later::{closure#0}>>, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<core::pin::Pin<alloc::boxed::Box<miyu_endpoint::connection::call_later::{closure#0}>> as core::future::future::Future>::poll
+miyu_endpoint::methods::params::<miyu_endpoint::commands::RunParams>
+<hashbrown::raw::RawTable<((alloc::string::String, miyu_kernel::id::CommandId), alloc::sync::Arc<tokio::sync::mutex::Mutex<core::option::Option<(u64, serde_json::value::Value)>>>)>>::reserve_rehash::<hashbrown::map::make_hasher<(alloc::string::String, miyu_kernel::id::CommandId), alloc::sync::Arc<tokio::sync::mutex::Mutex<core::option::Option<(u64, serde_json::value::Value)>>>, std::hash::random::RandomState>::{closure#0}>
+miyu_endpoint::commands::templates::run::{closure#0}
+miyu_endpoint::methods::later::call_later::{closure#0}
+core::slice::sort::stable::quicksort::quicksort::<&miyu_store::packages::Found, <[&miyu_store::packages::Found]>::sort_by<miyu_store::slash::find::{closure#1}>::{closure#0}>
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#12}>
+miyu_endpoint::backstage::calls::forward::{closure#0}
+<miyu_endpoint::backstage::calls::Methods>::peer_of
+core::ptr::drop_glue::<miyu_endpoint::backstage::calls::call::{closure#0}>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#22}, miyu_endpoint::methods::call::{closure#22}::{closure#0}>
+miyu_endpoint::methods::call::{closure#22}::{closure#0}
+miyu_endpoint::methods::call::{closure#29}::{closure#0}
+miyu_endpoint::presets::carried::{closure#0}
+<alloc::vec::Vec<miyu_endpoint::presets::entry::Tool> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<miyu_endpoint::presets::entry::Tool, core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::iter::adapters::map::Map<core::iter::adapters::map::Map<alloc::collections::btree::map::Values<alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>>, <miyu_tool::catalog::Catalog>::specs::{closure#0}>, miyu_endpoint::presets::features::tools_of<miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}>::{closure#0}>, miyu_endpoint::presets::features::tools_of<miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}>::{closure#1}>, miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}>>>::from_iter
+<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::iter::adapters::map::Map<core::iter::adapters::map::Map<alloc::collections::btree::map::Values<alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>>, <miyu_tool::catalog::Catalog>::specs::{closure#0}>, miyu_endpoint::presets::features::tools_of<miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}>::{closure#0}>, miyu_endpoint::presets::features::tools_of<miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}>::{closure#1}>, miyu_endpoint::presets::features::listed::{closure#0}::{closure#0}> as core::iter::traits::iterator::Iterator>::next
+miyu_endpoint::presets::describe
+core::slice::sort::stable::driftsort_main::<&alloc::string::String, <&alloc::string::String as core::cmp::PartialOrd>::lt, alloc::vec::Vec<&alloc::string::String>>
+core::slice::sort::stable::driftsort_main::<(alloc::string::String, miyu_endpoint::presets::sections::Shelved), <[(alloc::string::String, miyu_endpoint::presets::sections::Shelved)]>::sort_by<<alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_endpoint::presets::sections::Shelved> as core::iter::traits::collect::FromIterator<(alloc::string::String, miyu_endpoint::presets::sections::Shelved)>>::from_iter<core::iter::adapters::filter_map::FilterMap<core::slice::iter::Iter<miyu_store::packages::Found>, <miyu_endpoint::presets::sections::Shelf>::of::{closure#0}>>::{closure#0}>::{closure#0}, alloc::vec::Vec<(alloc::string::String, miyu_endpoint::presets::sections::Shelved)>>
+core::slice::sort::shared::smallsort::insert_tail::<(&str, alloc::string::String), <[(&str, alloc::string::String)]>::sort_by<<alloc::collections::btree::map::BTreeMap<&str, alloc::string::String> as core::iter::traits::collect::FromIterator<(&str, alloc::string::String)>>::from_iter<core::iter::adapters::filter_map::FilterMap<core::iter::adapters::filter_map::FilterMap<core::slice::iter::Iter<miyu_config::item::Item>, <miyu_endpoint::config::Config>::load_leaving::{closure#0}>, <miyu_endpoint::config::Config>::load_leaving::{closure#1}>>::{closure#0}>::{closure#0}>
+miyu_endpoint::extensions::methods::restart_process::{closure#0}
+miyu_endpoint::extensions::methods::extension
+<miyu_endpoint::extensions::Extensions>::halt::{closure#0}
+<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<alloc::collections::btree::map::IterMut<miyu_endpoint::extensions::instance::Instance, miyu_endpoint::extensions::Slot>, <miyu_endpoint::extensions::Extensions>::take<<miyu_endpoint::extensions::Extensions>::halt::{closure#0}::{closure#0}>::{closure#0}>, <miyu_endpoint::extensions::Extensions>::take<<miyu_endpoint::extensions::Extensions>::halt::{closure#0}::{closure#0}>::{closure#1}> as core::iter::traits::iterator::Iterator>::next
+<tokio::sync::watch::Sender<bool>>::send_if_modified::<<tokio::sync::watch::Sender<bool>>::send_modify<<tokio::sync::watch::Sender<bool>>::send_replace::{closure#0}>::{closure#0}>
+core::ptr::drop_glue::<miyu_endpoint::connection::serve_spawned<tokio::io::join::Join<tokio::process::ChildStdout, tokio::process::ChildStdin>>::{closure#0}>
+tokio::time::timeout::timeout::<<tokio::process::Child>::wait::{closure#0}>
+core::ptr::drop_glue::<tokio::signal::make_future::{closure#0}>
+core::ptr::drop_glue::<tokio::process::FusedChild>
+<std::process::ExitStatus as core::fmt::Display>::fmt
+<i32 as core::fmt::Display>::fmt
+<alloc::vec::into_iter::IntoIter<(miyu_endpoint::extensions::instance::Instance, core::option::Option<tokio::runtime::task::join::JoinHandle<()>>)> as core::ops::drop::Drop>::drop
+<&mut <miyu_store::program::PackageDirs>::of::{closure#0} as core::ops::function::FnMut<(&&str,)>>::call_mut
+core::ptr::drop_glue::<(<tokio::sync::broadcast::Receiver<alloc::string::String>>::recv::{closure#0}, miyu_endpoint::subscriptions::listed::next::{closure#0})>
+miyu_endpoint::extensions::methods::entry
+core::ptr::drop_glue::<miyu_endpoint::widgets::entry::Item>
+<miyu_sandbox::lifeline::unix::Watcher>::gone
+miyu_endpoint::methods::call::{closure#40}::{closure#0}
+<serde_json::value::Value as serde_core::de::Deserializer>::deserialize_seq::<<alloc::vec::Vec<_> as serde_core::de::Deserialize>::deserialize::VecVisitor<miyu_endpoint::provide::ToolParams>>
+miyu_tool::portable::unportable
+miyu_config::widget::method_name
+core::ptr::drop_glue::<miyu_endpoint::backstage::calls::Registered>
+<alloc::string::String as tracing_core::field::Value>::record
+<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::ContentHash, alloc::string::String>>::get::<miyu_kernel::id::ContentHash>
+<miyu_store::root::DataRoot>::package_logs
+<miyu_config::package::Manifest as core::clone::Clone>::clone
+core::ptr::drop_glue::<miyu_config::package::guard::Guard>
+miyu_endpoint::packages::switch::switch_off::{closure#0}
+miyu_store::extensions::write
+miyu_store::durable::create_temp_with::<miyu_store::config_file::write_with::{closure#0}>
+miyu_store::private_json::write::<serde_json::map::Map<alloc::string::String, serde_json::value::Value>>::{closure#1}
+tokio::runtime::task::raw::try_read_output::<miyu_endpoint::extensions::supervise::run::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>
+tokio::runtime::task::raw::drop_join_handle_slow::<miyu_endpoint::subscriptions::extension_config::forward::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<tokio::process::ChildDropGuard<tokio::process::imp::Child> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<tokio::process::Child>
+<miyu_endpoint::subscriptions::listed::Listed>::line
+<miyu_endpoint::widgets::head::Follow>::package_changed
+core::ptr::drop_glue::<miyu_endpoint::provide::remote::RemoteTool>
+core::ptr::drop_glue::<miyu_endpoint::sessions::state::Declared>
+<miyu_endpoint::extensions::Extensions>::notify
+<core::iter::adapters::cloned::Cloned<core::iter::adapters::filter::Filter<core::slice::iter::Iter<miyu_endpoint::widgets::entry::Item>, <miyu_endpoint::widgets::head::Follow>::package_changed::{closure#0}>> as core::iter::traits::iterator::Iterator>::next
+<miyu_endpoint::Core>::follow_switches::{closure#0}
+<miyu_endpoint::Core>::follow_providers
+<core::iter::adapters::map::Map<core::slice::iter::Iter<(alloc::string::String, std::path::PathBuf)>, <miyu_store::knowledge::Knowledge>::follow_packages::{closure#0}> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<alloc::string::String, &mut <miyu_store::knowledge::Knowledge>::follow_packages::{closure#1}>::{closure#0}, core::ops::control_flow::ControlFlow<alloc::string::String>>
+miyu_recall::kb::switches
+<toml_edit::de::table::TableDeserializer as serde_core::de::Deserializer>::deserialize_any::<<miyu_recall::kb::Switches as serde_core::de::Deserialize>::deserialize::__Visitor>
+<miyu_core::BuiltinTools as miyu_endpoint::builtins::Builtins>::embed
+miyu_endpoint::packages::switch::switch_on::{closure#0}
+<tokio::sync::mutex::MutexGuard<miyu_endpoint::sessions::Open> as core::ops::drop::Drop>::drop
+miyu_config::widget::pick
+<&mut serde_json::ser::Serializer<&mut alloc::vec::Vec<u8>> as serde_core::ser::Serializer>::collect_seq::<&alloc::vec::Vec<serde_json::value::Value>>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_map::<<alloc::collections::btree::map::BTreeMap<_, _> as serde_core::de::Deserialize>::deserialize::MapVisitor<alloc::string::String, bool>>
+miyu_endpoint::packages::methods::call::{closure#5}::{closure#0}
+<<miyu_endpoint::packages::info::InfoParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::packages::local::entry::{closure#0}
+<core::iter::adapters::GenericShunt<core::iter::adapters::map::Map<core::str::iter::Lines, miyu_store::packages::local::line>, core::option::Option<core::convert::Infallible>> as core::iter::traits::iterator::Iterator>::next
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_store::packages::local::Entry>>
+<miyu_endpoint::packages::preview::Content>::of
+miyu_store::skills::carried
+miyu_store::scripts::carried
+miyu_store::slash::carried
+miyu_source::tools::of
+core::slice::sort::shared::smallsort::insert_tail::<miyu_source::tools::Tool, <[miyu_source::tools::Tool]>::sort_by<miyu_source::tools::of::{closure#1}>::{closure#0}>
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_source::tools::Tool>>
+miyu_endpoint::packages::depends::dependents
+<tokio::runtime::task::join::JoinHandle<core::option::Option<alloc::string::String>> as core::future::future::Future>::poll
+<core::iter::adapters::cloned::Cloned<core::slice::iter::Iter<miyu_endpoint::extensions::offers::Offer>> as core::iter::traits::iterator::Iterator>::next
+<miyu_tool::catalog::Catalog>::packages
+<alloc::vec::Vec<&str> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<&str, core::iter::adapters::map::Map<alloc::collections::btree::map::Values<alloc::string::String, alloc::string::String>, <alloc::string::String>::as_str>>>::from_iter
+<core::option::Option<core::option::Option<alloc::string::String>>>::map::<miyu_session::actor::persona::swap::Recast, miyu_session::actor::persona::look::{closure#12}>
+<miyu_session::route::Route as miyu_session::port::ModelPort>::retext
+core::ptr::drop_glue::<miyu_policy::tools::RunTexts>
+<hashbrown::raw::RawTable<(alloc::string::String, alloc::sync::Arc<miyu_endpoint::backstage::host::Ticket>)>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, alloc::sync::Arc<miyu_endpoint::backstage::host::Ticket>, std::hash::random::RandomState>::{closure#0}>
+core::ptr::drop_glue::<core::result::Result<(alloc::vec::Vec<std::path::PathBuf>, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>>, core::option::Option<miyu_kernel::session::input::Injection>), miyu_store::resources::SourceError>>
+core::ptr::drop_glue::<miyu_endpoint::extensions::afters::Outlet>
+miyu_endpoint::methods::call::{closure#45}::{closure#0}
+<miyu_kernel::id::ExternalId>::parse
+miyu_endpoint::venues::voice_owner
+miyu_endpoint::methods::call::{closure#47}::{closure#0}
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<u64>>>
+<&miyu_kernel::id::VenueId as core::fmt::Debug>::fmt
+miyu_endpoint::sessions::places::prepared
+<miyu_policy::compose::PersonaTexts>::digest
+<miyu_store::resources::ResourceRoot>::group_chat
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<miyu_endpoint::venues::AsParams>>>
+<core::option::Option<miyu_endpoint::venues::message::VenueMessageParams> as serde_core::de::Deserialize>::deserialize::<serde_json::value::Value>
+<<miyu_endpoint::venues::message::VenueMessageParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<&alloc::boxed::Box<miyu_kernel::event::venue::VenueMessage> as core::fmt::Debug>::fmt
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, miyu_kernel::id::ExternalId>
+core::ptr::drop_glue::<miyu_kernel::event::venue::VenueMessage>
+miyu_assemble::group::recent::one
+<alloc::vec::Vec<alloc::string::String> as alloc::vec::spec_extend::SpecExtend<alloc::string::String, alloc::vec::into_iter::IntoIter<alloc::string::String>>>::spec_extend
+<alloc::collections::btree::map::BTreeMap<&str, &miyu_store::knowledge::Skipped> as core::ops::drop::Drop>::drop
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<alloc::sync::Arc<dyn miyu_session::onlooker::Onlooker>>>::initialize<<std::sync::once_lock::OnceLock<alloc::sync::Arc<dyn miyu_session::onlooker::Onlooker>>>::get_or_init<<miyu_session::handle::Handle>::onlooker<miyu_endpoint::venues::records::recent::Recent, miyu_endpoint::venues::records::records::{closure#0}::{closure#3}::{closure#0}>::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::venues::records::records::{closure#0}::{closure#4}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<core::option::Option<miyu_policy::group::GroupChat> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::SliceRead>>
+<serde_json::de::Deserializer<serde_json::read::SliceRead>>::deserialize_number::<<i32 as serde_core::de::Deserialize>::deserialize::PrimitiveVisitor>
+miyu_endpoint::methods::params::<miyu_endpoint::models::call::CallParams>
+miyu_endpoint::models::call::call::{closure#0}
+<core::option::Option<&str>>::and_then::<(&str, miyu_config::package::side::SideRequest), miyu_endpoint::models::call::call::{closure#0}::{closure#0}>
+core::ptr::drop_glue::<hyper::proto::MessageHead<http::status::StatusCode>>
+miyu_endpoint::methods::call::{closure#41}::{closure#0}
+<<miyu_endpoint::responding::RespondParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#5}>
+<miyu_kernel::ledger::triggers::Triggers>::check_list
+<miyu_recall::memory::book::MemoryBook>::card
+<miyu_session::sandbox::Sandbox>::broad
+core::ptr::drop_glue::<miyu_sandbox::spec::Spec>
+core::ptr::drop_glue::<alloc::vec::Vec<(std::ffi::os_str::OsString, std::ffi::os_str::OsString)>>
+<std::sync::once_lock::OnceLock<()>>::initialize::<<std::sync::once_lock::OnceLock<()>>::get_or_init<<miyu_session::memory::turns::Turns>::place::{closure#0}>::{closure#0}, !>
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<()>>::initialize<<std::sync::once_lock::OnceLock<()>>::get_or_init<<miyu_session::memory::turns::Turns>::place::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+<<miyu_endpoint::appending::AppendParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<core::num::nonzero::NonZero<u32>>>>
+<core::option::Option<u64> as core::fmt::Debug>::fmt
+<&core::num::nonzero::NonZero<u32> as core::fmt::Debug>::fmt
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::Seq, alloc::string::String, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::ExtractIfInner<miyu_kernel::id::Seq, alloc::string::String, core::ops::range::RangeFull>>::next<<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::Seq, alloc::string::String>>::retain<<miyu_recall::turns::TurnFeed>::see::{closure#0}::{closure#0}>::{closure#0}, alloc::alloc::Global>::{closure#0}, alloc::alloc::Global>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#44}, miyu_endpoint::methods::call::{closure#44}::{closure#0}>
+miyu_endpoint::methods::call::{closure#44}::{closure#0}
+<<miyu_endpoint::venues::records::RecordsParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<serde_json::value::de::MapDeserializer as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<u64>>
+<std::sync::once_lock::OnceLock<alloc::sync::Arc<dyn miyu_session::onlooker::Onlooker>>>::initialize::<<std::sync::once_lock::OnceLock<alloc::sync::Arc<dyn miyu_session::onlooker::Onlooker>>>::get_or_init<<miyu_session::handle::Handle>::onlooker<miyu_endpoint::venues::records::recent::Recent, miyu_endpoint::venues::records::records::{closure#0}::{closure#3}::{closure#0}>::{closure#0}>::{closure#0}, !>
+miyu_endpoint::venues::records::pass::start_building
+<serde_json::de::MapAccess<serde_json::read::StrRead> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<miyu_kernel::id::ExternalId>>
+<core::option::Option<miyu_kernel::event::venue::VenueMessage> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<serde_json::de::ParserNumber>::visit::<<i32 as serde_core::de::Deserialize>::deserialize::PrimitiveVisitor>
+<miyu_policy::group::GroupChat>::texts
+core::ptr::drop_glue::<miyu_policy::group::GroupChat>
+miyu_assemble::group::record
+<miyu_kernel::time::Timestamp>::local_clock
+<miyu_session::route::Routes as miyu_session::port::Models>::one_shot
+<alloc::vec::Vec<miyu_kernel::id::Seq> as core::fmt::Debug>::fmt
+<alloc::vec::Vec<miyu_kernel::id::Seq>>::dedup_by::<<alloc::vec::Vec<miyu_kernel::id::Seq>>::dedup::{closure#0}>
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, alloc::vec::Vec<miyu_kernel::id::Seq>>
+<miyu_recall::turns::TurnFeed>::take
+<miyu_store::root::DataRoot>::secret_places
+miyu_endpoint::venues::speaker
+miyu_assemble::poke::said
+<alloc::vec::Vec<miyu_kernel::id::ExternalId> as core::clone::Clone>::clone
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#47}, miyu_endpoint::methods::call::{closure#47}::{closure#0}>
+<<miyu_endpoint::venues::VenueParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::venues::owner_in
+<alloc::vec::Vec<miyu_kernel::event::venue::Media> as core::fmt::Debug>::fmt
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_kernel::event::session::CommandRan as serde_core::de::Deserialize>::deserialize::__Visitor>
+<core::option::Option<alloc::boxed::Box<miyu_kernel::event::model::FirstDifference>> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<alloc::vec::Vec<alloc::string::String>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<alloc::boxed::Box<miyu_kernel::event::model::FirstDifference>>>
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::CompactFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, miyu_kernel::event::package::State>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<miyu_kernel::event::session::Dream>>
+core::slice::sort::shared::smallsort::insert_tail::<(miyu_models::catalog::recall::ModelAsk, miyu_models::catalog::lookup::ModelSide), <[(miyu_models::catalog::recall::ModelAsk, miyu_models::catalog::lookup::ModelSide)]>::sort_by<<alloc::collections::btree::map::BTreeMap<miyu_models::catalog::recall::ModelAsk, miyu_models::catalog::lookup::ModelSide> as core::iter::traits::collect::FromIterator<(miyu_models::catalog::recall::ModelAsk, miyu_models::catalog::lookup::ModelSide)>>::from_iter<alloc::vec::into_iter::IntoIter<(miyu_models::catalog::recall::ModelAsk, miyu_models::catalog::lookup::ModelSide)>>::{closure#0}>::{closure#0}>
+core::ptr::drop_glue::<miyu_mcp::content::Tool>
+<tokio::process::ChildStdin as tokio::io::async_write::AsyncWrite>::poll_write
+<miyu_basesystem::sessions::Sessions as miyu_tool::Tool>::run
+<miyu_endpoint::spawn::Table as miyu_session::spawn::SessionPort>::sessions
+<miyu_endpoint::spawn::Table as miyu_session::spawn::SessionPort>::sessions::{closure#0}
+miyu_store::projects::read
+<alloc::vec::into_iter::IntoIter<miyu_endpoint::list::Listed>>::forget_allocation_drop_remaining
+<alloc::vec::into_iter::IntoIter<miyu_endpoint::list::Listed> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<miyu_store::projects::Projects>
+miyu_tool::sessions::reaches
+core::slice::sort::stable::driftsort_main::<miyu_tool::sessions::MainSession, <[miyu_tool::sessions::MainSession]>::sort_by<<miyu_basesystem::sessions::Sessions as miyu_tool::Tool>::run::{closure#0}::{closure#1}>::{closure#0}, alloc::vec::Vec<miyu_tool::sessions::MainSession>>
+miyu_basesystem::sessions::shown_ids::<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&miyu_kernel::id::SessionId>, core::iter::adapters::map::Map<core::slice::iter::Iter<miyu_tool::sessions::MainSession>, <miyu_basesystem::sessions::Texts>::page::{closure#0}>>>::{closure#1}
+<miyu_kernel::id::SessionId>::short
+core::slice::sort::stable::drift::sort::<(miyu_kernel::id::SessionId, alloc::string::String), <[(miyu_kernel::id::SessionId, alloc::string::String)]>::sort_by<<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::SessionId, alloc::string::String> as core::iter::traits::collect::FromIterator<(miyu_kernel::id::SessionId, alloc::string::String)>>::from_iter<core::iter::adapters::map::Map<core::slice::iter::Iter<&miyu_kernel::id::SessionId>, miyu_basesystem::sessions::shown_ids<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&miyu_kernel::id::SessionId>, core::iter::adapters::map::Map<core::slice::iter::Iter<miyu_tool::sessions::MainSession>, <miyu_basesystem::sessions::Texts>::page::{closure#0}>>>::{closure#2}>>::{closure#0}>::{closure#0}>
+core::slice::sort::shared::smallsort::sort4_stable::<(miyu_kernel::id::ContentHash, alloc::string::String), <[(miyu_kernel::id::ContentHash, alloc::string::String)]>::sort_by<<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::ContentHash, alloc::string::String> as core::iter::traits::collect::FromIterator<(miyu_kernel::id::ContentHash, alloc::string::String)>>::from_iter<core::iter::adapters::filter_map::FilterMap<core::iter::adapters::flatten::FlatMap<core::slice::iter::Iter<miyu_kernel::request::Message>, &[miyu_kernel::block::Block], miyu_session::route::extension::wire::blocks>, miyu_session::route::extension::wire::media::{closure#0}>>::{closure#0}>::{closure#0}>
+<miyu_basesystem::send_message::SendMessage as miyu_tool::Tool>::run::{closure#0}
+<miyu_kernel::format_error::FormatError>::new
+<miyu_session::messages::Messenger as miyu_tool::messages::MessagePort>::send
+<miyu_kernel::id::call::CallId as core::fmt::Display>::fmt
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#99}, miyu_endpoint::meta::retitle::{closure#0}>
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#10}>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::Seq, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::ExtractIfInner<miyu_kernel::id::Seq, alloc::collections::btree::set_val::SetValZST, core::ops::range::RangeFull>>::next<<alloc::collections::btree::set::ExtractIf<miyu_kernel::id::Seq, core::ops::range::RangeFull, <alloc::collections::btree::set::BTreeSet<miyu_kernel::id::Seq>>::retain<<miyu_kernel::ledger::Ledger>::record::{closure#0}>::{closure#0}> as core::iter::traits::iterator::Iterator>::next::{closure#0}, alloc::alloc::Global>::{closure#0}, alloc::alloc::Global>
+<<miyu_endpoint::meta::MetaParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<core::option::Option<bool> as core::fmt::Debug>::fmt
+miyu_endpoint::methods::call::{closure#42}::{closure#0}
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<(miyu_kernel::id::Seq, miyu_session::open::fork::ForkedBase), miyu_session::open::fork::ForkError>, miyu_session::open::fork::forked<miyu_session::open::fork::Handing>::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<tracing::span::Span>::in_scope::<miyu_session::open::fork::forked<miyu_session::open::fork::Handing>::{closure#0}::{closure#0}, core::result::Result<(miyu_kernel::id::Seq, miyu_session::open::fork::ForkedBase), miyu_session::open::fork::ForkError>>
+<miyu_kernel::event::effect::JobKind as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+miyu_session::open::fork::read_parent::<miyu_session::open::fork::Handing>::{closure#0}
+<miyu_kernel::session::fork::feed::ForkFeed>::finish
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_kernel::session::nested::Call>>
+miyu_session::memory::lane::attach::{closure#2}
+miyu_endpoint::list::whole::<miyu_endpoint::list::one::{closure#0}>
+miyu_endpoint::methods::session::recap::{closure#0}
+miyu_endpoint::methods::call::{closure#13}::{closure#0}
+<<miyu_endpoint::export::ExportParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::export::export::{closure#0}
+<miyu_endpoint::view::Titles>::of
+<core::iter::adapters::map::Map<alloc::collections::btree::map::Values<alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>>, <miyu_tool::catalog::Catalog>::specs::{closure#0}> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find_map::check<&miyu_tool::Spec, (alloc::string::String, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>), &mut <miyu_endpoint::view::Titles>::of::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<(alloc::string::String, alloc::collections::btree::map::BTreeMap<alloc::string::String, alloc::string::String>)>>
+<core::iter::adapters::map::Map<alloc::collections::btree::map::Values<alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>>, <miyu_tool::catalog::Catalog>::specs::{closure#0}> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find_map::check<&miyu_tool::Spec, (alloc::string::String, alloc::string::String), &mut <miyu_endpoint::view::Titles>::of::{closure#2}>::{closure#0}, core::ops::control_flow::ControlFlow<(alloc::string::String, alloc::string::String)>>
+miyu_endpoint::export::markdown::transcript
+miyu_endpoint::view::texts
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_map::<<alloc::collections::btree::map::BTreeMap<_, _> as serde_core::de::Deserialize>::deserialize::MapVisitor<alloc::string::String, miyu_view::words::ToolKind>>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_map::<<alloc::collections::btree::map::BTreeMap<_, _> as serde_core::de::Deserialize>::deserialize::MapVisitor<alloc::string::String, miyu_view::words::Hosted>>
+<miyu_endpoint::export::markdown::One>::draft
+miyu_endpoint::view::project::fresh
+<miyu_view::projector::Projector>::event
+<miyu_view::projector::Projector>::created
+miyu_view::projector::users::level
+<alloc::vec::Vec<miyu_view::change::Change> as core::ops::drop::Drop>::drop
+<miyu_view::markdown::sources::Sources>::see
+<miyu_view::projector::Projector>::get
+core::ptr::drop_glue::<miyu_view::entry::Body>
+<alloc::vec::Vec<miyu_kernel::id::Seq> as alloc::vec::spec_extend::SpecExtend<miyu_kernel::id::Seq, alloc::vec::into_iter::IntoIter<miyu_kernel::id::Seq>>>::spec_extend
+core::slice::sort::shared::smallsort::insert_tail::<miyu_kernel::id::VenueId, <miyu_kernel::id::VenueId as core::cmp::PartialOrd>::lt>
+<alloc::vec::Vec<miyu_view::id::EntryId> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<miyu_view::id::EntryId, core::iter::adapters::cloned::Cloned<core::iter::adapters::flatten::Flatten<core::slice::iter::Iter<core::option::Option<miyu_view::id::EntryId>>>>>>::from_iter
+<miyu_view::projector::Projector>::refresh_groups_of
+<miyu_view::entry::Title as core::clone::Clone>::clone
+<miyu_view::markdown::text::Out>::block
+miyu_view::markdown::draft
+miyu_view::markdown::text::longest_run
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_view::entry::Entry>>
+<alloc::collections::btree::map::IntoIter<miyu_kernel::id::SessionId, miyu_endpoint::sessions::Running>>::dying_next
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_view::status::Waiting>>
+core::ptr::drop_glue::<miyu_endpoint::view::Titles>
+<alloc::collections::btree::map::IntoIter<alloc::string::String, usize> as core::ops::drop::Drop>::drop
+<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::SessionId, miyu_store::index::row::Row>>::get::<miyu_kernel::id::SessionId>
+<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::SessionId, alloc::collections::btree::set_val::SetValZST>>::insert
+miyu_store::bundle::temp_beside
+<core::iter::adapters::filter::Filter<core::iter::adapters::filter_map::FilterMap<core::iter::adapters::filter_map::FilterMap<std::fs::ReadDir, <core::result::Result<std::fs::DirEntry, std::io::error::Error>>::ok>, miyu_store::bundle::segment_names::{closure#0}>, miyu_store::bundle::segment_names::{closure#1}> as core::iter::traits::iterator::Iterator>::next
+<zip::datetime::DateTime>::from_date_and_time
+core::ptr::drop_glue::<zip::result::ZipError>
+<<std::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard as core::ops::drop::Drop>::drop
+<hashbrown::raw::RawTable<usize>>::reserve_rehash::<indexmap::inner::get_hash<alloc::boxed::Box<[u8]>, zip::types::ZipFileData>::{closure#0}>
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<u64>>::initialize<<std::sync::once_lock::OnceLock<u64>>::get_or_init<<zip::write::zip_writer::ZipWriter<std::io::buffered::bufwriter::BufWriter<std::fs::File>>>::start_entry<()>::{closure#3}>::{closure#0}, !>::{closure#0}>::{closure#0}
+<flate2::mem::Compress>::new
+<zlib_rs::allocate::Allocator>::allocate_slice_raw::<u8>
+zlib_rs::deflate::reset
+<flate2::zio::Writer<zip::write::MaybeEncrypted<std::io::buffered::bufwriter::BufWriter<std::fs::File>>, flate2::mem::Compress>>::write_with_status
+zlib_rs::deflate::algorithm::medium::deflate_medium
+<crc32fast::Hasher>::update
+<miyu_store::bundle::manifest::Manifest as serde_core::ser::Serialize>::serialize::<&mut serde_json::ser::Serializer<&mut alloc::vec::Vec<u8>, serde_json::ser::PrettyFormatter>>
+core::ptr::drop_glue::<indexmap::map::IndexMap<alloc::boxed::Box<[u8]>, zip::types::ZipFileData>>
+std::sys::fs::hard_link
+miyu_endpoint::methods::call::{closure#65}::{closure#0}
+<<miyu_endpoint::session_context::SpentParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+tokio::task::spawn::spawn::<core::pin::Pin<alloc::boxed::Box<<miyu_session::actor::Actor>::usage_parts::{closure#1}>>>
+tokio::runtime::task::raw::poll::<core::pin::Pin<alloc::boxed::Box<<miyu_session::actor::Actor>::usage_parts::{closure#1}>>, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<miyu_session::handle::context::Spent, <miyu_session::actor::Actor>::usage_parts::{closure#1}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<tracing::span::Span>::in_scope::<<miyu_session::actor::Actor>::usage_parts::{closure#1}::{closure#0}, miyu_session::handle::context::Spent>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::Seq, alloc::vec::Vec<core::option::Option<u64>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<miyu_kernel::id::Seq, alloc::vec::Vec<core::option::Option<u64>>>>::remove_kv::{closure#0}, alloc::alloc::Global>
+core::ptr::drop_glue::<tokio::sync::oneshot::Sender<miyu_session::handle::context::Spent>>
+<tokio::runtime::task::core::Core<core::pin::Pin<alloc::boxed::Box<<miyu_session::actor::Actor>::usage_parts::{closure#1}>>, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>>::set_stage
+miyu_endpoint::methods::call::{closure#14}::{closure#0}
+<miyu_endpoint::sessions::Sessions>::delete::{closure#0}
+miyu_endpoint::sessions::delete::descendants
+<miyu_session::jobs::SessionJobs>::close::{closure#0}
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<(), <miyu_session::jobs::SessionJobs>::close::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<tracing::span::Span>::in_scope::<<miyu_session::jobs::SessionJobs>::close::{closure#0}::{closure#0}, ()>
+alloc::vec::in_place_collect::from_iter_in_place::<core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<(miyu_kernel::id::Seq, (tokio::sync::oneshot::Sender<miyu_kernel::session::action::Outcome>, miyu_kernel::session::action::Outcome))>, <miyu_session::actor::durable::Durable<(tokio::sync::oneshot::Sender<miyu_kernel::session::action::Outcome>, miyu_kernel::session::action::Outcome)>>::release_all::{closure#0}>, (tokio::sync::oneshot::Sender<miyu_kernel::session::action::Outcome>, miyu_kernel::session::action::Outcome)>
+<alloc::sync::Arc<miyu_session::jobs::Shared>>::drop_slow
+<alloc::collections::btree::map::IntoIter<alloc::string::String, miyu_recall::memory::book::PersonCard>>::dying_next
+core::ptr::drop_glue::<tokio::sync::oneshot::Receiver<core::result::Result<(), miyu_kernel::session::action::Reason>>>
+<tokio::runtime::task::harness::Harness<tracing::instrument::Instrumented<<miyu_session::actor::Actor>::run::{closure#0}>, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>>::complete
+<tokio::runtime::task::core::Core<tracing::instrument::Instrumented<miyu_session::actor::life::spawn::{closure#0}>, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>>::set_stage
+<sharded_slab::tid::Tid<sharded_slab::cfg::DefaultConfig>>::is_current
+<miyu_store::recall::indexes::RecallIndexes>::personas
+sqlite3SelectDup
+fts5SavepointMethod
+substrFunc
+sqlite3_result_text64
+sqlite3BlobCompare
+miyu_config::package::mcp::valid_name
+<miyu_store::root::DataRoot>::provide_cache
+core::ptr::drop_glue::<core::option::Option<(tokio::sync::watch::Sender<bool>, tokio::runtime::task::join::JoinHandle<()>)>>
+<<serde_json::value::Value as serde_core::de::Deserialize>::deserialize::ValueVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_store::trash::sweep
+miyu_store::trash::deleted_at
+<serde_json::ser::Compound<&mut alloc::vec::Vec<u8>, serde_json::ser::PrettyFormatter> as serde_core::ser::SerializeMap>::serialize_entry::<str, alloc::string::String>
+core::ptr::drop_glue::<miyu_store::projects::Read>
+miyu_kernel::apart::future::<core::result::Result<(serde_json::value::Value, miyu_endpoint::subscriptions::memory::MemoryAt), miyu_endpoint::refusal::Refusal>, miyu_endpoint::connection::streams::memory::{closure#0}>
+<tokio::sync::mpsc::block::Block<miyu_kernel::event::Event>>::new
+<alloc::vec::into_iter::IntoIter<miyu_kernel::event::Event> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::adapters::filter::filter_try_fold<miyu_kernel::event::Event, (), core::ops::control_flow::ControlFlow<miyu_kernel::event::Event>, <miyu_session::memory::keeper::Keeper>::follow::{closure#6}::{closure#0}, core::iter::adapters::filter::filter_try_fold<miyu_kernel::event::Event, (), core::ops::control_flow::ControlFlow<miyu_kernel::event::Event>, <miyu_session::memory::keeper::Keeper>::follow::{closure#6}::{closure#1}, core::iter::traits::iterator::Iterator::find::check<miyu_kernel::event::Event, &mut <miyu_session::memory::keeper::Keeper>::follow::{closure#6}::{closure#2}>::{closure#0}>::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<miyu_kernel::event::Event>>
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_endpoint::subscriptions::memory::MemoryAt, miyu_endpoint::subscriptions::memory::MemoryForwarder, alloc::collections::btree::node::marker::LeafOrInternal>>::find_key_index::<miyu_endpoint::subscriptions::memory::MemoryAt>
+miyu_endpoint::methods::call::{closure#23}::{closure#0}
+miyu_endpoint::personas::describe
+miyu_endpoint::personas::delete::sole_package
+<&mut <miyu_store::personas::Personas>::layers_with::{closure#0} as core::ops::function::FnMut<(&&(miyu_store::layers::Layer, std::path::PathBuf),)>>::call_mut
+<<miyu_endpoint::personas::write::ReadParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::methods::call::{closure#9}::{closure#0}
+miyu_endpoint::projects::call::{closure#0}
+<core::option::Option<miyu_kernel::event::session::Forked> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+miyu_endpoint::memory::read::<miyu_endpoint::memory::params::List>
+<miyu_session::memory::Memory>::settle
+core::ptr::drop_glue::<miyu_endpoint::memory::list::{closure#0}::{closure#0}>
+<alloc::vec::Vec<serde_json::value::Value> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<serde_json::value::Value, core::iter::adapters::map::Map<core::slice::iter::Iter<miyu_recall::memory::book::Entry>, miyu_endpoint::memory::shown::shown_all::{closure#0}>>>::from_iter
+miyu_endpoint::methods::call::{closure#10}::{closure#0}
+<<miyu_endpoint::projects::Fields as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::projects::apply
+miyu_store::projects::too_long
+miyu_endpoint::projects::read::{closure#0}
+<alloc::raw_vec::RawVec<miyu_store::scripts::Script>>::grow_one
+miyu_store::config_file::write_with
+<alloc::vec::Vec<miyu_store::projects::Project> as core::ops::drop::Drop>::drop
+<miyu_endpoint::packages::changes::Changes>::notify
+<miyu_store::projects::Project as serde_core::ser::Serialize>::serialize::<serde_json::value::ser::Serializer>
+miyu_kernel::apart::future::<core::result::Result<(serde_json::value::Value, core::option::Option<miyu_kernel::id::SessionId>), miyu_endpoint::refusal::Refusal>, miyu_endpoint::connection::streams::view::{closure#0}>
+miyu_endpoint::connection::streams::view::{closure#0}
+<miyu_kernel::session::fork::feed::BaseFeed>::new
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_kernel::event::session::SessionRecapped as serde_core::de::Deserialize>::deserialize::__Visitor>
+<miyu_session::store::Base>::range_with::<miyu_session::open::load::stream::start::{closure#1}>::{closure#0}
+<miyu_session::store::Base>::range_with::<miyu_session::memory::lane::attach::{closure#0}>::{closure#0}
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_recall::turns::Change>>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::connection::streams::view::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::connection::streams::view::{closure#0}::{closure#3}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::connection::streams::view::{closure#0}::{closure#3}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<alloc::collections::btree::map::BTreeMap<miyu_kernel::id::call::CallId, core::option::Option<alloc::string::String>> as core::ops::drop::Drop>::drop
+<miyu_view::projector::Projector>::status
+miyu_endpoint::subscriptions::view::forward::{closure#0}
+<alloc::collections::btree::map::Iter<miyu_kernel::id::call::CallId, miyu_view::projector::progress::Line> as core::iter::traits::iterator::Iterator>::next
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<miyu_kernel::id::SessionId>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<core::option::Option<u32>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeMap>::serialize_value::<core::option::Option<u32>>
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<miyu_kernel::id::SessionId>
+miyu_endpoint::subscriptions::view::flush
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, serde_json::value::Value> as core::cmp::PartialEq>::eq
+<core::iter::adapters::flatten::Flatten<alloc::collections::btree::map::IntoValues<miyu_kernel::id::Seq, alloc::vec::Vec<core::option::Option<u64>>>> as core::iter::traits::iterator::Iterator>::next
+<tokio::sync::oneshot::Inner<core::result::Result<serde_json::value::Value, serde_json::value::Value>> as core::ops::drop::Drop>::drop
+core::ptr::drop_glue::<miyu_kernel::session::report::Upward>
+<alloc::collections::btree::map::Iter<miyu_kernel::id::call::CallId, alloc::collections::btree::set_val::SetValZST> as core::iter::traits::double_ended::DoubleEndedIterator>::next_back
+core::ptr::drop_glue::<alloc::collections::btree::dedup_sorted_iter::DedupSortedIter<miyu_kernel::id::ContentHash, alloc::collections::btree::set_val::SetValZST, core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<miyu_kernel::id::ContentHash>, <alloc::collections::btree::set::BTreeSet<miyu_kernel::id::ContentHash>>::from_sorted_iter<alloc::vec::into_iter::IntoIter<miyu_kernel::id::ContentHash>>::{closure#0}>>>
+<miyu_kernel::session::Session>::reply_when_stored
+<core::option::Option<u64> as serde_core::de::Deserialize>::deserialize::<serde_json::value::Value>
+miyu_endpoint::models::context::command::{closure#0}
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#15}>
+miyu_endpoint::methods::call::{closure#93}::{closure#0}
+miyu_endpoint::files::place
+miyu_endpoint::files::boundary_of
+core::ptr::drop_glue::<[(alloc::string::String, miyu_store::packages::Layer, std::path::PathBuf)]>
+miyu_endpoint::files::item_json
+<globset::BasenameLiteralStrategy>::matches_into
+ignore::pathutil::file_name::imp
+alloc::str::join_generic_copy::<str, u8, alloc::borrow::Cow<str>>
+core::ptr::drop_glue::<alloc::vec::Vec<alloc::borrow::Cow<std::ffi::os_str::OsStr>>>
+miyu_fs::find::pass::<miyu_endpoint::files::cache::slot::{closure#0}>
+miyu_fs::find::push
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_fs::find::Found>>
+std::sys::backtrace::__rust_begin_short_backtrace::<<miyu_fs::find::Index>::start<miyu_endpoint::files::cache::slot::{closure#0}>::{closure#0}, ()>
+<hashbrown::raw::RawTableInner>::drop_inner_table::<(alloc::string::String, ()), alloc::alloc::Global>
+tokio::runtime::task::raw::poll::<core::pin::Pin<alloc::boxed::Box<miyu_endpoint::connection::call_later::{closure#0}>>, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_endpoint::files::find::{closure#0}
+<serde_json::value::ser::SerializeVec as serde_core::ser::SerializeSeq>::serialize_element::<&usize>
+core::ptr::drop_glue::<miyu_endpoint::connection::call_later::{closure#0}>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#73}, miyu_endpoint::methods::call::{closure#73}::{closure#0}>
+miyu_endpoint::methods::call::{closure#73}::{closure#0}
+<serde_json::value::Value as serde_core::de::Deserializer>::deserialize_struct::<<miyu_endpoint::config::set::SetParams as serde_core::de::Deserialize>::deserialize::__Visitor>
+<<miyu_endpoint::config::set::SetParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<alloc::raw_vec::RawVec<miyu_store::personas::Checked>>::grow_one
+<alloc::vec::into_iter::IntoIter<miyu_endpoint::config::set::ChangeParam> as core::ops::drop::Drop>::drop
+miyu_config::edit::from_json
+<alloc::raw_vec::RawVec<miyu_endpoint::toml_changes::Wanted>>::grow_one
+miyu_config::edit::apply
+<&str as toml_edit::index::Index>::index
+miyu_store::config_file::bytes
+miyu_endpoint::config::set::done
+miyu_endpoint::config::observe::differences
+core::slice::sort::unstable::ipnsort::<&alloc::string::String, <&alloc::string::String as core::cmp::PartialOrd>::lt>
+<alloc::collections::btree::map::IntoIter<&str, alloc::collections::btree::set_val::SetValZST> as core::iter::traits::iterator::Iterator>::next
+<tracing_core::field::DisplayValue<&&str> as tracing_core::field::Value>::record
+<tracing_core::field::DisplayValue<&&str> as core::fmt::Debug>::fmt
+miyu_endpoint::config::push::keys
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_config::parse::Entry>>::get::<alloc::string::String>
+miyu_endpoint::config::handout::publish
+core::ptr::drop_glue::<miyu_endpoint::toml_changes::Wanted>
+core::ptr::drop_glue::<miyu_endpoint::config::enabled::set::{closure#0}>
+tokio::runtime::task::raw::poll::<miyu_endpoint::subscriptions::extension_config::forward::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_core::manifests_of::{closure#0}
+<miyu_config::package::mcp::Reach as core::cmp::PartialEq>::eq
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_core::settings::follow::watching::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_core::models::follow_recall::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_session::route::shared::ModelData>::run::<(), <miyu_session::route::shared::ModelData>::recalling_only<(), <miyu_session::route::shared::ModelData>::remember_configured::{closure#0}>::{closure#0}>
+miyu_endpoint::check::known::known::{closure#0}
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, (alloc::string::String, alloc::string::String), alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Leaf>>::push_with_handle
+core::ptr::drop_glue::<alloc::collections::btree::dedup_sorted_iter::DedupSortedIter<(alloc::string::String, alloc::string::String), alloc::collections::btree::set_val::SetValZST, core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<(alloc::string::String, alloc::string::String)>, <alloc::collections::btree::set::BTreeSet<(alloc::string::String, alloc::string::String)>>::from_sorted_iter<alloc::vec::into_iter::IntoIter<(alloc::string::String, alloc::string::String)>>::{closure#0}>>>
+<alloc::collections::btree::map::BTreeMap<(alloc::string::String, alloc::string::String), alloc::collections::btree::set_val::SetValZST>>::insert
+core::ptr::drop_glue::<tokio::sync::broadcast::RecvGuard<alloc::sync::Arc<miyu_endpoint::config::push::Changed>>>
+<miyu_endpoint::subscriptions::config::Writer>::push::{closure#0}
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_core::models::follow_recall::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_config::dangling::unknown_names
+<miyu_config::item::kind::Kind as core::cmp::PartialEq>::eq
+<serde_json::number::Number as serde_core::ser::Serialize>::serialize::<&mut serde_json::ser::Serializer<&mut alloc::vec::Vec<u8>>>
+<alloc::sync::Arc<miyu_endpoint::config::push::Changed>>::drop_slow
+<core::option::Option<miyu_kernel::event::cost::Cost> as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<core::iter::adapters::map::Map<core::slice::iter::Iter<(std::path::PathBuf, std::time::Instant)>, miyu_store::watch::hub::dispatch::{closure#0}::{closure#0}> as core::iter::traits::iterator::Iterator>::fold::<std::time::Instant, &mut core::iter::traits::iterator::Iterator::min_by::fold<std::time::Instant, <std::time::Instant as core::cmp::Ord>::cmp>::{closure#0}>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_core::settings::follow::watching::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+core::ptr::drop_glue::<miyu_core::settings::follow::Applied>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#85}, miyu_endpoint::methods::call::{closure#85}::{closure#0}>
+miyu_endpoint::methods::call::{closure#85}::{closure#0}
+miyu_endpoint::quota::quota::{closure#0}::{closure#1}
+<&mut miyu_models::onboard::listing::search::{closure#0} as core::ops::function::FnMut<(&&miyu_models::onboard::listing::Listed,)>>::call_mut
+core::slice::sort::shared::smallsort::insert_tail::<&miyu_models::onboard::listing::Listed, <[&miyu_models::onboard::listing::Listed]>::sort_by<miyu_models::onboard::listing::search::{closure#1}>::{closure#0}>
+<[&miyu_models::onboard::listing::Listed]>::sort_by::<miyu_models::onboard::listing::search::{closure#1}>::{closure#0}
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#79}, miyu_endpoint::methods::call::{closure#79}::{closure#0}>
+miyu_endpoint::methods::call::{closure#79}::{closure#0}
+<miyu_session::route::shared::ModelData>::recalling_only::<core::result::Result<miyu_models::provider::Provider, miyu_models::provider::NoModel>, miyu_endpoint::providers::configured_by::{closure#1}>
+miyu_models::onboard::listing::key_vars
+core::slice::sort::stable::driftsort_main::<(alloc::string::String, &miyu_models::onboard::listing::Listed), <[(alloc::string::String, &miyu_models::onboard::listing::Listed)]>::sort_by<miyu_models::onboard::listing::key_vars::{closure#1}>::{closure#0}, alloc::vec::Vec<(alloc::string::String, &miyu_models::onboard::listing::Listed)>>
+core::ptr::drop_glue::<alloc::vec::Vec<(alloc::string::String, &miyu_config::secret::Reference)>>
+<tokio::util::linked_list::LinkedList<tokio::util::idle_notified_set::ListEntry<tokio::runtime::task::join::JoinHandle<core::option::Option<(usize, miyu_session::route::local::Running)>>>>>::push_front
+tokio::runtime::task::raw::drop_abort_handle::<miyu_session::route::local::find_local::{closure#0}::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<alloc::vec::into_iter::IntoIter<miyu_models::onboard::listing::Listed> as core::ops::drop::Drop>::drop
+miyu_session::route::local::find_local::{closure#0}::{closure#0}
+<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<std::io::error::Error>>::from
+<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<hyper_util::client::legacy::connect::http::ConnectError>>::from
+core::ptr::drop_glue::<<hyper_util::client::legacy::client::Client<reqwest::connect::Connector, reqwest::async_impl::body::Body>>::connect_to::{closure#0}::{closure#1}>
+<hyper_util::client::legacy::client::Error as core::error::Error>::source
+<std::io::error::Error as core::error::Error>::type_id
+miyu_http::get::chain
+<reqwest::error::Error as core::fmt::Display>::fmt
+<hyper_util::client::legacy::connect::http::ConnectError as core::fmt::Display>::fmt
+<std::io::error::Error as core::fmt::Display>::fmt
+<std::io::error::Error as core::error::Error>::source
+core::ptr::drop_glue::<reqwest::error::Error>
+core::ptr::drop_glue::<[(usize, miyu_session::route::local::Running)]>
+core::slice::sort::unstable::ipnsort::<alloc::string::String, <alloc::string::String as core::cmp::PartialOrd>::lt>
+core::slice::sort::unstable::quicksort::quicksort::<alloc::string::String, <alloc::string::String as core::cmp::PartialOrd>::lt>
+miyu_endpoint::methods::call::{closure#83}::{closure#0}
+<<miyu_endpoint::providers::trial::TestParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<miyu_session::route::shared::ModelData>::recalling_only::<core::result::Result<miyu_session::route::endpoint::Reached, miyu_session::route::endpoint::Unreached>, miyu_session::route::probe::run::{closure#0}::{closure#0}>
+miyu_session::route::endpoint::reach
+miyu_session::route::probe::probe::{closure#0}
+miyu_session::route::placeholder::fill
+<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::slice::iter::Iter<(alloc::string::String, alloc::string::String)>, miyu_session::route::placeholder::fill::{closure#0}>, miyu_session::route::placeholder::fill::{closure#1}> as core::iter::traits::iterator::Iterator>::next
+core::ptr::drop_glue::<miyu_kernel::accumulate::Delta>
+tokio::runtime::task::raw::poll::<miyu_endpoint::subscriptions::view::forward::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+core::ptr::drop_glue::<(<tokio::sync::mpsc::unbounded::UnboundedReceiver<alloc::string::String>>::recv::{closure#0}, <miyu_session::handle::subscription::Subscription>::next::{closure#0}, <tokio::sync::broadcast::Receiver<miyu_kernel::id::SessionId>>::recv::{closure#0}, miyu_endpoint::subscriptions::view::until::{closure#0})>
+<alloc::collections::vec_deque::VecDeque<std::path::PathBuf>>::grow
+<miyu_endpoint::Core>::watch_config::{closure#0}
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::venues::mains<miyu_endpoint::venues::sessions::sessions::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_endpoint::venues::sessions::Platforms>::holds
+miyu_kernel::apart::sync::<serde_json::value::Value, miyu_endpoint::connection::streams::subscribe::{closure#0}::{closure#6}>
+<<miyu_endpoint::knowledge::manage::Named as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<tokio::runtime::task::join::JoinHandle<core::result::Result<(miyu_store::knowledge::Base, alloc::vec::Vec<miyu_store::knowledge::Skipped>), miyu_store::knowledge::KnowledgeError>> as core::future::future::Future>::poll
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::knowledge::manage::named::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_store::knowledge::Knowledge>::vacant
+core::ptr::drop_glue::<core::result::Result<miyu_store::knowledge::place::Place, miyu_store::knowledge::KnowledgeError>>
+core::ptr::drop_glue::<miyu_store::knowledge::KnowledgeError>
+<miyu_store::knowledge::Knowledge>::counted
+<toml_edit::de::table::TableDeserializer as serde_core::de::Deserializer>::deserialize_any::<<miyu_recall::kb::About as serde_core::de::Deserialize>::deserialize::__Visitor>
+<core::iter::adapters::GenericShunt<rusqlite::row::MappedRows<<miyu_store::recall::RecallIndex>::keys::{closure#0}>, core::result::Result<core::convert::Infallible, rusqlite::error::Error>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::try_for_each::call<alloc::string::String, core::ops::control_flow::ControlFlow<alloc::string::String>, core::ops::control_flow::ControlFlow<alloc::string::String>::Break>::{closure#0}, core::ops::control_flow::ControlFlow<alloc::string::String>>
+miyu_endpoint::methods::call::{closure#86}::{closure#0}
+<<miyu_endpoint::attach::PutParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::attach::place
+<core::io::util::Take<std::fs::File> as std::io::Read>::read_buf
+<miyu_kernel::id::FileName>::parse
+miyu_tool::attachment::fit
+miyu_drivers::text_file::as_text
+miyu_endpoint::attach::reply
+core::ptr::drop_glue::<<miyu_net::LinkPreview>::keep::{closure#0}::{closure#0}>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::attach::put::{closure#0}::{closure#2}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<<miyu_endpoint::knowledge::manage::Document as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_store::knowledge::read::target
+tokio::runtime::blocking::pool::spawn_blocking::<miyu_endpoint::knowledge::manage::document::{closure#0}::{closure#1}, core::result::Result<alloc::vec::Vec<u8>, miyu_endpoint::refusal::Refusal>>
+miyu_endpoint::attach::read_blob
+<miyu_store::knowledge::Knowledge>::writable_dir
+miyu_store::knowledge::catch_up::about
+<miyu_store::knowledge::Knowledge>::catch_up
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::sync::Arc<miyu_store::knowledge::Shelf>, alloc::collections::btree::node::marker::LeafOrInternal>>::find_key_index::<alloc::string::String>
+miyu_store::knowledge::catch_up::scan
+core::slice::sort::shared::smallsort::insert_tail::<std::fs::DirEntry, <[std::fs::DirEntry]>::sort_by_key<std::ffi::os_str::OsString, <std::fs::DirEntry>::file_name>::{closure#0}>
+<alloc::vec::into_iter::IntoIter<std::fs::DirEntry> as core::ops::drop::Drop>::drop
+<miyu_endpoint::knowledge::progress::Progress as miyu_store::knowledge::watch::IndexWatch>::indexing
+miyu_recall::chunk::section
+codeDeferredSeek
+sqlite3UpsertAnalyzeTarget
+sqlite3UpsertDoUpdate
+upsertDelete
+<miyu_store::recall::RecallIndex>::keys
+<alloc::raw_vec::RawVec<core::option::Option<(usize, miyu_session::route::local::Running)>>>::grow_one
+std::thread::functions::spawn::<miyu_store::knowledge::extract::run::{closure#1}::{closure#0}, alloc::vec::Vec<u8>>
+<std::thread::lifecycle::spawn_unchecked<miyu_store::knowledge::extract::run::{closure#1}::{closure#0}, alloc::vec::Vec<u8>>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+<std::process::ChildStdout as std::io::Read>::read_to_end
+serde_json::de::from_trait::<serde_json::read::SliceRead, alloc::vec::Vec<alloc::string::String>>
+miyu_endpoint::knowledge::read::<miyu_endpoint::knowledge::Documents>
+core::slice::sort::shared::smallsort::insert_tail::<miyu_store::knowledge::listing::Document, <[miyu_store::knowledge::listing::Document]>::sort_by<<miyu_store::knowledge::Knowledge>::listing::{closure#4}>::{closure#0}>
+<tracing::span::Span>::in_scope::<<miyu_session::embed::remote::Remote>::record::{closure#0}::{closure#2}, ()>
+fts5ExprSetEof
+core::ptr::drop_glue::<[(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp))]>
+miyu_recall::fuse::fuse_above::<alloc::string::String>
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp)>>::insert
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp)>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<alloc::collections::btree::node::BalancingContext<alloc::string::String, miyu_models::observed::ProviderList>>::merge_tracking_child_edge::<alloc::alloc::Global>
+renumberCursors
+sqlite3_bind_blob64
+<rusqlite::row::Row>::get::<usize, alloc::vec::Vec<u8>>
+sqlite3VdbeFinishMoveto
+core::slice::sort::shared::smallsort::insert_tail::<(f32, alloc::string::String), <[(f32, alloc::string::String)]>::sort_by<<miyu_store::recall::RecallIndex>::nearest::{closure#1}>::{closure#0}>
+sqlite3VdbeMemFromBtree
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<(), <miyu_session::embed::remote::Remote>::record::{closure#0}::{closure#2}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+sqlite3SrcListAppendList
+readsTable
+<alloc::vec::Vec<u8> as rusqlite::types::to_sql::ToSql>::to_sql
+std::sys::backtrace::__rust_begin_short_backtrace::<miyu_store::knowledge::extract::run::{closure#1}::{closure#0}, alloc::vec::Vec<u8>>
+core::ptr::drop_glue::<std::process::ChildStderr>
+<miyu_store::knowledge::Knowledge>::read
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::knowledge::call::{closure#0}::{closure#5}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<<miyu_endpoint::knowledge::Read as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<miyu_store::knowledge::Knowledge>::documents
+miyu_store::knowledge::extract::pages
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::knowledge::manage::named::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_store::knowledge::manage::BaseFields>::values
+<core::pin::Pin<alloc::boxed::Box<miyu_session::actor::model::hooks::timed<<miyu_session::knowledge::Shelves>::recall::{closure#0}>::{closure#0}>> as core::future::future::Future>::poll
+<core::iter::adapters::flatten::FlatMap<core::iter::adapters::filter::Filter<core::iter::adapters::filter::Filter<core::slice::iter::Iter<miyu_kernel::facts::Present>, miyu_session::knowledge::recall::seen::{closure#0}>, miyu_session::knowledge::recall::seen::{closure#1}>, core::iter::adapters::cloned::Cloned<core::slice::iter::Iter<alloc::string::String>>, miyu_session::knowledge::recall::seen::{closure#2}> as core::iter::traits::iterator::Iterator>::next
+<tokio::time::timeout::Timeout<<miyu_session::knowledge::Shelves>::recall::{closure#0}> as core::future::future::Future>::poll
+<tracing::span::Span>::in_scope::<<miyu_session::knowledge::Shelves>::recall::{closure#0}::{closure#0}, core::result::Result<alloc::vec::Vec<miyu_store::knowledge::Hit>, alloc::string::String>>
+<core::str::pattern::TwoWaySearcher>::next_back::<core::str::pattern::MatchOnly>
+<alloc::vec::Vec<alloc::string::String>>::truncate
+core::ptr::drop_glue::<tokio::time::timeout::Timeout<<miyu_session::knowledge::Shelves>::recall::{closure#0}>>
+core::ptr::drop_glue::<<miyu_session::timing::turn::Lap>::timed<core::option::Option<miyu_kernel::session::input::Injection>, miyu_session::actor::model::hooks::timed<<miyu_session::knowledge::Shelves>::recall::{closure#0}>::{closure#0}>::{closure#0}>
+<miyu_knowledge::search::Search as miyu_tool::Tool>::run
+core::ptr::drop_glue::<miyu_tool::run::Progress>
+core::ptr::drop_glue::<core::option::Option<miyu_kernel::origin::By>>
+<miyu_session::knowledge::Port as miyu_tool::knowledge::KnowledgePort>::search
+<miyu_session::knowledge::Port as miyu_tool::knowledge::KnowledgePort>::search::{closure#0}
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<(alloc::vec::Vec<miyu_tool::knowledge::KbHit>, alloc::vec::Vec<alloc::string::String>), miyu_tool::knowledge::KbRefused>, <miyu_session::knowledge::Port as miyu_tool::knowledge::KnowledgePort>::search::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<tracing::span::Span>::in_scope::<<miyu_session::knowledge::Port as miyu_tool::knowledge::KnowledgePort>::search::{closure#0}::{closure#0}, core::result::Result<(alloc::vec::Vec<miyu_tool::knowledge::KbHit>, alloc::vec::Vec<alloc::string::String>), miyu_tool::knowledge::KbRefused>>
+miyu_recall::vector::from_bytes
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp), alloc::collections::btree::node::marker::Leaf>>::push_with_handle
+<alloc::collections::btree::node::BalancingContext<alloc::string::String, miyu_models::observed::ProviderList>>::bulk_steal_left
+miyu_memory::texts::line
+miyu_knowledge::texts::said
+<miyu_tool::run::Done>::data
+<miyu_knowledge::read::Read as miyu_tool::Tool>::run
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<miyu_tool::knowledge::KbPage, miyu_tool::knowledge::KbRefused>, <miyu_session::knowledge::Port as miyu_tool::knowledge::KnowledgePort>::read::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<hashbrown::raw::RawTableInner>::drop_inner_table::<(alloc::string::String, (tokio::sync::mpsc::unbounded::UnboundedSender<serde_json::value::Value>, tokio::sync::mpsc::unbounded::UnboundedSender<miyu_session::route::driver_port::DriverAsk>)), alloc::alloc::Global>
+miyu_endpoint::knowledge::read::<miyu_endpoint::knowledge::Search>
+<<miyu_endpoint::knowledge::Search as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<miyu_store::knowledge::Knowledge>::search
+<miyu_store::knowledge::Knowledge>::caught
+<miyu_store::knowledge::extract::Kind>::of
+<alloc::collections::btree::map::IntoIter<alloc::string::String, (f32, usize)> as core::ops::drop::Drop>::drop
+core::slice::sort::stable::driftsort_main::<(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp)), <[(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp))]>::sort_by<<alloc::collections::btree::map::BTreeMap<alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp)> as core::iter::traits::collect::FromIterator<(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp))>>::from_iter<core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<miyu_store::recall::vectors::Near>, miyu_store::knowledge::fused::{closure#2}>>::{closure#0}>::{closure#0}, alloc::vec::Vec<(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp))>>
+<tokio::process::ChildStdout as tokio::io::async_read::AsyncRead>::poll_read
+<alloc::collections::btree::map::BTreeMap<u64, tokio::sync::oneshot::Sender<core::result::Result<serde_json::value::Value, serde_json::value::Value>>>>::remove_entry::<u64>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, tokio::sync::oneshot::Sender<core::result::Result<serde_json::value::Value, serde_json::value::Value>>, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<u64, tokio::sync::oneshot::Sender<core::result::Result<serde_json::value::Value, serde_json::value::Value>>>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<miyu_endpoint::extensions::state::Cell>::set
+tokio::runtime::task::raw::poll::<miyu_endpoint::mcp::supervise::run::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<core::future::poll_fn::PollFn<miyu_endpoint::mcp::supervise::once::{closure#0}::{closure#1}> as core::future::future::Future>::poll
+<tokio::sync::oneshot::Receiver<core::result::Result<serde_json::value::Value, serde_json::value::Value>> as core::future::future::Future>::poll
+core::ptr::drop_glue::<tokio::time::timeout::Timeout<<miyu_mcp::link::Link>::ask::{closure#0}::{closure#0}>>
+<miyu_mcp::link::Asking as core::ops::drop::Drop>::drop
+miyu_mcp::client::era::offers_prompts
+miyu_endpoint::venues::sessions::platforms_of_package
+<&mut miyu_endpoint::mcp::resources::tools::{closure#0} as core::ops::function::FnMut<((&str, miyu_store::resources::mcp_tools::ToolText, miyu_endpoint::mcp::tool::What),)>>::call_mut
+<tracing_core::field::DebugValue<&core::option::Option<u32>> as tracing_core::field::Value>::record
+tokio::runtime::task::raw::dealloc::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::personas::list::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_store::knowledge::Knowledge>::place
+core::ptr::drop_glue::<miyu_store::knowledge::place::Place>
+miyu_endpoint::memory::stamp
+miyu_endpoint::memory::read::<miyu_endpoint::memory::params::Remember>
+miyu_endpoint::memory::checks::checked
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::memory::remember_in::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::memory::remember_in::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_session::memory::keeper::Keeper>::save
+<miyu_session::memory::keeper::Keeper>::follow::{closure#0}
+<&serde_json::value::Value as core::fmt::Display>::fmt
+core::ptr::drop_glue::<miyu_endpoint::memory::blocking<miyu_recall::memory::MemoryId, miyu_endpoint::memory::remember_in::{closure#0}::{closure#0}>::{closure#0}>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::memory::fill::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, miyu_kernel::id::CommandId, (miyu_recall::memory::MemoryId, usize), alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+miyu_session::memory::her::is_her
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp)>>::bulk_build_from_sorted_iter::<alloc::vec::Vec<(alloc::string::String, (alloc::string::String, miyu_kernel::time::Timestamp))>>
+tokio::runtime::blocking::pool::spawn_blocking::<miyu_endpoint::memory::forget::{closure#0}::{closure#0}, core::result::Result<(), miyu_tool::memory::Refused>>
+<miyu_session::memory::keeper::Keeper>::hush_for
+tokio::task::spawn::spawn::<core::pin::Pin<alloc::boxed::Box<<miyu_session::memory::merge::MergeJob>::now::{closure#0}::{closure#0}>>>
+tokio::runtime::task::raw::poll::<core::pin::Pin<alloc::boxed::Box<<miyu_session::memory::merge::MergeJob>::now::{closure#0}::{closure#0}>>, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<core::pin::Pin<alloc::boxed::Box<<miyu_session::memory::merge::MergeJob>::now::{closure#0}::{closure#0}>> as core::future::future::Future>::poll
+core::ptr::drop_glue::<miyu_endpoint::memory::dream::call::{closure#0}>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::sessions::creating::recall::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_session::memory::port::Port as miyu_tool::memory::MemoryPort>::save
+<miyu_session::memory::port::Port as miyu_tool::memory::MemoryPort>::save::{closure#0}
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<miyu_recall::memory::MemoryId, miyu_tool::memory::Refused>, <miyu_session::memory::port::Port as miyu_tool::memory::MemoryPort>::save::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_basesystem::history::History as miyu_tool::Tool>::run
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_basesystem::blocking::blocking<miyu_tool::run::Done, <miyu_basesystem::history::History as miyu_tool::Tool>::run::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_basesystem::blocking::blocking<miyu_tool::run::Done, <miyu_basesystem::history::History as miyu_tool::Tool>::run::{closure#0}::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<tracing::span::Span>::in_scope::<miyu_basesystem::blocking::blocking<miyu_tool::run::Done, <miyu_basesystem::history::History as miyu_tool::Tool>::run::{closure#0}::{closure#0}>::{closure#0}::{closure#0}::{closure#0}, miyu_tool::run::Done>
+<miyu_store::sweep::Sweep<miyu_basesystem::history::collect::Collect>>::new
+miyu_basesystem::history::collect::collect::<miyu_basesystem::history::look_tuned::{closure#0}>::{closure#0}
+<miyu_basesystem::session_usage::SessionUsage as miyu_tool::Tool>::run
+<miyu_session::usage::Port as miyu_tool::usage::UsagePort>::spent
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_session::blocking::blocking<core::result::Result<miyu_tool::usage::Spent, alloc::string::String>, <miyu_session::usage::Port as miyu_tool::usage::UsagePort>::spent::{closure#0}>::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_basesystem::session_usage::SessionUsage as miyu_tool::Tool>::run::{closure#0}
+<tracing::span::Span>::in_scope::<<miyu_session::usage::Port as miyu_tool::usage::UsagePort>::spent::{closure#0}, core::result::Result<miyu_tool::usage::Spent, alloc::string::String>>
+<alloc::vec::Vec<core::option::Option<alloc::string::String>> as core::ops::drop::Drop>::drop
+<f64 as core::fmt::Display>::fmt
+<miyu_store::knowledge::Knowledge>::switched
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_store::knowledge::Hit>>
+<miyu_endpoint::memory::slash::Dream as miyu_endpoint::commands::registry::Slash>::later
+<<miyu_endpoint::commands::RunParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::memory::dream::in_session::{closure#0}
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<<miyu_session::actor::Actor>::dream::{closure#3}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+core::ptr::drop_glue::<miyu_kernel::event::tool::Said>
+<miyu_session::memory::extract::extractor::Extractor>::start
+<miyu_session::memory::keeper::Keeper>::followed
+tokio::runtime::task::raw::poll::<miyu_endpoint::subscriptions::memory::forward::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<tokio::sync::mpsc::list::Rx<miyu_kernel::event::Event>>::pop
+<miyu_session::memory::merge::MergeJob>::now::{closure#0}
+core::ptr::drop_glue::<core::iter::adapters::take::Take<core::iter::adapters::chain::Chain<alloc::vec::into_iter::IntoIter<miyu_recall::memory::book::Entry>, alloc::vec::into_iter::IntoIter<miyu_recall::memory::book::Entry>>>>
+serde_json::de::from_str::<miyu_recall::memory::Swept>
+core::ptr::drop_glue::<miyu_session::blocking::blocking<core::result::Result<alloc::vec::Vec<(i64, alloc::string::String, alloc::string::String)>, miyu_store::sqlite::DbError>, miyu_session::memory::vectors::fill_all::{closure#0}::{closure#0}>::{closure#0}>
+core::ptr::drop_glue::<tokio::runtime::task::core::Stage<core::pin::Pin<alloc::boxed::Box<<miyu_session::memory::merge::MergeJob>::now::{closure#0}::{closure#0}>>>>
+core::ptr::drop_glue::<core::option::Option<core::result::Result<miyu_session::memory::merge::Dreamed, miyu_session::memory::merge::NotDreamed>>>
+miyu_endpoint::commands::run::{closure#0}
+<miyu_endpoint::memory::slash::Dream as miyu_endpoint::commands::registry::Slash>::run::{closure#0}
+core::ptr::drop_glue::<tokio::sync::oneshot::Receiver<core::result::Result<miyu_session::memory::merge::Dreamed, miyu_session::memory::merge::NotDreamed>>>
+miyu_view::summary::clock
+miyu_endpoint::commands::command::{closure#0}
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_endpoint::commands::Said>>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#33}, miyu_endpoint::methods::call::{closure#33}::{closure#0}>
+<serde::private::de::FlatStructAccess<serde_json::error::Error> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<core::option::Option<alloc::string::String>>>
+miyu_endpoint::memory::find::{closure#0}
+minmaxStep
+<serde_json::value::ser::SerializeMap as serde_core::ser::SerializeStruct>::serialize_field::<miyu_kernel::id::TurnId>
+<miyu_mcp::link::Link>::ask::{closure#0}
+<miyu_store::knowledge::Knowledge>::title
+miyu_session::knowledge::listing::{closure#1}
+<miyu_endpoint::mcp::tool::McpTool as miyu_tool::Tool>::run::{closure#0}
+core::ptr::drop_glue::<<tokio::sync::mpsc::bounded::Sender<alloc::vec::Vec<u8>>>::reserve_inner::{closure#0}>
+<tokio::sync::mpsc::chan::Rx<serde_json::value::Value, tokio::sync::mpsc::bounded::Semaphore>>::recv
+<tokio::sync::mpsc::list::Rx<serde_json::value::Value>>::try_pop
+core::ptr::drop_glue::<miyu_mcp::link::Following>
+<miyu_mcp::client::Client>::ask::{closure#0}
+tokio::sync::oneshot::channel::<core::result::Result<serde_json::value::Value, serde_json::value::Value>>
+miyu_mcp::wire::line
+miyu_mcp::link::write::<alloc::boxed::Box<dyn tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send>>::{closure#0}
+core::ptr::drop_glue::<[miyu_mcp::content::Content]>
+<tokio::io::split::Inner<tokio::io::util::mem::DuplexStream>>::with_lock::<core::task::poll::Poll<core::result::Result<usize, std::io::error::Error>>, <tokio::io::split::WriteHalf<tokio::io::util::mem::DuplexStream> as tokio::io::async_write::AsyncWrite>::poll_write::{closure#0}>
+<http::header::map::HeaderMap>::get::<&str>
+miyu_endpoint::commands::templates::opened::{closure#0}
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#54}, miyu_endpoint::methods::call::{closure#54}::{closure#0}>
+miyu_endpoint::methods::call::{closure#54}::{closure#0}
+miyu_endpoint::commands::prompts::run::{closure#0}
+<tokio::runtime::task::join::JoinHandle<core::result::Result<alloc::vec::Vec<miyu_kernel::block::Block>, miyu_endpoint::refusal::Refusal>> as core::future::future::Future>::poll
+<&miyu_kernel::event::message::TypedCommand as core::fmt::Debug>::fmt
+miyu_kernel::apart::sync::<alloc::vec::Vec<miyu_kernel::session::action::Action>, <miyu_kernel::session::Session>::receive::{closure#1}>
+miyu_endpoint::packages::methods::call::{closure#26}::{closure#0}
+<<miyu_endpoint::mcp::login::flow::LoginParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<alloc::collections::btree::map::BTreeMap<(alloc::string::String, alloc::string::String), miyu_endpoint::mcp::Slot>>::get::<(alloc::string::String, alloc::string::String)>
+<url::Url>::set_fragment
+core::ptr::drop_glue::<miyu_mcp::oauth::flow::Trouble>
+<reqwest::async_impl::request::RequestBuilder>::timeout
+<http_body_util::combinators::map_err::MapErr<reqwest::async_impl::body::TotalTimeoutBody<http_body_util::combinators::box_body::BoxBody<bytes::bytes::Bytes, alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync>>>, reqwest::async_impl::body::box_err<reqwest::error::Error>> as http_body::Body>::poll_frame
+miyu_mcp::oauth::flow::authorization_of::{closure#0}
+base64::engine::Engine::encode::inner::<base64::engine::general_purpose::GeneralPurpose>
+<base64::engine::general_purpose::GeneralPurpose as base64::engine::Engine>::internal_encode
+form_urlencoded::string::<url::UrlQuery>
+form_urlencoded::append_pair
+core::ptr::drop_glue::<alloc::vec::Vec<(alloc::string::String, miyu_config::package::mcp::EnvValue)>>
+<miyu_endpoint::mcp::login::flow::Waiting>::wait::{closure#0}
+percent_encoding::after_percent_sign
+miyu_config::secret::parse_file
+<alloc::collections::btree::map::BTreeMap<_, _, _> as core::clone::Clone>::clone::clone_subtree::<alloc::string::String, miyu_config::secret::Secret, alloc::alloc::Global>
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, u64, alloc::collections::btree::node::marker::Leaf>>::push_with_handle
+core::ptr::drop_glue::<alloc::collections::btree::dedup_sorted_iter::DedupSortedIter<alloc::string::String, u64, alloc::vec::into_iter::IntoIter<(alloc::string::String, u64)>>>
+tokio::runtime::task::raw::try_read_output::<miyu_endpoint::mcp::supervise::run::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>
+<hashbrown::raw::RawTable<(alloc::string::String, tokio::runtime::task::abort::AbortHandle)>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, tokio::runtime::task::abort::AbortHandle, std::hash::random::RandomState>::{closure#0}>
+<&mut <miyu_tool::catalog::Catalog>::take_out_where<<miyu_tool::catalog::Catalog>::replacing_service::{closure#0}>::{closure#0} as core::ops::function::FnMut<(&(&alloc::string::String, &alloc::string::String),)>>::call_mut
+<miyu_tool::catalog::Catalog>::replacing_service
+<miyu_endpoint::mcp::Servers>::service
+<miyu_store::root::DataRoot>::mcp_stderr
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_endpoint::mcp::skipped::Skipped>>
+core::slice::sort::shared::smallsort::sort4_stable::<miyu_policy::tools::ToolEntry, <[miyu_policy::tools::ToolEntry]>::sort_by<<miyu_policy::snapshot::Snapshot>::with_tools::{closure#0}>::{closure#0}>
+<tokio::io::split::WriteHalf<tokio::io::util::mem::DuplexStream> as tokio::io::async_write::AsyncWrite>::poll_write
+tokio::runtime::task::raw::poll::<miyu_mcp::http::relay::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<miyu_endpoint::mcp::login::credentials::Login as miyu_mcp::http::Credentials>::token
+miyu_endpoint::mcp::login::now
+miyu_endpoint::packages::methods::call::{closure#28}::{closure#0}
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, miyu_endpoint::mcp::login::Ongoing, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove_leaf_kv::<<alloc::collections::btree::map::entry::OccupiedEntry<alloc::string::String, miyu_endpoint::mcp::login::Ongoing>>::remove_kv::{closure#0}, alloc::alloc::Global>
+<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::sync::Arc<dyn miyu_tool::Tool>, alloc::collections::btree::node::marker::LeafOrInternal>>::choose_parent_kv
+<tokio::runtime::task::core::Core<<miyu_endpoint::mcp::login::flow::Waiting>::wait::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>>::set_stage
+core::ptr::drop_glue::<tokio::runtime::task::core::Stage<<miyu_endpoint::mcp::login::flow::Waiting>::wait::{closure#0}>>
+toml_parser::decoder::string::escape_seq_char
+<miyu_endpoint::mcp::supervise::Running>::finish::{closure#0}
+core::ptr::drop_glue::<miyu_config::package::mcp::Reach>
+core::ptr::drop_glue::<std::sync::poison::mutex::Mutex<tokio::io::util::mem::SimplexStream>>
+<<miyu_endpoint::mcp::editing::RemoveParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+core::ptr::drop_glue::<<miyu_endpoint::Core>::follow_secrets::{closure#0}>
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_config::value::Value>>
+core::ptr::drop_glue::<miyu_endpoint::extensions::supervise::spawn_settled::{closure#0}>
+miyu_endpoint::mcp::written::has
+<alloc::raw_vec::RawVec<miyu_endpoint::attach::Wanted>>::grow_one
+miyu_endpoint::methods::answer::<miyu_endpoint::packages::methods::call::{closure#30}, miyu_endpoint::packages::methods::call::{closure#30}::{closure#0}>
+miyu_endpoint::packages::methods::call::{closure#30}::{closure#0}
+<alloc::string::String>::replace_range::<core::ops::range::Range<usize>>
+core::slice::sort::shared::smallsort::bidirectional_merge::<&alloc::string::String, <&alloc::string::String as core::cmp::PartialOrd>::lt>
+<alloc::sync::Arc<miyu_endpoint::config::Config>>::drop_slow
+<miyu_config::package::mcp::McpServer as core::clone::Clone>::clone
+<miyu_config::item::Item as core::cmp::PartialEq>::eq
+<miyu_endpoint::mcp::Servers>::stop_one::{closure#0}
+<miyu_config::item::Ui as core::cmp::PartialEq>::eq
+core::ptr::drop_glue::<tokio::sync::watch::Sender<bool>>
+core::ptr::drop_glue::<(<miyu_mcp::client::Client>::closed::{closure#0}, <tokio::sync::watch::Receiver<bool>>::changed::{closure#0}, <tokio::sync::watch::Receiver<u64>>::changed::{closure#0}, tokio::sync::notify::Notified)>
+core::ptr::drop_glue::<tokio::sync::mpsc::bounded::Sender<alloc::vec::Vec<u8>>>
+<tokio::io::stdout::Stdout as tokio::io::async_write::AsyncWrite>::poll_shutdown
+<miyu_mcp::link::Shared>::close
+core::ptr::drop_glue::<tokio::process::ChildStdout>
+miyu_endpoint::mcp::switch::withdraw_one
+miyu_endpoint::secrets::discard
+<miyu_endpoint::mcp::Servers>::launch_one
+<miyu_endpoint::secrets::file::SecretsFile>::of
+<std::thread::lifecycle::spawn_unchecked<<miyu_store::watch::hub::Lane>::hand::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+miyu_endpoint::provide::cache::restore
+miyu_endpoint::packages::dir_of
+<miyu_endpoint::Core>::start_services
+<&mut serde_json::de::Deserializer<serde_json::read::SliceRead> as serde_core::de::Deserializer>::deserialize_seq::<<alloc::vec::Vec<_> as serde_core::de::Deserialize>::deserialize::VecVisitor<miyu_endpoint::provide::ToolParams>>
+tokio::io::util::mem::duplex
+<miyu_endpoint::mcp::Shared>::set
+<miyu_mcp::client::Client>::meta
+tokio::runtime::task::raw::poll::<miyu_mcp::http::relay::{closure#0}::{closure#4}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_mcp::http::relay::{closure#0}::{closure#4}
+miyu_endpoint::mcp::supervise::list::{closure#0}
+<miyu_mcp::http::Remote>::handled
+<alloc::raw_vec::RawVec<miyu_store::skills::Skipped>>::grow_one
+<miyu_store::root::DataRoot>::mcp_catalog
+<hashbrown::raw::RawTable<(miyu_endpoint::extensions::instance::Instance, miyu_endpoint::backstage::calls::Registered)>>::reserve_rehash::<hashbrown::map::make_hasher<miyu_endpoint::extensions::instance::Instance, miyu_endpoint::backstage::calls::Registered, std::hash::random::RandomState>::{closure#0}>
+miyu_endpoint::methods::answer::<miyu_endpoint::methods::call::{closure#39}, miyu_endpoint::methods::call::{closure#39}::{closure#0}>
+<<miyu_endpoint::schedules::methods::AddParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<miyu_endpoint::schedules::clock::SystemClock as miyu_endpoint::schedules::clock::Clock>::now
+<miyu_endpoint::schedules::Schedules>::add
+miyu_endpoint::schedules::checked
+<std::sync::once_lock::OnceLock<jiff::tz::db::TimeZoneDatabase>>::initialize::<<std::sync::once_lock::OnceLock<jiff::tz::db::TimeZoneDatabase>>::get_or_init<jiff::tz::db::db::{closure#0}>::{closure#0}, !>
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<jiff::tz::db::TimeZoneDatabase>>::initialize<<std::sync::once_lock::OnceLock<jiff::tz::db::TimeZoneDatabase>>::get_or_init<jiff::tz::db::db::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+jiff::tz::db::zoneinfo::inner::walk
+core::ptr::drop_glue::<core::option::Option<jiff::error::Error>>
+jiff::tz::system::get
+unixGetLastError
+rusqlite::error::error_from_handle
+sqlite3_close
+connectionIsBusy
+sqlite3CollapseDatabaseArray
+sqlite3HashClear
+dupedExprSize
+sqlite3RefillIndex
+miyu_endpoint::schedules::methods::entry
+<miyu_store::schedules::Schedules>::list
+valueFromExpr
+exprCodeTargetAndOr
+sqlite3VdbeMemCast
+miyu_store::schedules::row::read
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_str::<<miyu_store::schedules::Creator as serde_core::de::Deserialize>::deserialize::__FieldVisitor>
+serde_json::de::from_str::<miyu_store::schedules::Creator>
+<alloc::vec::into_iter::IntoIter<(serde_core::private::content::Content, serde_core::private::content::Content)> as core::ops::drop::Drop>::drop
+<miyu_endpoint::schedules::busy::Waiting>::held
+core::ptr::drop_glue::<miyu_store::schedules::Schedule>
+core::ptr::drop_glue::<miyu_store::schedules::Target>
+<miyu_endpoint::schedules::clock::SystemClock as miyu_endpoint::schedules::clock::Clock>::sleep_until
+core::ptr::drop_glue::<core::result::Result<miyu_endpoint::sessions::Found, miyu_endpoint::refusal::Refusal>>
+<<miyu_endpoint::venues::BindingParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+<miyu_store::schedules::Schedules>::remove
+<std::sync::poison::mutex::Mutex<rusqlite::Connection> as miyu_store::sqlite::idle::Wal>::shrink
+<miyu_endpoint::schedules::clock::SystemClock as miyu_endpoint::schedules::clock::Clock>::sleep_until::{closure#0}
+<miyu_store::schedules::Schedules>::due
+<miyu_endpoint::schedules::hold::Holds>::later
+miyu_endpoint::schedules::run::fire::{closure#0}
+miyu_endpoint::schedules::zone
+miyu_endpoint::schedules::next::after
+<miyu_endpoint::schedules::Schedules>::notify
+<alloc::vec::into_iter::IntoIter<miyu_store::schedules::Schedule> as core::ops::drop::Drop>::drop
+tokio::runtime::context::defer
+<miyu_store::schedules::Schedules>::get
+tokio::runtime::task::raw::poll::<<miyu_endpoint::schedules::Schedules>::watch_ran::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<miyu_endpoint::schedules::Schedules>::watch_ran::{closure#0}
+tokio::runtime::task::raw::try_read_output::<<miyu_endpoint::hooks::Hooks as miyu_tool::hooks::HooksPort>::turn_start::{closure#0}::{closure#0}::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::current_thread::Handle>>
+<tokio::time::timeout::Timeout<<miyu_endpoint::reverse::Peer>::call::{closure#0}> as core::future::future::Future>::poll
+<alloc::vec::Vec<miyu_store::recall::Edit> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<miyu_store::recall::Edit, core::iter::adapters::map::Map<core::slice::iter::Iter<miyu_recall::memory::MemoryId>, miyu_store::memory::removals::{closure#0}>>>::from_iter
+<miyu_endpoint::schedules::notices::Notices>::send
+<tokio::sync::broadcast::Sender<alloc::sync::Arc<miyu_endpoint::prefs::Changed>> as core::ops::drop::Drop>::drop
+<miyu_schedule::cron::Cron as miyu_tool::Tool>::run
+core::ptr::drop_glue::<core::option::Option<serde_json::value::Value>>
+<miyu_schedule::cron::Cron as miyu_tool::Tool>::run::{closure#0}
+<[&[char]] as alloc::slice::Concat<char>>::concat
+<croner::component::CronComponent>::handle_number
+<jiff::tz::db::TimeZoneDatabase>::get
+<jiff::zoned::Zoned as croner::time::CronDateTime>::resolve_civil
+<miyu_endpoint::commands::looping::LoopCommand as miyu_endpoint::commands::registry::Slash>::run
+<miyu_endpoint::commands::looping::LoopCommand as miyu_endpoint::commands::registry::Slash>::run::{closure#0}
+<alloc::collections::btree::map::BTreeMap<alloc::string::String, miyu_kernel::id::SessionId>>::insert
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::string::String, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::remove
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::commands::looping::autonomous::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<alloc::vec::Vec<serde_json::value::Value> as alloc::vec::spec_from_iter_nested::SpecFromIterNested<serde_json::value::Value, core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::iter::adapters::filter::Filter<core::slice::iter::Iter<miyu_store::schedules::Schedule>, miyu_endpoint::schedules::methods::call::{closure#0}::{closure#1}>, miyu_endpoint::schedules::methods::call::{closure#0}::{closure#2}>, miyu_endpoint::schedules::methods::entry>>>::from_iter
+miyu_endpoint::mcp::spec::register
+tokio::runtime::task::raw::poll::<miyu_mcp::client::listen::listen::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+miyu_kernel::apart::sync::<core::option::Option<alloc::sync::Arc<miyu_store::schedules::Schedules>>, <miyu_endpoint::schedules::Schedules>::table::{closure#0}>
+core::ptr::drop_glue::<rusqlite::Connection>
+sqlite3_update_hook
+sqlite3_set_authorizer
+sqliteErrorFromPosixError
+walIndexClose
+sqlite3VtabEponymousTableClear
+fts5ModuleDestroy
+core::ptr::drop_glue::<miyu_store::schedules::open::Opened>
+miyu_endpoint::provide::declared::paths
+<miyu_net::web_fetch::WebFetch as miyu_tool::Tool>::run
+<core::option::Option<&dyn miyu_tool::settings::SettingsPort>>::map::<miyu_net::search::using::Using, miyu_net::settings::using>
+<miyu_session::config::Turn as miyu_tool::settings::SettingsPort>::values
+<miyu_net::web_fetch::WebFetch as miyu_tool::Tool>::run::{closure#0}
+<std::sync::once_lock::OnceLock<core::result::Result<miyu_net::search::Ready, ()>>>::initialize::<<std::sync::once_lock::OnceLock<core::result::Result<miyu_net::search::Ready, ()>>>::get_or_init<<miyu_net::search::Search>::ready::{closure#0}>::{closure#0}, !>
+<std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<core::result::Result<miyu_net::search::Ready, ()>>>::initialize<<std::sync::once_lock::OnceLock<core::result::Result<miyu_net::search::Ready, ()>>>::get_or_init<<miyu_net::search::Search>::ready::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0}
+<serde_json::de::MapAccess<serde_json::read::StrRead> as serde_core::de::MapAccess>::next_value_seed::<core::marker::PhantomData<usize>>
+<serde_json::de::Deserializer<serde_json::read::StrRead>>::deserialize_number::<<usize as serde_core::de::Deserialize>::deserialize::PrimitiveVisitor>
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_seq::<<alloc::vec::Vec<_> as serde_core::de::Deserialize>::deserialize::VecVisitor<u64>>
+<u32 as core::fmt::LowerHex>::fmt
+miyu_net::rules::load
+<&mut serde_json::de::Deserializer<serde_json::read::StrRead> as serde_core::de::Deserializer>::deserialize_struct::<<miyu_net::rules::sites::YoutubeFile as serde_core::de::Deserialize>::deserialize::__Visitor>
+<alloc::raw_vec::RawVec<u16>>::grow_one
+<str>::trim_matches::<char>
+<str>::trim_start_matches::<char>
+tokio::time::timeout::timeout::<<miyu_http::guard::Guard>::lookup::{closure#0}>
+<tokio::time::timeout::Timeout<<miyu_http::guard::Guard>::lookup::{closure#0}> as core::future::future::Future>::poll
+<tokio::runtime::task::core::Cell<tokio::runtime::blocking::task::BlockingTask<<(&str, u16) as tokio::net::addr::sealed::ToSocketAddrsPriv>::to_socket_addrs::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>>::new
+core::ptr::drop_glue::<tokio::time::timeout::Timeout<<miyu_http::guard::Guard>::lookup::{closure#0}>>
+core::ptr::drop_glue::<hyper_util::client::proxy::matcher::Auth>
+reqwest::proxy::cache_maybe_has_http_auth
+<hyper_util::client::proxy::matcher::Builder>::no::<&str>
+<core::fmt::builders::DebugTuple>::field
+reqwest::connect::with_timeout::<reqwest::connect::sealed::Conn, <reqwest::connect::ConnectorService>::connect_via_proxy::{closure#0}>::{closure#0}
+core::ptr::drop_glue::<<miyu_net::fetch::Fetcher>::hop::{closure#0}>
+encoding_rs::utf_8::utf8_valid_up_to
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_net::document::fetch::{closure#0}::{closure#3}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<htmd::element_handler::ElementHandlers>::new
+<hashbrown::map::HashMap<alloc::string::String, alloc::vec::Vec<usize>, std::hash::random::RandomState>>::rustc_entry
+<hashbrown::raw::RawTable<(alloc::string::String, alloc::vec::Vec<usize>)>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, alloc::vec::Vec<usize>, std::hash::random::RandomState>::{closure#0}>
+<hashbrown::raw::RawTable<(alloc::string::String, alloc::vec::Vec<alloc::string::String>)>>::insert_no_grow
+<htmd::HtmlToMarkdown>::html_to_tree
+<alloc::rc::Rc<markup5ever_rcdom::Node>>::new
+<html5ever::driver::Parser<markup5ever_rcdom::RcDom>>::loop_until_done
+<tendril::tendril::Tendril<tendril::fmt::UTF8>>::pop_front
+html5ever::tokenizer::option_push
+<html5ever::tree_builder::TreeBuilder<alloc::rc::Rc<markup5ever_rcdom::Node>, markup5ever_rcdom::RcDom>>::create_root
+<html5ever::tree_builder::TreeBuilder<alloc::rc::Rc<markup5ever_rcdom::Node>, markup5ever_rcdom::RcDom>>::step
+<html5ever::tree_builder::TreeBuilder<alloc::rc::Rc<markup5ever_rcdom::Node>, markup5ever_rcdom::RcDom>>::current_node
+core::ptr::drop_glue::<core::cell::RefCell<alloc::vec::Vec<html5ever::tree_builder::types::FormatEntry<alloc::rc::Rc<markup5ever_rcdom::Node>>>>>
+<htmd::element_handler::block_handler as htmd::element_handler::ElementHandler>::handle
+<string_cache::atom::Atom<web_atoms::LocalNameStaticSet> as core::cmp::PartialEq<str>>::eq
+<str>::replace::<char>
+<url::Url>::query_pairs_mut
+miyu_net::search::rest::send::{closure#0}
+<miyu_tool::detail::Detail>::to_value
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_tool::detail::Link>>
+tokio::runtime::task::raw::drop_abort_handle::<miyu_endpoint::connection::answer_later::{closure#0}, alloc::sync::Arc<tokio::runtime::scheduler::multi_thread::handle::Handle>>
+<miyu_endpoint::queries::Queries>::add::<miyu_core::packages::net::register::{closure#0}, miyu_core::packages::net::register::{closure#0}::{closure#0}>::{closure#0}
+miyu_core::packages::net::register::{closure#0}::{closure#0}
+miyu_net::sites::draft::{closure#0}
+<miyu_net::fetch::Fetcher>::page_with::{closure#0}
+<reqwest::connect::ConnectorService>::connect_via_proxy::{closure#0}
+<miyu_net::fetch::Fetcher>::get_with::{closure#0}
+miyu_endpoint::connection::answer_later::{closure#0}
+<miyu_net::fetch::Fetcher>::is_challenge
+<miyu_net::body::HeadSignals>::feed
+core::ptr::drop_glue::<core::pin::Pin<alloc::boxed::Box<tokio::time::sleep::Sleep>>>
+<url::parser::SchemeType as core::convert::From<&str>>::from
+miyu_net::html::tidy
+miyu_net::sites::mediawiki::is_mediawiki
+<miyu_net::Asker>::internal
+<miyu_http::guard::Guard>::shape
+<(&str, u16) as tokio::net::addr::sealed::ToSocketAddrsPriv>::to_socket_addrs
+<miyu_net::fetch::clients::Clients>::get
+<reqwest::async_impl::client::Client>::request::<url::Url>
+core::ptr::drop_glue::<miyu_net::body::read_prefix::{closure#0}>
+<hashbrown::raw::RawTable<(alloc::string::String, (core::result::Result<miyu_net::Card, miyu_net::Why>, std::time::Instant))>>::reserve_rehash::<hashbrown::map::make_hasher<alloc::string::String, (core::result::Result<miyu_net::Card, miyu_net::Why>, std::time::Instant), std::hash::random::RandomState>::{closure#0}>
+miyu_endpoint::connection::send::{closure#0}
+core::ptr::drop_glue::<miyu_endpoint::connection::send::{closure#0}>
+miyu_store::schedules::open::connected
+<&mut <miyu_endpoint::mcp::Servers>::prompts::{closure#0} as core::ops::function::FnMut<((&(alloc::string::String, alloc::string::String), &miyu_endpoint::mcp::Slot),)>>::call_mut
+miyu_store::packages::local::scan
+std::fs::metadata::<std::path::PathBuf>
+<std::path::Path as serde_core::ser::Serialize>::serialize::<serde_json::value::ser::Serializer>
+miyu_endpoint::packages::methods::call::{closure#9}::{closure#0}
+<&mut miyu_endpoint::packages::verify::recorded::{closure#1} as core::ops::function::FnMut<(&&miyu_store::packages::Found,)>>::call_mut
+<alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, alloc::string::String, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert_fit
+<alloc::vec::Vec<serde_json::value::Value> as alloc::vec::spec_extend::SpecExtend<serde_json::value::Value, alloc::vec::into_iter::IntoIter<serde_json::value::Value>>>::spec_extend
+miyu_endpoint::methods::answer::<miyu_endpoint::packages::methods::call::{closure#8}, miyu_endpoint::packages::methods::call::{closure#8}::{closure#0}>
+<<miyu_endpoint::export::ToFile as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::verify::owns::{closure#0}::{closure#1}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_endpoint::packages::methods::call::{closure#16}::{closure#0}
+miyu_endpoint::packages::switch::disable::{closure#0}
+miyu_endpoint::packages::remove::remove_package::{closure#0}
+<bool>::then::<core::option::Option<alloc::string::String>, miyu_endpoint::packages::remove::remove_package::{closure#0}::{closure#3}>
+<core::iter::adapters::copied::Copied<core::slice::iter::Iter<&miyu_store::packages::Found>> as core::iter::traits::iterator::Iterator>::try_fold::<(), core::iter::traits::iterator::Iterator::find::check<&miyu_store::packages::Found, &mut miyu_endpoint::packages::manage::leaving::{closure#0}>::{closure#0}, core::ops::control_flow::ControlFlow<&miyu_store::packages::Found>>
+<alloc::collections::btree::map::Iter<&str, &miyu_config::package::Manifest> as core::iter::traits::iterator::Iterator>::next
+<miyu_config::value::Value as core::cmp::PartialEq>::eq
+<alloc::collections::btree::map::BTreeMap<miyu_recall::memory::MemoryId, (f32, usize)> as core::ops::drop::Drop>::drop
+<alloc::vec::into_iter::IntoIter<alloc::sync::Arc<miyu_store::knowledge::Shelf>> as core::ops::drop::Drop>::drop
+miyu_endpoint::packages::changes::snapshot
+core::ptr::drop_glue::<alloc::vec::Vec<alloc::sync::Arc<dyn miyu_tool::Tool>>>
+core::ptr::drop_glue::<miyu_basesystem::edit::Edit>
+core::ptr::drop_glue::<miyu_basesystem::shell::Shell>
+core::ptr::drop_glue::<alloc::vec::Vec<(miyu_policy::hazard::Kind, miyu_kernel::template::Template)>>
+<alloc::sync::Arc<miyu_call::Texts>>::drop_slow
+core::ptr::drop_glue::<miyu_basesystem::subagent::Subagent>
+core::ptr::drop_glue::<miyu_basesystem::ask_user::AskUser>
+core::ptr::drop_glue::<miyu_basesystem::history::Texts>
+core::ptr::drop_glue::<miyu_basesystem::session_usage::Texts>
+core::ptr::drop_glue::<miyu_basesystem::send_message::Texts>
+core::ptr::drop_glue::<miyu_basesystem::package::Package>
+core::ptr::drop_glue::<miyu_basesystem::show::Texts>
+core::ptr::drop_glue::<miyu_memory::forget::Forget>
+core::ptr::drop_glue::<miyu_memory::texts::All>
+core::ptr::drop_glue::<miyu_goal::goal::Goal>
+core::ptr::drop_glue::<miyu_schedule::cron::Cron>
+core::ptr::drop_glue::<miyu_knowledge::edit::Edit>
+core::ptr::drop_glue::<miyu_knowledge::texts::All>
+core::ptr::drop_glue::<miyu_net::web_fetch::WebFetch>
+core::ptr::drop_glue::<miyu_net::web_fetch::Texts>
+core::ptr::drop_glue::<miyu_net::web_search::Texts>
+miyu_endpoint::packages::manage::clear_of_conflicts::{closure#0}
+core::iter::adapters::flatten::and_then_or_clear::<core::iter::adapters::map::Map<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&str>, core::iter::adapters::copied::Copied<core::slice::iter::Iter<&str>>>, <miyu_endpoint::commands::registry::Commands>::reserved<miyu_endpoint::packages::manage::clear_of_conflicts::{closure#0}::{closure#1}>::{closure#1}::{closure#0}>, (alloc::string::String, core::option::Option<alloc::string::String>), <core::iter::adapters::map::Map<core::iter::adapters::chain::Chain<core::iter::sources::once::Once<&str>, core::iter::adapters::copied::Copied<core::slice::iter::Iter<&str>>>, <miyu_endpoint::commands::registry::Commands>::reserved<miyu_endpoint::packages::manage::clear_of_conflicts::{closure#0}::{closure#1}>::{closure#1}::{closure#0}> as core::iter::traits::iterator::Iterator>::next>
+<serde_json::value::Value as serde_core::de::Deserializer>::deserialize_struct::<<miyu_endpoint::packages::asked::InstallParams as serde_core::de::Deserialize>::deserialize::__Visitor>
+miyu_endpoint::packages::approve::valid
+miyu_endpoint::packages::preview::installing::{closure#0}
+miyu_endpoint::packages::progress::push
+<miyu_endpoint::reverse::Peer>::notify
+miyu_endpoint::packages::methods::call::{closure#4}::{closure#0}
+tokio::runtime::task::raw::drop_join_handle_slow::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::source::upgrade::survey_core::{closure#0}::{closure#1}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+<miyu_kernel::tool::texts::ToolTexts>::unknown
+<miyu_kernel::session::Session>::written_result
+miyu_endpoint::methods::call::{closure#2}::{closure#0}
+<<miyu_endpoint::check::CheckParams as serde_core::de::Deserialize>::deserialize::__FieldVisitor as serde_core::de::Visitor>::visit_str::<serde_json::error::Error>
+miyu_endpoint::check::check::{closure#0}
+miyu_endpoint::check::expand
+miyu_endpoint::config::checking::check_leaving
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::check::check::{closure#0}::{closure#4}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+miyu_endpoint::check::check_packages::{closure#0}
+miyu_tool::portable::scan
+alloc::vec::in_place_collect::from_iter_in_place::<core::iter::adapters::map::Map<alloc::vec::into_iter::IntoIter<miyu_tool::portable::Found>, miyu_endpoint::packages::portable::said::{closure#0}>, serde_json::value::Value>
+miyu_store::scripts::places_in
+miyu_store::cache::folders
+tokio::runtime::task::raw::try_read_output::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::check::skipped::skipped::{closure#0}::{closure#13}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+core::ptr::drop_glue::<miyu_store::packages::leftovers::Leftovers>
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_store::scripts::State>>
+<miyu_endpoint::mcp::Servers>::skipped
+<miyu_store::schedules::Schedules>::unreadable
+miyu_endpoint::packages::verify::recorded
+core::slice::sort::shared::smallsort::insert_tail::<(alloc::string::String, std::path::PathBuf), <(alloc::string::String, std::path::PathBuf) as core::cmp::PartialOrd>::lt>
+core::cmp::default_chaining_impl::<alloc::string::String, alloc::string::String, <core::cmp::Ordering>::is_lt>
+tokio::runtime::task::raw::poll::<tokio::runtime::blocking::task::BlockingTask<miyu_endpoint::packages::verify::drifted::{closure#0}::{closure#0}>, tokio::runtime::blocking::schedule::BlockingSchedule>
+minMaxQuery
+<miyu_recall::memory::book::MemoryBook>::touch
+core::ptr::drop_glue::<[miyu_store::presets::Checked]>

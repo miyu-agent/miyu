@@ -2342,3 +2342,53 @@ jiff::util::fs::last_modified_from_file
 <core::marker::PhantomData<[f64; 3]> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
 <core::marker::PhantomData<[f64; 2]> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
 <core::marker::PhantomData<miyu_tui::oobe::look::Stars> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>
+<tokio::runtime::io::registration_set::RegistrationSet>::allocate
+<miyu_tui::theme::palette::Palette as core::cmp::PartialEq>::eq
+miyu_tui::theme::persona::make
+tokio::io::util::read_line::finish_string_read
+<core::marker::PhantomData<u32> as serde_core::de::DeserializeSeed>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::SliceRead>>
+<miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame::<miyu_tui::frame::{closure#0}>
+miyu_tui::frame::{closure#0}
+<alloc::raw_vec::RawVec<core::option::Option<alloc::rc::Rc<[miyu_tui::ui::rows::Row]>>>>::grow_one
+miyu_tui::screen::spans::owners
+<core::iter::adapters::flatten::FlattenCompat<_, _> as core::iter::traits::iterator::Iterator>::try_fold::flatten::<core::iter::adapters::filter_map::FilterMap<core::iter::adapters::zip::Zip<core::ops::range::RangeFrom<u16>, core::slice::iter::Iter<ratatui_core::buffer::cell::Cell>>, miyu_tui::glyph_guard::shown<<miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}>, (), core::ops::control_flow::ControlFlow<(u16, u16, &ratatui_core::buffer::cell::Cell, bool)>, core::iter::adapters::filter::filter_try_fold<(u16, u16, &ratatui_core::buffer::cell::Cell, bool), (), core::ops::control_flow::ControlFlow<(u16, u16, &ratatui_core::buffer::cell::Cell, bool)>, miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}::{closure#1}, core::iter::traits::iterator::Iterator::find::check<(u16, u16, &ratatui_core::buffer::cell::Cell, bool), &mut miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#1}>::{closure#0}>::{closure#0}>::{closure#0}
+miyu_tui::glyph_guard::shown::<<miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}
+<core::iter::adapters::map::Map<core::iter::adapters::filter::Filter<core::iter::adapters::filter::Filter<core::iter::adapters::flatten::FlatMap<core::slice::iter::Iter<(u16, u16, &[ratatui_core::buffer::cell::Cell])>, core::iter::adapters::filter_map::FilterMap<core::iter::adapters::zip::Zip<core::ops::range::RangeFrom<u16>, core::slice::iter::Iter<ratatui_core::buffer::cell::Cell>>, miyu_tui::glyph_guard::shown<<miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}>, miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}::{closure#0}>, miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#0}::{closure#1}>, miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#3}>, miyu_tui::glyph_guard::spans<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#4}, <miyu_tui::screen::Screen<ratatui_crossterm::CrosstermBackend<miyu_tui::frame_output::Output<std::io::stdio::Stdout>>>>::active_frame<miyu_tui::frame::{closure#0}>::{closure#5}>::{closure#4}> as core::iter::traits::iterator::Iterator>::next
+core::ptr::drop_glue::<(core::future::poll_fn::PollFn<miyu_tui::reader::read_until_knocked<miyu_tui::run::{closure#3}>::{closure#0}::{closure#2}>, tokio::time::sleep::Sleep, miyu_tui::reader::sleep_until::{closure#0}, tokio::sync::notify::Notified)>
+core::ptr::drop_glue::<core::option::Option<tokio::runtime::Timer>>
+miyu_tui::reader::read_until_knocked::<miyu_tui::run::{closure#3}>::{closure#0}::{closure#1}
+<core::iter::adapters::flatten::FlatMap<alloc::vec::into_iter::IntoIter<miyu_tui::reader::replies::Read>, alloc::vec::Vec<miyu_tui::reader::replies::Read>, miyu_tui::reader::read_until_knocked<miyu_tui::run::{closure#3}>::{closure#0}::{closure#1}::{closure#0}> as core::iter::traits::iterator::Iterator>::next
+<miyu_tui::reader::burst::Burst>::feed
+core::ptr::drop_glue::<core::iter::adapters::flatten::FlatMap<alloc::vec::into_iter::IntoIter<miyu_tui::reader::replies::Read>, alloc::vec::Vec<miyu_tui::reader::replies::Read>, miyu_tui::reader::read_until_knocked<miyu_tui::run::{closure#3}>::{closure#0}::{closure#1}::{closure#0}>>
+miyu_tui::reader::sleep_until::{closure#0}
+<tokio::time::sleep::Sleep as core::future::future::Future>::poll
+<parking_lot::raw_mutex::RawMutex>::lock_slow
+<parking_lot_core::parking_lot::ThreadData>::new
+miyu_tui::input::field::edit
+<miyu_tui::ui::row_cache::RowCache>::lay
+<hashbrown::raw::RawTable<(u64, miyu_tui::ui::row_cache::Kept)>>::reserve_rehash::<hashbrown::map::make_hasher<u64, miyu_tui::ui::row_cache::Kept, std::hash::random::RandomState>::{closure#0}>
+<miyu_tui::ui::row_cache::chunks::Rows>::push_chunk
+miyu_tui::ui::body::keep::place::<miyu_tui::ui::body::draw::{closure#7}>::{closure#0}
+<core::iter::adapters::filter::Filter<core::iter::adapters::chain::Chain<core::iter::adapters::flatten::FlatMap<core::slice::iter::Iter<core::ops::range::Range<usize>>, core::ops::range::Range<usize>, miyu_tui::ui::row_cache::keep::fill::{closure#0}>, core::iter::adapters::flatten::FlatMap<core::slice::iter::Iter<usize>, core::iter::adapters::filter::Filter<core::ops::range::Range<usize>, <miyu_tui::ui::row_cache::chunks::Rows>::chunks_of::{closure#0}>, miyu_tui::ui::row_cache::keep::fill::{closure#1}>>, miyu_tui::ui::row_cache::keep::fill::{closure#2}> as core::iter::traits::iterator::Iterator>::next
+miyu_tui::ui::body::draw::{closure#7}
+<miyu_tui::body_view::BodyView>::held
+core::ptr::drop_glue::<miyu_tui::ui::row_cache::chunks::Rows>
+miyu_tui::input::wrap::wrap
+<miyu_tui::body_view::BodyView as core::clone::Clone>::clone
+core::slice::sort::shared::smallsort::insertion_sort_shift_left::<usize, <[usize]>::sort_by_key<usize, miyu_tui::ui::row_cache::build::{closure#6}>::{closure#0}>
+<tokio::runtime::park::Inner>::park_timeout
+<miyu_tui::reader::burst::Burst>::expire
+<alloc::sync::Arc<std::sync::poison::mutex::Mutex<miyu_wallpaper::watch::State>>>::drop_slow
+<alloc::sync::Arc<std::sync::poison::mutex::Mutex<dyn notify::EventHandler>>>::drop_slow
+core::ptr::drop_glue::<std::sync::mpsc::Sender<core::result::Result<notify_types::event::Event, notify::error::Error>>>
+core::ptr::drop_glue::<miyu_wallpaper::watch::start_native<<miyu_tui::theme::wallpaper::Wallpaper>::watch_targets::{closure#0}>::{closure#2}>
+core::ptr::drop_glue::<std::sync::mpsc::Receiver<core::result::Result<notify_types::event::Event, notify::error::Error>>>
+<miyu_tui::ui::md_cache::MdCache>::clear
+<miyu_tui::input::field::Field as alloc::vec::spec_from_elem::SpecFromElem>::from_elem::<alloc::alloc::Global>
+<alloc::vec::Vec<miyu_tui::input::field::Field> as core::clone::Clone>::clone
+<miyu_tui::input::field::Field>::full
+core::ptr::drop_glue::<alloc::vec::Vec<miyu_tui::input::field::Field>>
+core::slice::sort::stable::driftsort_main::<usize, <[usize]>::sort_by_key<usize, miyu_tui::ui::row_cache::build::{closure#6}>::{closure#0}, alloc::vec::Vec<usize>>
+core::slice::sort::stable::drift::sort::<usize, <[usize]>::sort_by_key<usize, miyu_tui::ui::row_cache::build::{closure#6}>::{closure#0}>
+miyu_tui::screen::print::fingerprint
+miyu_tui::screen::record
