@@ -148,7 +148,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
     | `pipe_to_shell` | `pipe_to_shell` |
     | `container` | `container_share` |
 
-  - 开关管不到的：灭顶的那七种（没有归的类，照拒）；看不透的命令（命令替换、`eval` 套了 8 层以上，`Kind::TooDeep`）不归哪一类（`class` 是空的），五个开关全关也照旧问，对外的写法照旧是 `delete_unresolved`；报的路径已经拒了的；只读（不看高危）；装包卸包（访问类别 `install`，不走高危这条路，完全放开每次问，这一步没给开关）。
+  - 开关管不到的：灭顶的那七种（没有归的类，照拒）；看不透的命令（命令替换、`eval` 套了 8 层以上，换变量换出来的一个词超过 64 KiB（施工 AUD-7），`Kind::TooDeep`）不归哪一类（`class` 是空的），五个开关全关也照旧问，对外的写法照旧是 `delete_unresolved`；报的路径已经拒了的；只读（不看高危）；装包卸包（访问类别 `install`，不走高危这条路，完全放开每次问，这一步没给开关）。
   - 只有本人的会话看开关（本机的头、主人自己在场所里的会话）。只碰得到自己工作区的会话（`confined`）不看，照旧都问（这些会话没人能确认，问了等于拒）。
   - 开关的值照回合开始时的配置：`actor/model.rs` 的 `turn_start` 读 `ConfirmSettings`，把关掉的那几类换进权限策略（`Guard::set_waived`），判的时候不读配置；改了下一轮生效。会话刚造好、还没开过回合时是空的（都问）。
 - 访问类别是 `write` 或者不认识的，内核当成写入：只读时在交给链之前就拦下了，走不到这里（`kernel/session.md`）。
@@ -213,6 +213,7 @@ A16 起只剩这两级（`11-权限与沙盒.md` A16，施工 LV-1），代码�
 | `crates/miyu-policy/src/hazard/tests/fresh.rs`（施工 HZ-2） | `x=$(mktemp …)` 以后删 `$x`、`"$x"`、`${x}`、`"${x}"` 不问，几种 `mktemp` 写法、反引号、`-u` 都认；带后缀的、赋值前后拼了字或里面不止一条 `mktemp`、参数带变量的、中间改过的（赋值、`read`、`for`、`printf -v`、`declare -n`、`${x:=…}`、算术）、赋值不一定跑到的（分支、`&&`、`\|\|`、括号、花括号、`&`、`case`、管道）、循环和函数里改的、有 `eval`、`source`、`trap`、`IFS` 的、跨命令的、`sh -c` 和替换里的、`find`、别的命令替换照旧判；同一个 `rm` 里别的目标照原规矩、最严者胜；`$(echo /)x` 不当 `$x` |
 | `crates/miyu-policy/src/hazard/tests/fed.rs` 的 `a_download_run_by_an_interpreter_is_reported`、`a_download_used_as_data_is_left_alone`（施工 SH-3） | 下载即执行只看装着替换的那一条：`bash <(curl …)`、`python3 <(curl …)`、`sh -c "$(curl …)"`、`curl … \| python3 -`、`source <(curl …)`、`bash < <(curl …)`、`bash <<< "$(curl …)"`、`cat <(curl …) \| bash`、`echo "$(curl …)" \| sh` 照报；变量赋值、`echo`、和解释器在不同段的不报（Terminal-Bench 里被拦的那条缩成的一条在内），修以前这几条判成 `pipe_to_shell` |
 | `crates/miyu-policy/src/hazard/tests/groups.rs`（施工 HZ-1） | 问人的十种正好分进五类，直接拒的七种和看不透的不归类；套得太深的单列一种、对外的写法是 `delete_unresolved`，八层还看得透，目标运行时才知道的删除照旧归「递归删除」；一条命令里认出几种问人的全交回、照先后、不重复，有拒的只交回拒的那一种 |
+| `crates/miyu-policy/src/hazard/tests/sizes.rs`（施工 AUD-7） | `x=$x$x…` 九句十倍（照字面换要 16 GB）、`${x}` 的写法、一个词里引一百次 1 KiB 的变量都判成看不透、照问人，限 2G 内存的 cgroup 里马上交回（改前被系统杀掉）；平常的拼路径照换 |
 | `crates/miyu-session/tests/guard.rs` | 相对路径照工作目录接、工作区里还不存在的也能写；越界的读哪一级都放行（施工 5-4 上）；数据根哪一级都读得到、完全放开写得进、只读写拒（施工 RO-2、RO-3）；完全放开越界的写不问；执行命令（施工 LV-1）：完全放开沙盒能不能用都照跑，只读沙盒能用不问、用不了问人（没人能确认就拒）；几条路径照最严的，有一条拒就拒、不问；指向不存在处的链接拒绝、写对了那一句和说法；`~` 照家目录换，完全放开照写、工具拿到的判过的位置是家目录下那一个；`trash` 判的是链接本身：工作区里指向不存在处的、指进数据根的、指到外面的链接都放行 |
 | `crates/miyu-session/src/guard/tests.rs` 的 `a_venue_action_runs_only_in_a_venue`、`crates/miyu-session/tests/guard_venue.rs`（施工 O-31 前） | 在场所里做的事：场所会话（群、私聊）里放行、不问人，只读开着、没人能确认也一样；本机的会话拒绝，`by` 是 `permissions`，写给她出厂的那一句、说法对，工具没跑；载入以后照样；`venues` 有 `local` 的在本机的会话里照 `outbound`：完全放开跑，只读没人能确认的拒、说的不是「不在场所里」（施工 O-31 补） |
 | `crates/miyu-endpoint/tests/provide_venue.rs`（施工 O-31 前，O-31 补改） | 契约：扩展登记 `venue` 的工具收；`venues` 有 `local` 的本机的会话调到它照 `outbound` 判，只读时问人，人点头以前扩展收不到 `tool.call`（完全放开直接发，施工 LV-1）。扩展登记的工具 `venues` 没有 `local` 的本来就不在本机会话的工具面上，「不在场所里」那一句只剩给没写 `venues` 的工具兜底（`guard_venue.rs`） |

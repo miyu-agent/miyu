@@ -163,3 +163,104 @@ fn below_takes_the_layers_under_the_cwd_down_to_the_file() {
         "不在工作目录下面的没有"
     );
 }
+
+/// 照整份读来算的：上限那里切开一个字、两层分一个上限，有界地读交回的字、截断的位置和整份读完再截的一模一样（施工 AUD-7）。
+#[test]
+fn a_bounded_read_cuts_where_reading_it_all_would() {
+    for pad in 0..8 {
+        for outer in [0, 1000] {
+            let dir = Dir::new(&format!("bounded-{pad}-{outer}"));
+            std::fs::create_dir_all(dir.0.join(".git")).unwrap();
+            let inner = format!("{}{}tail\n", "a".repeat(LIMIT - 4 + pad), "😀".repeat(3));
+            let mut expected = Vec::new();
+            let mut left = LIMIT;
+            if outer > 0 {
+                let path = dir.write("AGENTS.md", &"o".repeat(outer));
+                expected.push((path, "o".repeat(outer)));
+                left -= outer;
+            }
+            let path = dir.write("sub/AGENTS.md", &inner);
+            expected.push((path, cut_at(&inner, left).to_string()));
+            let found = find(&dir.0.join("sub")).unwrap();
+            assert_eq!(found.docs, expected, "pad {pad} outer {outer}");
+            assert!(found.cut);
+        }
+    }
+    // 正好是上限、比上限多一个字的：照旧整份交、截一个字。
+    let dir = Dir::new("bounded-edge");
+    dir.write("AGENTS.md", &"a".repeat(LIMIT));
+    let found = find(&dir.0).unwrap();
+    assert_eq!((found.docs[0].1.len(), found.cut), (LIMIT, false));
+    dir.write("AGENTS.md", &"a".repeat(LIMIT + 1));
+    let found = find(&dir.0).unwrap();
+    assert_eq!((found.docs[0].1.len(), found.cut), (LIMIT, true));
+    // 结尾坏了半个字、中间不是 UTF-8 的：照旧当没有，找 CLAUDE.md。
+    for broken in [&b"rules\n\xF0\x9F"[..], &b"ru\xFFles\n"[..]] {
+        std::fs::write(dir.0.join("AGENTS.md"), broken).unwrap();
+        dir.write("CLAUDE.md", "claude\n");
+        let found = find(&dir.0).unwrap();
+        assert_eq!(found.docs[0].1, "claude\n");
+    }
+}
+
+/// 仓库根、子目录里的 `AGENTS.md` 都是指向 `target` 的链接（施工 AUD-7）：当没有，找 CLAUDE.md，十秒内交回。
+#[cfg(unix)]
+fn linked_doc_is_skipped(name: &str, target: &Path) {
+    let repo = Dir::new(name);
+    std::fs::create_dir_all(repo.0.join("sub")).unwrap();
+    std::os::unix::fs::symlink(target, repo.0.join("AGENTS.md")).unwrap();
+    std::fs::write(repo.0.join("CLAUDE.md"), "claude\n").unwrap();
+    std::os::unix::fs::symlink(target, repo.0.join("sub/AGENTS.md")).unwrap();
+    std::fs::write(repo.0.join("sub/a.txt"), "x\n").unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let looked = repo.0.clone();
+    std::thread::spawn(move || {
+        let found = find(&looked).map(|found| found.docs);
+        let below = below(&looked, &looked.join("sub/a.txt"));
+        drop(send.send((found, below)));
+    });
+    let (found, below) = receive
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .unwrap_or_else(|_| panic!("{name}: 卡住了"));
+    assert_eq!(
+        found,
+        Some(vec![(repo.0.join("CLAUDE.md"), "claude\n".to_string())]),
+        "{name}"
+    );
+    assert!(below.is_empty(), "{name}: {below:?}");
+}
+
+/// 指向 `/dev/zero` 的：修之前整份往内存里读，读到内存吃光。
+#[cfg(unix)]
+#[test]
+fn a_doc_linked_to_dev_zero_is_skipped() {
+    linked_doc_is_skipped("zero", Path::new("/dev/zero"));
+}
+
+/// 指向 FIFO 的：修之前打开时一直等人来写，卡住。
+#[cfg(unix)]
+#[test]
+fn a_doc_linked_to_a_fifo_is_skipped() {
+    let dir = Dir::new("fifo-target");
+    let fifo = dir.0.join("fifo");
+    let made = std::process::Command::new("mkfifo")
+        .arg(&fifo)
+        .status()
+        .unwrap();
+    assert!(made.success());
+    linked_doc_is_skipped("fifo", &fifo);
+}
+
+/// 指向普通文件的链接照常读（`CLAUDE.md -> AGENTS.md` 是常见的写法）。
+#[cfg(unix)]
+#[test]
+fn a_doc_linked_to_a_regular_file_is_read() {
+    let dir = Dir::new("linked");
+    std::fs::write(dir.0.join("rules.md"), "rules\n").unwrap();
+    std::os::unix::fs::symlink(dir.0.join("rules.md"), dir.0.join("CLAUDE.md")).unwrap();
+    let found = find(&dir.0).unwrap();
+    assert_eq!(
+        found.docs,
+        vec![(dir.0.join("CLAUDE.md"), "rules\n".to_string())]
+    );
+}

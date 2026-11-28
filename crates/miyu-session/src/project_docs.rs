@@ -8,6 +8,7 @@
 //! - 内容是仓库作者写的字，原样放进外壳；兜底的是权限和沙盒（不设信任的门，照 Codex、opencode）。
 
 use std::collections::BTreeMap;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use miyu_kernel::event::ContextInjected;
@@ -79,10 +80,46 @@ pub(crate) fn below(cwd: &Path, file: &Path) -> Vec<(PathBuf, String)> {
         .collect()
 }
 
-/// 一份普通文件的字；不在、读不了、不是 UTF-8 的没有。
+/// 一份最多读这么多字节（施工 AUD-7）：总上限再加一个字最长的写法（UTF-8 四个字节）。比它长的，丢掉结尾切开的半个字以后
+/// 仍然比总上限长，截不截、截在哪和整份读完再截一样。
+const READ: usize = LIMIT + 4;
+
+/// 一份普通文件的字；不在、读不了、不是 UTF-8 的没有。比 [`READ`] 长的只读开头那么多（施工 AUD-7）。
+///
+/// 先跟着链接看是不是普通文件、再打开（施工 AUD-7）：仓库里的 `AGENTS.md` 可以是指向 `/dev/zero`、`/dev/tty`、FIFO 的链接，
+/// 原来先整份读进来再看，读到内存吃光，或者一直等着读。指向普通文件的链接照常读。
 fn read(path: &Path) -> Option<(PathBuf, String)> {
-    let text = std::fs::read_to_string(path).ok()?;
-    path.is_file().then(|| (path.to_path_buf(), text))
+    let regular = |metadata: std::fs::Metadata| {
+        let regular = metadata.is_file();
+        if !regular {
+            tracing::debug!(target: crate::TARGET, "project doc not a regular file, skipped");
+        }
+        regular
+    };
+    if !regular(std::fs::metadata(path).ok()?) {
+        return None;
+    }
+    let file = std::fs::File::open(path).ok()?;
+    // 查过以后换成了别的：打开的这一份再看一次。
+    if !regular(file.metadata().ok()?) {
+        return None;
+    }
+    let mut bytes = Vec::new();
+    file.take(READ as u64 + 1).read_to_end(&mut bytes).ok()?;
+    let more = bytes.len() > READ;
+    bytes.truncate(READ);
+    let text = match String::from_utf8(bytes) {
+        Ok(text) => text,
+        // 后面还有、只是读到的结尾切开了一个字：丢掉那半个字。
+        Err(error) if more && error.utf8_error().error_len().is_none() => {
+            let valid = error.utf8_error().valid_up_to();
+            let mut bytes = error.into_bytes();
+            bytes.truncate(valid);
+            String::from_utf8(bytes).ok()?
+        }
+        Err(_) => return None,
+    };
+    Some((path.to_path_buf(), text))
 }
 
 /// `text` 截到最多 `limit` 字节，不切开一个字。

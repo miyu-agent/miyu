@@ -1,16 +1,25 @@
 //! 同一条命令里赋过值的变量（施工 5-17 再补，2026-10-22 项目主人定）：`T=/tmp/x; rm -rf $T` 照删 `/tmp/x` 判，不再算「要到运行时
 //! 才知道」。只认单独成句的赋值（`T=…`、`export T=…` 这类），照出现的先后记；值里又引了别的变量的，照记下的换，换不掉的忘掉
 //! 这个名字（之后照说不清算）。`~` 开头的值照家目录接（shell 赋值时就换了）。替换里、`sh -c` 里的另起一份。
+//!
+//! 换出来的字最多 [`EXPANDED`] 字节（施工 AUD-7）：`x=$x$x` 每一句都翻倍，两百来字的命令照字面换要十几 GB。超了的不换、
+//! 那个名字忘掉，整条命令记成看不透（[`Vars::overflowed`]，照 `Kind::TooDeep` 问人）。
 
+use std::cell::Cell;
 use std::collections::BTreeMap;
 
 use super::lex::{Simple, Word};
+
+/// 一个词换出来最多这么多字节：再长的照看不透（施工 AUD-7）。平常的路径、拼起来的参数离它很远。
+pub(super) const EXPANDED: usize = 64 * 1024;
 
 /// 记下的变量。`for`、`read`、`unset` 碰过的名字忘掉。
 pub(super) struct Vars<'a> {
     known: BTreeMap<String, String>,
     /// 系统的家目录：没赋过值的 `$HOME` 照它换。
     home: Option<&'a str>,
+    /// 有一个词换出来超过了 [`EXPANDED`]（施工 AUD-7）。
+    overflowed: Cell<bool>,
 }
 
 impl<'a> Vars<'a> {
@@ -18,7 +27,13 @@ impl<'a> Vars<'a> {
         Vars {
             known: BTreeMap::new(),
             home,
+            overflowed: Cell::new(false),
         }
+    }
+
+    /// 有一个词换出来太长、没换（施工 AUD-7）：这条命令看不透。
+    pub(super) fn overflowed(&self) -> bool {
+        self.overflowed.get()
     }
 
     /// 单独成句的赋值：记下来。管道里的（在子 shell 里赋）、后面跟着命令的（只给那个命令）不算。
@@ -79,7 +94,8 @@ impl<'a> Vars<'a> {
     }
 
     /// 把词里的 `$名字`、`${名字}` 换成记下的（`${名字:?}` 这类带修饰的照名字换）：全换得掉的交回换好的（不再说不清），有一个
-    /// 换不掉的交回原样。带命令替换的交回原样（施工 HZ-2）：替换拆出来只留一个 `$`，`$(echo /)T` 看着和 `$T` 一样。
+    /// 换不掉的交回原样。带命令替换的交回原样（施工 HZ-2）：替换拆出来只留一个 `$`，`$(echo /)T` 看着和 `$T` 一样。换出来
+    /// 超过 [`EXPANDED`] 的也交回原样，记下太长了（施工 AUD-7）。
     pub(super) fn expand(&self, word: &Word) -> Word {
         if !word.unresolved || !word.substitutions.is_empty() {
             return word.clone();
@@ -116,8 +132,16 @@ impl<'a> Vars<'a> {
                 },
                 None => return word.clone(),
             };
+            if text.len() + value.len() > EXPANDED {
+                self.overflowed.set(true);
+                return word.clone();
+            }
             text.push_str(value);
             rest = next;
+        }
+        if text.len() + rest.len() > EXPANDED {
+            self.overflowed.set(true);
+            return word.clone();
         }
         text.push_str(rest);
         Word {

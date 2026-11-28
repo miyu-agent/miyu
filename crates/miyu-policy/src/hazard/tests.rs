@@ -7,6 +7,7 @@ mod fed;
 mod fresh;
 mod groups;
 mod moves;
+mod sizes;
 mod windows;
 
 const PLACES: Places<'static> = Places {

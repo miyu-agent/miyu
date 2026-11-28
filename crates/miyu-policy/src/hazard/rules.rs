@@ -78,6 +78,10 @@ fn look(text: &str, places: &Places<'_>, depth: usize, found: &mut Vec<Kind>) {
             cwd = next;
         }
     }
+    // 有一个词换出来太长（施工 AUD-7）：没换的那几处照说不清判了，整条命令另记一条看不透。
+    if vars.overflowed() {
+        found.push(Kind::TooDeep);
+    }
     for inner in &parsed.inner {
         look(inner, places, depth + 1, found);
     }
