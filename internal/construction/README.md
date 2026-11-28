@@ -1840,6 +1840,7 @@ flowchart LR
 | CRT-1 | Windows 的程序不再要 VC++ 运行库 | rc.5 的 Windows 包五个 `.exe` 都要 `VCRUNTIME140.dll`，没装过 VC++ 运行库的机器上起不来（2026-11-28 core1 派，优化会话报）。`.cargo/config.toml` 给 MSVC 目标加 `+crt-static`，`release.yml` 用 `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS` 给两个头也加上；`cargo xtask dist-check` 读每个 `.exe` 的导入表，要了 `VCRUNTIME`、`MSVCP` 的不发。施工单 `CRT-1-Windows不要VC运行库.md`。 |
 | UP-4 | `miyu upgrade` 读发行版订阅，不再撞 GitHub API 的匿名限流 | 有用户报撞上匿名每小时 60 次的限流（2026-11-28 core1 派，项目主人定做法）。版本列表改读 `github.com/miyu-agent/miyu/releases.atom`（普通网页，不算 API 额度），只认 `releases/tag/v<版本>` 的标签，带 `-` 的是预发布、`--prerelease` 才算；文件地址按标签拼；比现在新的先下 `SHA256SUMS`，404 的（作废的 rc.3 那样）跳过、往旧的找，只升不降；订阅读不了的说清楚。限流的判法和「60 次」那句一起撤，429 照状态码说。签名、校验和、对换不变。施工单见 `UP-4-升级不走API.md` |
 | MO-6 | macOS 的发行包改用链式修正，最低系统提到 12.0 | rc.5 的 macOS 程序照默认的 11.0 链接、用老式修正，启动时 dyld 把核心 1024 kB、终端界面 592 kB 的 `__DATA_CONST` 写脏、一直算进占用（2026-11-28 优化会话在一台 M1 MacBook 上量的；项目主人定可以提）。`cargo xtask dist` 在 macOS 上编要发出去的程序时带 `MACOSX_DEPLOYMENT_TARGET=12.0`，打压缩包以前读每个程序的加载命令，不是链式修正、最低系统 12.0 的不打包，`dist-check` 同样查；安装脚本在 macOS 11 上停下。施工单 `MO-6-macOS链式修正.md`。 |
+| PERF-5 | 核心停下时不读回收着的会话，预演新会话不重读给模型看的字 | 优化报告第 4、8 项（2026-11-28 core1 派，项目主人点头）。停下时每个收成了槽的会话收到「要重启了」都先把整份历史读回来，可是没有回合时 `restart` 不碰历史：`needs_history` 改成有回合才要。终端界面打开一次核心预演新会话的上下文 6 遍（`preset.list` 4 遍、`session.context` 2 遍），每一遍把一百多份给模型看的字和你那一层的覆盖从头读一遍，占开文件的一半多：照文件放一阵，`stat` 看长短、修改时刻没变的不再读，改了下一次就是新的，核心安静下来放掉。施工单见 `PERF-5-停下和预演少读.md` |
 
 ### 四、施工单的格式
 

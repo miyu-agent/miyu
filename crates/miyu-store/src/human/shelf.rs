@@ -123,9 +123,11 @@ impl fmt::Debug for Shelf {
 }
 
 impl ResourceRoot {
-    /// 放掉读好放着的字（施工 V-30）：核心安静下来时调，下一次要字的再读。交回原来有没有放着的。
+    /// 放掉读好放着的字（施工 V-30；给模型看的字施工 PERF-5 起一起放，`resources/texts.rs`）：核心安静下来时调，下一次要
+    /// 字的再读。交回原来有没有放着的。
     pub fn forget_words(&self) -> bool {
-        self.shelf.clear()
+        let words = self.shelf.clear();
+        self.forget_texts() || words
     }
 }
 
