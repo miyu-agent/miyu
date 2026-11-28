@@ -17,6 +17,8 @@ The ways you can install Miyu depend on your system:
 
 There is currently no release archive for Intel Macs, or for 32-bit Windows and Windows on ARM.
 
+macOS needs version 12 or later. If you run the install script on an older macOS, it prints `needs macOS 12 or later; …` and installs nothing.
+
 Each way of installing also installs different things:
 
 | Way of installing | Core and command line | Terminal UI | Web UI | System tray |

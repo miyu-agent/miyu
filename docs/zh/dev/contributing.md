@@ -186,8 +186,8 @@ cargo xtask check
 | `cargo xtask prompts` | 根据登记簿和资源重新生成 `internal/blueprint/prompts.md` |
 | `cargo xtask notices` | 重新生成 `THIRD-PARTY-LICENSES.txt` |
 | `cargo xtask perf [量尺的参数]` | 编译 release 版的 `miyu`、`miyu-sandbox` 和量尺 `miyu-perf`，测量启动、内存、长会话上的请求、二进制大小，结果写进 `target/perf-out/`；后面的参数原样交给量尺，例如 `--runs 3`。内存只能在 Linux 上测量，macOS、Windows 上表里那几格写的是 `不量` |
-| `cargo xtask dist [--target <系统>] [--out <目录>]` | 打出本机这一种系统的命令行版压缩包：按照 `heads.toml` 取终端、网页，编译 release 版的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`（只在 Linux、macOS 上）、`miyu-tui`、`miyu-web`，打包成 `miyu-<版本>-<系统>.tar.gz`（Windows 上是 `.zip`），默认放在 target 目录的 `dist/` 下；`--target` 只能写本机的系统 |
-| `cargo xtask dist-check <压缩包>` | 发布前检查压缩包：名字、程序、许可证、资源逐字节比较，并运行包里的 `miyu --version` 和 `miyu check`；Windows 的压缩包还会读每个 `.exe` 的导入表，如果程序依赖 VC++ 运行库（`VCRUNTIME*.dll`、`MSVCP*.dll`），检查不通过 |
+| `cargo xtask dist [--target <系统>] [--out <目录>]` | 打出本机这一种系统的命令行版压缩包：按照 `heads.toml` 取终端、网页，编译 release 版的 `miyu`、`miyu-sandbox`、`miyu-extract`、`miyu-watchdog`（只在 Linux、macOS 上）、`miyu-tui`、`miyu-web`，打包成 `miyu-<版本>-<系统>.tar.gz`（Windows 上是 `.zip`），默认放在 target 目录的 `dist/` 下；`--target` 只能写本机的系统。macOS 上这些程序都按最低系统 12.0 编译（`MACOSX_DEPLOYMENT_TARGET=12.0`），打包前检查每个程序都使用链式修正（`LC_DYLD_CHAINED_FIXUPS`）、最低系统是 12.0，不符合时不打包 |
+| `cargo xtask dist-check <压缩包>` | 发布前检查压缩包：名字、程序、许可证、资源逐字节比较，并运行包里的 `miyu --version` 和 `miyu check`；Windows 的压缩包还会读每个 `.exe` 的导入表，如果程序依赖 VC++ 运行库（`VCRUNTIME*.dll`、`MSVCP*.dll`），检查不通过；macOS 的压缩包还会读每个程序的加载命令，如果程序没有使用链式修正，或者最低系统不是 12.0，检查不通过 |
 | `cargo xtask packaging <标签> --sums <SHA256SUMS> [--applet <托盘的标签> --applet-sums <托盘的 SHA256SUMS>] [--out <目录>]` | 根据一次发布的 `SHA256SUMS` 填写 AUR 的 `PKGBUILD` 和 Homebrew 的 formula |
 | `cargo xtask version <年.月.序号>` | 修改工作区的版本号（例如 `2026.12.0`），`Cargo.lock` 跟着修改 |
 

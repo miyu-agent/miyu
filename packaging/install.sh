@@ -84,10 +84,21 @@ target() {
   case "${os}-${arch}" in
     Linux-x86_64 | Linux-amd64) echo "linux-x86_64" ;;
     Linux-aarch64 | Linux-arm64) echo "linux-aarch64" ;;
-    Darwin-arm64 | Darwin-aarch64) echo "macos-aarch64" ;;
+    Darwin-arm64 | Darwin-aarch64) macos; echo "macos-aarch64" ;;
     *) die "没有 ${os} ${arch} 的发行包（目前有 Linux x86_64、aarch64 和 macOS Apple 芯片的发行包）" \
            "no release for ${os} ${arch} (there are Linux x86_64 and aarch64, and macOS on Apple silicon)" ;;
   esac
+}
+
+# macOS 的发行包照最低系统 12.0 编（施工 MO-6，xtask/src/dist.rs 的 MACOS_MINIMUM）：更老的系统上程序起不来，不装。版本读不出来
+# 的不拦，后面照样跑一次新的 miyu --version。
+macos() {
+  release=$(sw_vers -productVersion 2>/dev/null || true)
+  case "${release%%.*}" in
+    '' | *[!0-9]*) return 0 ;;
+  esac
+  [ "${release%%.*}" -ge 12 ] \
+    || die "需要 macOS 12 或更新的版本，这台是 macOS ${release}" "needs macOS 12 or later; this Mac runs macOS ${release}"
 }
 
 sha256() {

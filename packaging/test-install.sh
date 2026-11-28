@@ -4,7 +4,7 @@
 #
 #   sh packaging/test-install.sh <install.sh 的路径>
 #
-# 查的：没有正式版时不加 --prerelease 停下、退出码 1；--prerelease 装上，链接、install.toml 在，miyu --version 对得上，
+# 查的：macOS 11 上停下、说要 12 或更新的版本；没有正式版时不加 --prerelease 停下、退出码 1；--prerelease 装上，链接、install.toml 在，miyu --version 对得上，
 # miyu upgrade --prerelease 说已是最新；再装说已经装了；有 python3 的另起一个本机的下载处，SHA256SUMS 被改过的（openssl 认 Ed25519
 # 时）、压缩包被改过的都停下、什么都不装；卸掉以后安装目录、链接没了，数据根还在。
 set -eu
@@ -18,6 +18,21 @@ fail() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
 }
+
+# macOS 11 上停下、说要 12 或更新的版本，什么都不装（施工 MO-6）：PATH 前面放假的 uname、sw_vers，Linux 的机器上也走得到这一条。
+fake=$(mktemp -d)
+printf '#!/bin/sh\ncase "$1" in -s) echo Darwin ;; -m) echo arm64 ;; *) exit 1 ;; esac\n' > "${fake}/uname"
+printf '#!/bin/sh\necho 11.7.10\n' > "${fake}/sw_vers"
+chmod +x "${fake}/uname" "${fake}/sw_vers"
+out=$(PATH="${fake}:${PATH}" sh "${SCRIPT}" --prerelease 2>&1) && fail "macOS 11 上装上了：${out}"
+printf '%s\n' "${out}" | grep -q 'needs macOS 12 or later; this Mac runs macOS 11.7.10' || fail "macOS 11 上该说要 12：${out}"
+[ ! -e "${HOME}/.local/lib/miyu" ] || fail "macOS 11 上不该留东西"
+printf '#!/bin/sh\necho 12.0\n' > "${fake}/sw_vers"
+# 12.0 不拦：停在后面哪一步都行，只是不能停在系统版本上。
+out=$(PATH="${fake}:${PATH}" MIYU_INSTALL_API="http://127.0.0.1:9" sh "${SCRIPT}" --prerelease 2>&1) || true
+printf '%s\n' "${out}" | grep -q 'needs macOS 12' && fail "macOS 12.0 上不该拦：${out}"
+rm -rf "${fake}"
+[ ! -e "${HOME}/.local/lib/miyu" ] || fail "停下的不该留东西"
 
 # 正式版还没有的时候，不加 --prerelease 的停下。有了以后这一条照装上算过。
 if out=$(sh "${SCRIPT}" 2>&1); then

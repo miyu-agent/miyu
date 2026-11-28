@@ -454,4 +454,32 @@ fn head_builds_drop_the_outer_cargo_settings() {
     );
 }
 
+/// 编要发出去的程序：macOS 上 cargo 的环境带最低系统 12.0（施工 MO-6），别的系统什么都不加。
+#[test]
+fn only_macos_builds_carry_the_minimum_system() {
+    let envs = |target: &str| {
+        let mut command = Command::new("cargo");
+        released(&mut command, target);
+        command
+            .get_envs()
+            .map(|(name, value)| {
+                (
+                    name.to_string_lossy().into_owned(),
+                    value.map(|value| value.to_string_lossy().into_owned()),
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        envs("macos-aarch64"),
+        [(
+            "MACOSX_DEPLOYMENT_TARGET".to_string(),
+            Some("12.0".to_string())
+        )]
+    );
+    for target in ["linux-x86_64", "linux-aarch64", "windows-x86_64"] {
+        assert!(envs(target).is_empty(), "{target}");
+    }
+}
+
 mod fetching;

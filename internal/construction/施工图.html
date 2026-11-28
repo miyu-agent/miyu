@@ -1683,6 +1683,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUP4"><span class="n">UP-4</span>升级读发行版订阅、不走 API<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCRT1"><span class="n">CRT-1</span>Windows 不要 VC++ 运行库<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sMO6"><span class="n">MO-6</span>macOS 链式修正<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -67067,6 +67068,68 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/CRT-1-Windows不要VC运行库.md</code>；设计 12 第六节平台表；<code>docs/{zh,en}/dev/contributing.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sMO6" aria-labelledby="h-sMO6">
+  <div class="sheet-head"><h2 id="h-sMO6"><span class="no">MO-6</span>macOS 链式修正</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">macOS 的发行包照最低系统 12.0 编、用链式修正：macOS 13 起带指针的只读数据不再写脏、不算进占用；哪一个程序漏了，打包前当场拦下。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask · dist.rs · order/probe.rs</span><span class="dir-note">MO-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>常量 <code>MACOS_MINIMUM</code> 是 <code>12.0</code>，<code>released</code> 给编核心、终端界面、网页和量尺的 cargo 带上 <code>MACOSX_DEPLOYMENT_TARGET</code></li>
+              <li>只管发行包，平时的编译、测试不设</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask · dist/check/macho.rs</span><span class="dir-note">MO-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>照 Mach-O 格式读每个程序的加载命令</li>
+              <li>要有 <code>LC_DYLD_CHAINED_FIXUPS</code>、没有 <code>LC_DYLD_INFO_ONLY</code>、最低系统 12.0；不是的不打包，查包也不过</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">packaging/install.sh</span><span class="dir-note">MO-6</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>macOS 11 及更老的系统上停下，说要 12 或更新的版本</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">macOS 最低系统 12.0</span><span class="rl">项目主人 2026-11-28 定可以提；12 不是 13 是技术题</span></div>
+          <div class="tile new"><span class="nm">加载命令自己读</span><span class="rl">技术题：同 CRT-1，不靠机器上的 otool</span></div>
+          <div class="tile new"><span class="nm">miyu upgrade 不改</span><span class="rl">升级由旧程序跑；跑新程序那一步本来就会失败、不换</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">MO-6</dd></div>
+        <div><dt>名称</dt><dd>macOS 链式修正</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">MO-6</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI、macOS 机器上打一次包、一台 M1 MacBook 上量占用</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>macho/tests.rs</code>：现搭的 Mach-O 文件、只有 12.0 加链式修正的通过、坏文件报错、macOS 的包六个程序都查；macOS 上读测试程序自己</span></li>
+        <li><span class="ok">✓</span><span>一台 M1 MacBook 上从头打一次包，<code>otool -l</code> 看核心、终端界面、网页都是链式修正、<code>minos 12.0</code>；和 rc.5 交替量占用</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/MO-6-macOS链式修正.md</code>；设计 59 第三节、设计 12 第六节平台表；<code>perf.md</code>「排函数」；<code>docs/{zh,en}/guide/install.md</code>、<code>docs/{zh,en}/dev/contributing.md</code>。</li>
       </ul>
     </div>
   </div>

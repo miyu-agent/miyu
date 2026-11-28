@@ -258,7 +258,7 @@
 
 5. `cargo xtask dist` 带探针跑一轮、写出下一次的起点清单（施工 MO-4，`order/probe.rs`）。这一轮不改这一次的程序。
    - 编之前（和找 `nm`、`cc` 同时），用 `/usr/bin/cc -O2 -dynamiclib -Wall -Wextra -Werror` 把探针编到 cargo 的 target 目录下的 `order/pagetrace.dylib`。
-   - 搭好发行包目录、两个程序核对过以后：记下目录里 `miyu`、`miyu-tui` 的 SHA-256；编量尺 `miyu-perf`，带核心编译时的同一个 `--config`，不设 `MIYU_ORDER_NAMES`，垫片原样调 `cc`。不带的话，链接器的参数不一样，共同的依赖要重编一遍（实测见总施工单「MO-4 量到的」）。
+   - 搭好发行包目录、两个程序核对过以后：记下目录里 `miyu`、`miyu-tui` 的 SHA-256；编量尺 `miyu-perf`，带核心编译时的同一个 `--config` 和同一个最低系统（`MACOSX_DEPLOYMENT_TARGET=12.0`，施工 MO-6），不设 `MIYU_ORDER_NAMES`，垫片原样调 `cc`。不带的话，链接器的参数不一样，共同的依赖要重编一遍（实测见总施工单「MO-4 量到的」）。
    - 跑 `miyu-perf --order <target>/order/macos/probe-miyu.txt --probe <探针> --miyu <目录>/miyu --resources <目录>/resources --head <目录>/miyu-tui --head-order <target>/order/macos/probe-miyu-tui.txt …`：量尺的五段对着要发出去的两个程序，探针是运行时插进去的。
    - 跑完核对两个程序和跑之前逐字节一样，目录里没有探针的动态库：没有叫 `pagetrace.dylib` 的文件，也没有哪个文件里写着探针的安装名（Mach-O 的 `LC_ID_DYLIB`，就是它编出来时的绝对路径）。之后打每一个压缩包以前，对要打的目录（一体包、核心、终端界面、网页）都再核对一次。
    - 两个程序各自合并（`order/seed.rs` 的 `merge`）：起点清单里的名字照原来的先后留着；本轮看到的函数里起点清单没有的，换成名字照第一次看到的先后接在后面；起点清单里的名字在这一份程序里对上的符号没有一个落在这一轮碰过的页上、本轮也没看到它的，去掉（清单里的函数挤在代码段开头，一整页都没被碰过，说明这一页上的函数这一次都没用到，没有这一条清单只会越来越长）。落在探针关上的那一段以外的不去：`__text` 开头不满一页的那一截探针看不见，`main` 和启动时执行的几个函数就排在那里（2026-11-23 实测，没有这一条时第一轮把它们去掉了，核心空闲的代码页多了约 200 kB）。对不上符号的名字没有页可看，照原样留着。写进 `<dist>/order/macos-miyu.txt`、`macos-miyu-tui.txt`（`<dist>` 默认是 target 目录下的 `dist/`），每个程序输出一行新看到几个、去掉几个、留着的对不上的几个、新清单几个名字。新看到的超过核心 200 个、终端界面 50 个时提醒「起点清单太旧」，不算失败。

@@ -101,7 +101,9 @@ pub(crate) fn round(round: &Round<'_>, say: &dyn Fn(&str)) -> Result<(), String>
     say("排函数：编量尺（带同一个垫片，不排）");
     let building = Instant::now();
     let mut perf = Command::new(round.cargo);
-    perf.current_dir(round.root)
+    // 和核心同一个最低系统（施工 MO-6）：共用的依赖不用照另一个最低系统再编一遍。探针这一轮只在 macOS 上跑。
+    crate::dist::released(&mut perf, crate::dist::HOST.unwrap_or_default())
+        .current_dir(round.root)
         .args(["build", "--release", "--locked", "-p", "miyu-perf"]);
     status(round.shims.core.linker(&mut perf)?).map_err(|error| format!("编量尺：{error}"))?;
     say(&format!(

@@ -10,7 +10,9 @@
 //!    模拟器，取头之前先找，没有的当场报错。终端界面钉的提交认排函数的（检出里的 `build.rs` 认 `MIYU_LINK_ORDER`），编它时
 //!    带上一份空清单；不认的说一句、照原来的办法编。本机是 `macos-aarch64` 的，核心的三个程序、终端界面照原来的命令编，只
 //!    多带一个链接器垫片，照仓库里的起点清单排 `miyu`、`miyu-tui`（施工 MO-3，`order/macos.rs`）；缺 `nm`、`cc`，起点清单
-//!    读不了的，取头之前当场报错。带 `--no-order` 的照原来的办法编，不排；别的两种系统一直是原来的办法。
+//!    读不了的，取头之前当场报错。带 `--no-order` 的照原来的办法编，不排；别的两种系统一直是原来的办法。macOS 上编要发出去的
+//!    程序（核心、终端、网页，带不带 `--no-order` 都一样）cargo 的环境里都带最低系统 12.0（施工 MO-6，[`MACOS_MINIMUM`]），
+//!    搭好目录、打压缩包以前核对每个程序都是链式修正、最低系统 12.0，不是的不打包。
 //! 4. 搭目录 `<dist>/miyu-<版本>-<系统>/`：
 //!    - 程序放一起：核心的（[`CORE`]）、终端、网页的（头的程序放在 `miyu` 旁边，`heads.toml` 开头那段）；
 //!    - `resources/`：仓库里登记了的资源（`git ls-files`，不带没登记的），加上两个头的包文件夹：`packages/tui/` 是终端仓库的
@@ -59,6 +61,29 @@ pub const HOST: Option<&str> = if cfg!(all(target_os = "linux", target_arch = "x
 } else {
     None
 };
+
+/// macOS 的发行包照这个最低系统编（施工 MO-6，设计 `12-进程形态与分发.md` 第六节的平台表）：编要发出去的程序时 cargo 的
+/// 环境里带 `MACOSX_DEPLOYMENT_TARGET=12.0`（[`released`]），rustc 照它链接，`cc` 编的 C 依赖（SQLite、zstd、ring）也照它编。
+///
+/// 为什么是 12：rustc 在 `aarch64-apple-darwin` 上默认照 11.0，苹果的链接器照 11.0 写老式的修正信息（`LC_DYLD_INFO_ONLY`），
+/// 启动时 dyld 把程序里带指针的只读数据（`__DATA_CONST`）整段改写一遍，这些页成了脏页、一直算进占用（rc.5 的核心 1024 kB、
+/// 终端界面 592 kB）。照 12.0 链接器就改用链式修正（`LC_DYLD_CHAINED_FIXUPS`），macOS 13 起内核读到哪一页才修正哪一页，
+/// 修正过的页是干净的、不算进占用。macOS 12 上程序照样能跑，只是不省；写 13.0 只会多排除 macOS 12 的人，没有多的好处。
+/// 只管发行包：平时开发的 `cargo build`、测试不设（2026-11-28 项目主人定可以提）。打包前（`check::chained`）、查包时都核对。
+pub(crate) const MACOS_MINIMUM: &str = "12.0";
+
+/// 告诉 rustc 和 `cc` 最低系统的环境变量。
+const DEPLOYMENT: &str = "MACOSX_DEPLOYMENT_TARGET";
+
+/// 给编要发出去的程序的 cargo 命令 `command` 照打的那一种系统 `target` 补环境：macOS 上带最低系统（[`MACOS_MINIMUM`]），
+/// 别的系统原样交回。核心、终端界面、网页的编译和同一个 target 目录里的量尺都经它：漏了一处，那个程序就还是 11.0
+/// （打包前的自查拦下）；量尺不发出去，但和核心共用依赖，不带的话依赖要照 11.0 再编一遍。
+pub(crate) fn released<'c>(command: &'c mut Command, target: &str) -> &'c mut Command {
+    if target.starts_with("macos") {
+        command.env(DEPLOYMENT, MACOS_MINIMUM);
+    }
+    command
+}
 
 /// 核心的程序，照这个先后编、放（排函数的流程也照它编，`order.rs`）：Unix 上四个，多一个看门的 `miyu-watchdog`（施工 LW-28，
 /// 核心照它看着自己起的子进程）；Windows 上核心进作业对象、用不到它，三个，不编也不放。打包、查包都只打、只查本机这一种系统，
@@ -162,7 +187,8 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         None => {
             say("编核心");
             let mut core = Command::new(cargo);
-            core.current_dir(root)
+            released(&mut core, &options.target)
+                .current_dir(root)
                 .args(["build", "--release", "--locked"])
                 .args(CORE.iter().flat_map(|name| ["-p", name]));
             // 带垫片编过以后，不能再对 `-p miyu` 跑不带垫片的 cargo build：它会重编、盖掉排过的那一份（`order/macos.rs`）。
@@ -179,6 +205,7 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
     };
     say("编终端");
     let mut tui_build = head_cargo(tui);
+    released(&mut tui_build, &options.target);
     if let Some(list) = &tui_list {
         tui_build.env(order::VARIABLE, list);
     }
@@ -188,7 +215,13 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         None => status(&mut tui_build).map(|()| None)?,
     };
     say("编网页");
-    status(head_cargo(web).args(["build", "--release", "--locked", "-p", WEB_PROGRAM]))?;
+    status(released(&mut head_cargo(web), &options.target).args([
+        "build",
+        "--release",
+        "--locked",
+        "-p",
+        WEB_PROGRAM,
+    ]))?;
     let web_binary = web
         .join("target/release")
         .join(format!("{WEB_PROGRAM}{exe}"));
@@ -310,6 +343,19 @@ fn dist(root: &Path, cargo: &str, args: &[String]) -> Result<Vec<Packed>, String
         Some(library) => order::probe::clean(dir, library),
         None => Ok(()),
     };
+    // macOS 的程序都要是链式修正、最低系统 12.0（施工 MO-6）：哪一处编译漏带了环境变量，在这里拦下、不打包。分包用的是
+    // 同一批程序，查这一个目录就够了。
+    if options.target.starts_with("macos") {
+        say("核对 macOS 的程序是链式修正、最低系统 12.0");
+        let found = check::chained(&dir);
+        if !found.is_empty() {
+            return Err(format!(
+                "{} 里有程序不是照最低系统 {MACOS_MINIMUM} 编的，不打包：\n  {}",
+                dir.display(),
+                found.join("\n  ")
+            ));
+        }
+    }
     let archive = work.join(archive_name(&version, &options.target));
     say("打压缩包");
     pack(&dir, &name, &archive)?;
