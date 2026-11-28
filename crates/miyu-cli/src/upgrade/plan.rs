@@ -1,9 +1,7 @@
-//! 只算不做的几样：安装标记（`install.toml`）认的是谁装的、版本号怎么比、发布列表里挑哪一个、压缩包叫什么、校验和清单里它的
-//! 那一行。
+//! 只算不做的几样：安装标记（`install.toml`）认的是谁装的、版本号怎么比、订阅里的标签哪几个能算、压缩包叫什么、校验和清单里
+//! 它的那一行。
 
 use std::cmp::Ordering;
-
-use serde_json::Value;
 
 /// 谁装的（程序真实位置旁边的 `install.toml` 写的 `channel`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -147,70 +145,39 @@ fn pre_order(left: &[String], right: &[String]) -> Ordering {
     left.len().cmp(&right.len())
 }
 
-/// 发布里的一个文件。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Asset {
-    /// 文件名。
-    pub(crate) name: String,
-    /// 下载地址。
-    pub(crate) url: String,
-}
-
-/// 挑中的一个发布。
+/// 能算的一个发布：照标签认的版本，连同原样的标签（文件地址按它拼）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Release {
     /// 照标签认的版本。
     pub(crate) version: Version,
-    /// 带的文件。
-    pub(crate) assets: Vec<Asset>,
+    /// 订阅里写的标签（`v2026.11.0` 这样）。
+    pub(crate) tag: String,
 }
 
-impl Release {
-    /// 叫 `name` 的那个文件。
-    pub(crate) fn asset(&self, name: &str) -> Option<&Asset> {
-        self.assets.iter().find(|asset| asset.name == name)
-    }
-}
-
-/// GitHub 发布列表（`/repos/<仓库>/releases`）里最新的一个：草稿不算；预发布只在 `pre` 时算；标签要是 `v<版本>`，认不出的跳过。
-pub(crate) fn newest(list: &Value, pre: bool) -> Option<Release> {
-    list.as_array()?
+/// 发行版订阅的标签里能算的，新的在前（施工 UP-4）：标签要是 `v<版本>`，认不出的跳过；订阅里没有「预发布」的标记，照标签认，
+/// 带 `-` 的（`-rc.N`）是预发布，只在 `pre` 时算。同一个版本写了两遍的只算一次。
+pub(crate) fn candidates(tags: &[String], pre: bool) -> Vec<Release> {
+    let mut found: Vec<Release> = tags
         .iter()
-        .filter(|release| release["draft"].as_bool() != Some(true))
-        .filter(|release| pre || release["prerelease"].as_bool() != Some(true))
-        .filter_map(|release| {
-            let version = Version::parse(release["tag_name"].as_str()?.strip_prefix('v')?)?;
-            if version.is_pre() && !pre {
-                return None;
-            }
-            let assets = release["assets"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|asset| {
-                    Some(Asset {
-                        name: asset["name"].as_str()?.to_string(),
-                        url: asset["browser_download_url"].as_str()?.to_string(),
-                    })
-                })
-                .collect();
-            Some(Release { version, assets })
+        .filter_map(|tag| {
+            let version = Version::parse(tag.strip_prefix('v')?)?;
+            (pre || !version.is_pre()).then(|| Release {
+                version,
+                tag: tag.clone(),
+            })
         })
-        .max_by(|a, b| a.version.cmp(&b.version))
+        .collect();
+    found.sort_by(|a, b| b.version.cmp(&a.version));
+    found.dedup_by(|a, b| a.version == b.version);
+    found
 }
 
-/// 列表里有没有预发布（草稿不算，标签要是 `v<版本>`；标成预发布的、标签带 `-` 的都算）：没有正式版时照它提示加 `--prerelease`
-/// （施工 RL-4补2）。
-pub(crate) fn has_pre(list: &Value) -> bool {
-    list.as_array().into_iter().flatten().any(|release| {
-        let version = release["tag_name"]
-            .as_str()
-            .and_then(|tag| tag.strip_prefix('v'))
-            .and_then(Version::parse);
-        release["draft"].as_bool() != Some(true)
-            && version.is_some_and(|version| {
-                version.is_pre() || release["prerelease"].as_bool() == Some(true)
-            })
+/// 订阅里有没有预发布（标签要是 `v<版本>`、带 `-` 的）：没有正式版时照它提示加 `--prerelease`（施工 RL-4补2，UP-4 照标签认）。
+pub(crate) fn has_pre(tags: &[String]) -> bool {
+    tags.iter().any(|tag| {
+        tag.strip_prefix('v')
+            .and_then(Version::parse)
+            .is_some_and(|version| version.is_pre())
     })
 }
 

@@ -213,7 +213,7 @@ Arguments you can add:
 
 | Argument | What it does |
 |---|---|
-| `--prerelease` | Counts pre-releases too |
+| `--prerelease` | Counts pre-releases too (versions whose tag contains `-`, such as `-rc.5`) |
 | `--yes` | Upgrades directly, without asking `Upgrade Miyu … → …? [Y/n]` |
 | `-h`, `--help` | Shows help |
 
@@ -228,9 +228,9 @@ Arguments you can add:
 
 If Miyu was installed with the install script, `miyu upgrade` upgrades it like this:
 
-1. It asks GitHub for the latest releases and picks the newest one that is newer than the current version. If there is no newer version, it says `already up to date (…)`.
-2. It asks whether you want to upgrade. Pressing Enter or typing `y` means yes. If it is not running in a terminal and cannot read an answer, it says `cancelled: no confirmation`; in that case you need to add `--yes`.
-3. It downloads this version's archive, `SHA256SUMS` and `SHA256SUMS.sig`, verifies the signature with the release public key built into the program, checks the SHA-256, unpacks the archive and runs the new `miyu --version` once.
+1. It reads the feed of the GitHub release page, `https://github.com/miyu-agent/miyu/releases.atom`, and picks the newest release that is newer than the current version. The feed is an ordinary web page, so it does not count against the GitHub API limit of 60 anonymous requests an hour, and an upgrade does not fail because several people share one network exit. A version whose tag contains `-` (for example `v2026.11.0-rc.5`) is a pre-release, and it counts only when you add `--prerelease`. If a release has no archives uploaded, `miyu upgrade` skips it and looks at the next older one, but it never picks a version older than the current one. If there is no newer version to upgrade to, it says `already up to date (…)`.
+2. It downloads this version's `SHA256SUMS` and `SHA256SUMS.sig`, verifies the signature with the release public key built into the program, and then asks whether you want to upgrade. Pressing Enter or typing `y` means yes. If it is not running in a terminal and cannot read an answer, it says `cancelled: no confirmation`; in that case you need to add `--yes`.
+3. It downloads this version's archive, checks the SHA-256, unpacks the archive and runs the new `miyu --version` once.
 4. It replaces the files in the install directory that belong to Miyu and does not change `install.toml`. Anything that is not Miyu's is left as it was, with the note `… item(s) in the install folder are not Miyu's and were left as they were`. The old files are first moved into `.miyu-old-<old version>/` in the install directory and deleted once the replacement is done; on Windows, the running `miyu.exe` cannot be deleted, so it is left until the start of the next `miyu upgrade`.
 5. It says `upgraded Miyu … → …`.
 

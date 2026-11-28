@@ -1,4 +1,4 @@
-//! 没拿到的怎么分：连不上、限流、别的状态码。
+//! 没拿到的怎么分：连不上、状态码。
 
 use super::*;
 
@@ -14,8 +14,9 @@ fn failed(status: Option<u16>, headers: &[(&str, &str)]) -> miyu_http::Failed {
     }
 }
 
+/// 施工 UP-4：不走 API 了，带着 `x-ratelimit-*` 头的 403、429 也照状态码说。
 #[test]
-fn no_status_is_offline_a_used_up_limit_is_limited_and_the_rest_keep_their_status() {
+fn no_status_is_offline_and_the_rest_keep_their_status() {
     assert_eq!(
         classify(&failed(None, &[])),
         NetError::Offline("connection refused".to_string())
@@ -24,18 +25,10 @@ fn no_status_is_offline_a_used_up_limit_is_limited_and_the_rest_keep_their_statu
         ("x-ratelimit-remaining", "0"),
         ("x-ratelimit-reset", "1790000000"),
     ];
-    assert_eq!(
-        classify(&failed(Some(403), &limit)),
-        NetError::Limited(Some(1_790_000_000))
-    );
-    assert_eq!(
-        classify(&failed(Some(429), &[("x-ratelimit-remaining", "0")])),
-        NetError::Limited(None)
-    );
-    assert_eq!(
-        classify(&failed(Some(403), &[("x-ratelimit-remaining", "12")])),
-        NetError::Status(403),
-        "没用完的 403 是别的原因"
-    );
-    assert_eq!(classify(&failed(Some(404), &limit)), NetError::Status(404));
+    for status in [403, 404, 429, 500] {
+        assert_eq!(
+            classify(&failed(Some(status), &limit)),
+            NetError::Status(status)
+        );
+    }
 }

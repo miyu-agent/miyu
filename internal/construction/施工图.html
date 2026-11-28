@@ -1681,6 +1681,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sUP4"><span class="n">UP-4</span>升级读发行版订阅、不走 API<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66952,6 +66953,63 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/SH-3-sleep和下载即执行.md</code>；蓝图 <code>tools/shell.md</code>「怎么走」第 4 条、「高危命令」第 5 条，<code>session/guard.md</code>；设计 26 登记簿。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sUP4" aria-labelledby="h-sUP4">
+  <div class="sheet-head"><h2 id="h-sUP4"><span class="no">UP-4</span>升级读发行版订阅、不走 API</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>miyu upgrade</code> 的版本列表改读 <code>releases.atom</code>：普通网页，不算 GitHub API 匿名每小时 60 次的额度，同一个出口后面人多也升得了。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-cli · upgrade/feed.rs · plan.rs</span><span class="dir-note">UP-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>每个 entry 只认 <code>releases/tag/v&lt;版本&gt;</code> 的链接，正文里转义过的不算，不加 XML 依赖</li>
+              <li>带 <code>-</code> 的标签是预发布，<code>--prerelease</code> 才算；新的在前</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-cli · upgrade/flow.rs · net.rs · language/upgrade.rs</span><span class="dir-note">UP-4</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>文件地址按标签拼；比现在新的先下 <code>SHA256SUMS</code>，404 的跳过、往旧的找，不比现在新的就停</li>
+              <li>订阅读不了的说「返回的不是 Atom 订阅」；限流判法和「60 次」那句撤掉，429 照状态码说</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">读 releases.atom、照标签认预发布</span><span class="rl">项目主人 2026-11-28 定</span></div>
+          <div class="tile new"><span class="nm">没带文件的跳过</span><span class="rl">项目主人 2026-11-28 定：<code>SHA256SUMS</code> 404 为准</span></div>
+          <div class="tile new"><span class="nm">签名、校验和不变</span><span class="rl">安全靠编进来的发版公钥，不靠列表从哪来</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">UP-4</dd></div>
+        <div><dt>名称</dt><dd>升级读发行版订阅、不走 API</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">UP-4</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI、真订阅实测</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>upgrade/tests.rs</code>、<code>tests/refused.rs</code>、<code>tests/feed.rs</code>：换成 atom 替身，挑正式版、挑 rc、只有 rc 提示、404 跳到下一个、订阅坏了；改前红 15 条</span></li>
+        <li><span class="ok">✓</span><span><code>feed/tests.rs</code>：照真的订阅认标签，正文链接不算，空的、坏的分开</span></li>
+        <li><span class="ok">✓</span><span>实测：debug 编的 <code>miyu upgrade --prerelease</code> 从真的 <code>releases.atom</code> 认出 rc.5，沙箱安装目录不动</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/UP-4-升级不走API.md</code>；蓝图 <code>cli/upgrade.md</code>「怎么走」第 4、6 条；用户手册 <code>install.md</code>、<code>cli.md</code>（中英）。</li>
       </ul>
     </div>
   </div>

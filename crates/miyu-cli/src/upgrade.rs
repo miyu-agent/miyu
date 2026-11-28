@@ -2,10 +2,12 @@
 //! 或者告诉人该用哪个包管理器。
 //!
 //! - [`Upgrade`]：参数；[`upgrade()`]：跑一次，交回退出码；
-//! - 只算不做的在 `plan.rs`（标记、版本、挑发布），怎么走在 `flow.rs`，下载在 `net.rs`（测试换替身），换文件在 `swap.rs`。
+//! - 只算不做的在 `plan.rs`（标记、版本、挑发布），订阅里的标签在 `feed.rs`，怎么走在 `flow.rs`，下载在 `net.rs`（测试换替身），
+//!   换文件在 `swap.rs`。
 //!
 //! 输出是给人看的：跟界面语言，成了印在标准输出上，没成印在标准错误上。不连核心，数据根一个字节都不碰。
 
+mod feed;
 mod flow;
 mod net;
 mod plan;
@@ -73,6 +75,8 @@ pub(crate) enum Said {
     UnknownSystem(String),
     /// 没拿到。
     Net(NetError),
+    /// 发行版列表的地址回的不是 Atom 订阅（空的、网页、不是 UTF-8 的，施工 UP-4）：那个地址。
+    BadFeed(String),
     /// 一个能用的发布都没有。
     NoRelease,
     /// 还没有正式版，列表里有预发布（不带 `--prerelease` 时，施工 RL-4补2）。

@@ -13,9 +13,9 @@ fn every_outcome_reads_in_both_languages() {
         Said::NoKeys,
         Said::UnknownSystem(flow::download_page()),
         Said::Net(NetError::Offline("dns".to_string())),
-        Said::Net(NetError::Limited(Some(1_790_000_000))),
-        Said::Net(NetError::Limited(None)),
+        Said::Net(NetError::Status(429)),
         Said::Net(NetError::Status(500)),
+        Said::BadFeed("https://github.com/miyu-agent/miyu/releases.atom".to_string()),
         Said::NoRelease,
         Said::OnlyPre,
         Said::UpToDate("1.0.0".to_string()),
@@ -62,12 +62,11 @@ fn every_outcome_reads_in_both_languages() {
                 .iter()
                 .any(|l| l.contains("brew upgrade"))
         );
-        let limited = language.upgrade(&Said::Net(NetError::Limited(Some(1_790_000_000))));
+        let status = language.upgrade(&Said::Net(NetError::Status(429)));
         assert!(
-            limited
-                .iter()
-                .any(|l| l.contains(':') && l.chars().any(|c| c.is_ascii_digit())),
-            "{limited:?}"
+            status.iter().any(|l| l.contains("HTTP 429"))
+                && !status.iter().any(|l| l.contains("60")),
+            "照状态码说，不再提匿名额度：{status:?}"
         );
         assert!(
             language

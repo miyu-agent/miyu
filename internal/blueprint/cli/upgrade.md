@@ -12,9 +12,10 @@
 |---|---|
 | `crates/miyu/src/main.rs` | 子命令 `upgrade`；换上帮助页 |
 | `crates/miyu-cli/src/upgrade.rs` | 参数（`--prerelease`、`--yes`）、入口、要说的那一句（`Said`）和退出码；真跑时的程序位置、网络、问一句、跑新版的 `--version` |
-| `crates/miyu-cli/src/upgrade/plan.rs` | 只算不做：安装标记认谁装的、版本号怎么比、发布列表里挑哪一个、压缩包叫什么、校验和清单里它那一行 |
+| `crates/miyu-cli/src/upgrade/plan.rs` | 只算不做：安装标记认谁装的、版本号怎么比、订阅里的标签哪几个能算、压缩包叫什么、校验和清单里它那一行 |
+| `crates/miyu-cli/src/upgrade/feed.rs` | 发行版订阅（`releases.atom`）里每个 entry 的标签（施工 UP-4），不加 XML 依赖 |
 | `crates/miyu-cli/src/upgrade/flow.rs` | 怎么走（下面「怎么走」），经 `World` 拿网络、程序位置、公钥，测试换替身 |
-| `crates/miyu-cli/src/upgrade/net.rs` | 下载：`miyu-http` 的一次 GET，照环境变量走代理；连不上、限流、别的状态码分开 |
+| `crates/miyu-cli/src/upgrade/net.rs` | 下载：`miyu-http` 的一次 GET，照环境变量走代理；连不上、别的状态码分开 |
 | `crates/miyu-cli/src/upgrade/swap.rs` | 解开 tar.gz、zip，查新版缺什么，和装着的逐样对换、出错照原样退回，收拾上次留下的 |
 | `crates/miyu-cli/src/language/upgrade.rs` | 给人看的字，中英文 |
 | `crates/miyu-cli/src/help/{zh,en}/upgrade.txt` | 帮助页 |
@@ -39,14 +40,22 @@ channel = "script"   # script：安装脚本；aur：AUR 的包；brew：Homebre
 3. **公钥**：编进来的发版公钥表（`sign::RELEASE`，施工 RL-4补 填上主人的第一把 `ca6918041857843c`）是空的时候，报「这一版没有内置
    发版公钥」，不升级、不跳过签名。系统不在发的四种里的
    报没有这种系统的发行包，提示发行包有哪四种、别的系统到下载地址拿源码自己编译（施工 WN-1）。这两样都在上网之前。
-4. **问 GitHub**：`/repos/miyu-agent/miyu/releases?per_page=30`，草稿不算，预发布只在 `--prerelease` 时算，标签要是 `v<版本>`。不比现在这一版
-   （`miyu --version` 的那一个）新的说「已是最新版本」，退出码 0：只升不降。一个能用的都没有时：不带 `--prerelease`、列表里有预发布的说
-   「还没有正式版」、提示加 `--prerelease`（施工 RL-4补2），连预发布都没有的说「没有找到可用的发行版」，都是退出码 1。连不上、限流（`403`、`429` 带 `x-ratelimit-remaining: 0`，
-   匿名每小时 60 次，照 `x-ratelimit-reset` 说几点以后再试）、别的状态码分开说，退出码 1。
-5. **问一句**「升级 Miyu <旧> → <新>？[Y/n]」，`--yes` 不问；答不升的「已取消」，标准输入关着的报没有收到确认、提示加 `--yes`，
+4. **读发行版订阅**（施工 UP-4，主人 2026-11-28 定）：`https://github.com/miyu-agent/miyu/releases.atom`。它是普通网页，不算 GitHub API
+   匿名每小时 60 次的额度（原来问的 `/repos/…/releases` 是 API，同一个出口后面人多就用完）。只认每个 entry 里 `releases/tag/<标签>`
+   的链接（正文是转义过的网页，里面的链接不算），标签要是 `v<版本>`，读回来最多 8 MB。草稿不在订阅里；订阅没有「预发布」的标记，
+   照标签认：带 `-` 的（`-rc.N`）是预发布，只在 `--prerelease` 时算。回的不是 Atom 订阅（空的、网页、不是 UTF-8、读到一半的）
+   说「无法读取发行版列表：<地址> 返回的不是 Atom 订阅」、提示检查网络或代理，退出码 1。一个能算的标签都没有时：不带 `--prerelease`、
+   订阅里有预发布的说「还没有正式版」、提示加 `--prerelease`（施工 RL-4补2），连预发布都没有的（包括一个 entry 都没有的）说「未找到
+   可用的发行版」，都是退出码 1。从新到旧一个一个看：不比现在这一版（`miyu --version` 的那一个）新的就停，说「已是最新版本」，退出码 0：
+   只升不降；比现在新的先下它的 `SHA256SUMS`（地址按标签拼，见第 6 条），回 404 的（作废的、没传包的，比如作废的 rc.3）跳过、接着往旧的
+   找，比现在新的都跳过了也说「已是最新版本」。连不上、别的状态码（`github.com` 自己偶尔也回 429）照原样说「GitHub 返回 HTTP <状态码>」，
+   退出码 1；`SHA256SUMS` 回 404 以外的错不跳过，停下说。
+5. **问一句**「升级 Miyu <旧> → <新>？[Y/n]」，`--yes` 不问（施工 UP-4 起问在第 6 条的清单、签名核对以后，问的是一个真能升的版本；压缩包在问以后才下）；答不升的「已取消」，标准输入关着的报没有收到确认、提示加 `--yes`，
    都是退出码 1。
-6. **核对**：发布里要有 `miyu-<版本>-<系统>.tar.gz`（Windows `.zip`，同 `cargo xtask dist`）、`SHA256SUMS`、`SHA256SUMS.sig`。
+6. **核对**：文件地址按标签拼：`https://github.com/miyu-agent/miyu/releases/download/<标签>/<文件名>`，要有 `SHA256SUMS`（第 4 条已经
+   下了）、`SHA256SUMS.sig`、`miyu-<版本>-<系统>.tar.gz`（Windows `.zip`，同 `cargo xtask dist`），后两个回 404 的报发行版里缺少它。
    签名照发版公钥验（签法同软件源的索引，`sign::verify`），清单照 `sums::check` 查写法，里面要有这个压缩包那一行。哪一样不对都停。
+   安全靠的是编进程序里的发版公钥，不靠版本列表从哪来。
 7. **暂存**：在安装目录里建 `.miyu-upgrade/`（和装着的同一块盘，对换只是改名）。没有写权限的说清楚、提示不提权，退出码 1：
    不 `sudo`、不提权；装进系统目录又没写标记的也停在这里。
 8. **下载、查新版**：下载压缩包，SHA-256 要和清单一致；解开（不许写到目录外面），`miyu-<版本>-<系统>/` 里要有五个程序（Unix 上六个，多一个看门的 `miyu-watchdog`，施工 LW-28）和
@@ -88,6 +97,7 @@ $ miyu upgrade
 
 | 测试 | 守着什么 |
 |---|---|
-| `upgrade/plan/tests.rs` | 标记的几种写法和写错；版本号读法、照 semver 比（预发布排在正式版前、`rc.10` 在 `rc.9` 后）；草稿、预发布不算，`--prerelease` 才算；压缩包名同 `dist`；清单照文件名找那一行 |
+| `upgrade/plan/tests.rs` | 标记的几种写法和写错；版本号读法、照 semver 比（预发布排在正式版前、`rc.10` 在 `rc.9` 后）；标签带 `-` 的是预发布，`--prerelease` 才算，新的在前；压缩包名同 `dist`；清单照文件名找那一行 |
+| `upgrade/feed/tests.rs` | 照真的订阅认标签，正文里转义过的链接、订阅头上的链接不算；空的订阅没有标签；空的、网页、读到一半的、不是 UTF-8 的不是订阅 |
 | `upgrade/swap/tests.rs` | tar.gz、zip 都解成一层目录，解不开的报错；新版缺的程序、`resources/`；对换后新的在、标记留着、旧的删了；挪到第几步出错都退回原样；收拾只删上次留下的 |
-| `upgrade/tests.rs`、`upgrade/tests/refused.rs`、`upgrade/tests/words.rs` | 假网络、真钥匙、真压缩包走一趟：升好；包管理器、没标记的不上网；标记写错、没有公钥、没有这种系统在上网之前停；连不上、限流、状态码、不是 JSON；已是最新、不降级、预发布要 `--prerelease`；答不升、没得答、`--yes` 不问；没有签名文件、别的钥匙签的、清单被改过、压缩包被改过、清单里没有这一行、清单写坏；新版缺东西、报的版本不对；没有写权限；对换中途出错。每一种停下的都查装着的没动、暂存删了。两种语言每一句都说得出 |
+| `upgrade/tests.rs`、`upgrade/tests/refused.rs`、`upgrade/tests/words.rs` | 假网络、真钥匙、真压缩包走一趟：升好；包管理器、没标记的不上网；标记写错、没有公钥、没有这种系统在上网之前停；连不上、状态码（含 429）、不是 Atom 订阅；已是最新、不降级、预发布要 `--prerelease`；挑最新的正式版、加 `--prerelease` 挑 rc、没带文件的跳到下一个、跳到不比现在新的就停、`SHA256SUMS` 别的错不跳（`tests/feed.rs`）；文件地址按标签拼、不碰 API；答不升、没得答、`--yes` 不问；没有签名文件、没有压缩包、别的钥匙签的、清单被改过、压缩包被改过、清单里没有这一行、清单写坏；新版缺东西、报的版本不对；没有写权限；对换中途出错。每一种停下的都查装着的没动、暂存删了。两种语言每一句都说得出 |

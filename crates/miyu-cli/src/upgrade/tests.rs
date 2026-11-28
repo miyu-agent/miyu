@@ -1,4 +1,4 @@
-//! `miyu upgrade` 走一趟：假的网络（发布列表、清单、签名、压缩包都是真造的）、真的钥匙、真的临时目录。每一种停下的地方都不碰
+//! `miyu upgrade` 走一趟：假的网络（发行版订阅、清单、签名、压缩包都是真造的）、真的钥匙、真的临时目录。每一种停下的地方都不碰
 //! 装着的那一份。
 
 use std::cell::RefCell;
@@ -8,7 +8,6 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use miyu_source::sign;
-use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use super::flow::{self, World};
@@ -19,14 +18,22 @@ use super::{Answer, Said, Step, Upgrade};
 
 const TARGET: &str = "linux-x86_64";
 
-/// 照地址交回准备好的东西，记下问过哪些。
+/// 发行版订阅的地址（施工 UP-4：普通网页，不算 GitHub API 的额度）。照写死的字查，不借 `flow` 的。
+const FEED: &str = "https://github.com/miyu-agent/miyu/releases.atom";
+
+/// 一个标签的文件从哪下（按标签拼）。
+fn download(tag: &str) -> String {
+    format!("https://github.com/miyu-agent/miyu/releases/download/{tag}")
+}
+
+/// 照地址交回准备好的东西，没准备的是 404；记下问过哪些。
 struct Fake {
     answers: HashMap<String, Result<Vec<u8>, NetError>>,
     asked: RefCell<Vec<String>>,
 }
 
 impl Net for Fake {
-    fn get(&self, url: &str, _limit: usize, _api: bool) -> Result<Vec<u8>, NetError> {
+    fn get(&self, url: &str, _limit: usize, _quick: bool) -> Result<Vec<u8>, NetError> {
         self.asked.borrow_mut().push(url.to_string());
         self.answers
             .get(url)
@@ -35,15 +42,34 @@ impl Net for Fake {
     }
 }
 
-/// 发布列表的地址（同 `flow`）。
-fn list_url() -> String {
-    format!(
-        "https://api.github.com/repos/{}/releases?per_page=30",
-        flow::REPOSITORY
-    )
+/// 照 GitHub 的样子写一份订阅：每个标签一个 entry，新的在前。正文是转义过的网页，里面带一个别的标签的链接（不该被认成发行版）。
+pub(super) fn feed(tags: &[&str]) -> Vec<u8> {
+    let mut text = String::from(concat!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n",
+        "<feed xmlns=\"http://www.w3.org/2005/Atom\" xmlns:media=\"http://search.yahoo.com/mrss/\" xml:lang=\"en-US\">\n",
+        "  <id>tag:github.com,2008:https://github.com/miyu-agent/miyu/releases</id>\n",
+        "  <link type=\"text/html\" rel=\"alternate\" href=\"https://github.com/miyu-agent/miyu/releases\"/>\n",
+        "  <link type=\"application/atom+xml\" rel=\"self\" href=\"https://github.com/miyu-agent/miyu/releases.atom\"/>\n",
+        "  <title>Release notes from miyu</title>\n",
+    ));
+    for tag in tags {
+        text.push_str(&format!(
+            concat!(
+                "  <entry>\n",
+                "    <id>tag:github.com,2008:Repository/1219967630/{tag}</id>\n",
+                "    <link rel=\"alternate\" type=\"text/html\" href=\"https://github.com/miyu-agent/miyu/releases/tag/{tag}\"/>\n",
+                "    <title>Miyu {tag}</title>\n",
+                "    <content type=\"html\">&lt;p&gt;接着 &lt;a href=&quot;https://github.com/miyu-agent/miyu/releases/tag/v99.0.0&quot;&gt;v99.0.0&lt;/a&gt;&lt;/p&gt;</content>\n",
+                "  </entry>\n",
+            ),
+            tag = tag
+        ));
+    }
+    text.push_str("</feed>\n");
+    text.into_bytes()
 }
 
-/// 一套：装着 0.9.0 的目录、一把钥匙、发布了 `version` 的网络。
+/// 一套：装着 0.9.0 的目录、一把钥匙、发布了 `version`（带全了文件）和 0.8.0（没带文件）的网络。
 struct Setup {
     scratch: Scratch,
     dir: PathBuf,
@@ -52,7 +78,7 @@ struct Setup {
 }
 
 impl Setup {
-    fn new(name: &str, version: &str, prerelease: bool) -> Setup {
+    fn new(name: &str, version: &str) -> Setup {
         let scratch = Scratch::new(&format!("flow-{name}"));
         scratch.put("install/miyu", "old");
         scratch.put("install/resources/core/a.md", "old resource");
@@ -73,22 +99,12 @@ impl Setup {
         );
         let signature =
             serde_json::to_vec(&sign::sign(sums.as_bytes(), &made.secret).unwrap()).unwrap();
-        let base = format!("https://github.com/x/releases/download/v{version}");
-        let list = json!([
-            {
-                "tag_name": format!("v{version}"),
-                "draft": false,
-                "prerelease": prerelease,
-                "assets": [
-                    {"name": archive, "browser_download_url": format!("{base}/{archive}")},
-                    {"name": "SHA256SUMS", "browser_download_url": format!("{base}/SHA256SUMS")},
-                    {"name": "SHA256SUMS.sig", "browser_download_url": format!("{base}/SHA256SUMS.sig")},
-                ],
-            },
-            {"tag_name": "v0.8.0", "draft": false, "prerelease": false, "assets": []},
-        ]);
+        let base = download(&format!("v{version}"));
         let answers = HashMap::from([
-            (list_url(), Ok(serde_json::to_vec(&list).unwrap())),
+            (
+                FEED.to_string(),
+                Ok(feed(&[&format!("v{version}"), "v0.8.0"])),
+            ),
             (format!("{base}/{archive}"), Ok(bytes)),
             (format!("{base}/SHA256SUMS"), Ok(sums.into_bytes())),
             (format!("{base}/SHA256SUMS.sig"), Ok(signature)),
@@ -116,6 +132,11 @@ impl Setup {
         self.net.answers.insert(url, answer);
     }
 
+    /// 订阅换成这几个标签。
+    fn tags(&mut self, tags: &[&str]) {
+        self.net.answers.insert(FEED.to_string(), Ok(feed(tags)));
+    }
+
     fn body(&self, ending: &str) -> Vec<u8> {
         self.net
             .answers
@@ -123,6 +144,11 @@ impl Setup {
             .find(|(url, _)| url.ends_with(ending))
             .and_then(|(_, answer)| answer.clone().ok())
             .unwrap()
+    }
+
+    /// 问过的地址里有没有带 `part` 的。
+    fn asked_for(&self, part: &str) -> bool {
+        self.net.asked.borrow().iter().any(|url| url.contains(part))
     }
 }
 
@@ -177,7 +203,7 @@ fn untouched(setup: &Setup) {
 
 #[test]
 fn a_script_install_upgrades_itself() {
-    let setup = Setup::new("ok", "1.0.0", false);
+    let setup = Setup::new("ok", "1.0.0");
     // 上一次删不掉、留下来的：这一次开头删（不删的话这一次的 .miyu-old-0.9.0 建不了）。
     setup.scratch.put("install/.miyu-old-0.9.0/miyu", "older");
     setup.scratch.put("install/.miyu-old-0.8.0/miyu", "oldest");
@@ -243,7 +269,7 @@ fn package_managers_and_unmarked_installs_are_only_told_what_to_do() {
         ),
         (None, Said::Unmarked(flow::download_page())),
     ] {
-        let setup = Setup::new("manager", "1.0.0", false);
+        let setup = Setup::new("manager", "1.0.0");
         match marker {
             Some(text) => drop(setup.scratch.put("install/install.toml", text)),
             None => fs::remove_file(setup.dir.join("install.toml")).unwrap(),
@@ -258,7 +284,7 @@ fn package_managers_and_unmarked_installs_are_only_told_what_to_do() {
 
 #[test]
 fn a_bad_marker_or_no_keys_or_an_unknown_system_stops_before_the_network() {
-    let setup = Setup::new("marker", "1.0.0", false);
+    let setup = Setup::new("marker", "1.0.0");
     setup
         .scratch
         .put("install/install.toml", "channel = \"apt\"\n");
@@ -268,7 +294,7 @@ fn a_bad_marker_or_no_keys_or_an_unknown_system_stops_before_the_network() {
         "{said:?}"
     );
 
-    let mut setup = Setup::new("nokeys", "1.0.0", false);
+    let mut setup = Setup::new("nokeys", "1.0.0");
     setup.keys.clear();
     let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0", Answer::Yes);
     assert_eq!(said, Said::NoKeys);
@@ -276,6 +302,7 @@ fn a_bad_marker_or_no_keys_or_an_unknown_system_stops_before_the_network() {
     untouched(&setup);
 }
 
+/// 订阅没拿到：连不上、别的状态码（github.com 自己偶尔也回 429）照原样说；回的不是 Atom 订阅（网页、空的）说读不了列表。
 #[test]
 fn network_trouble_is_named() {
     for (answer, said) in [
@@ -283,35 +310,32 @@ fn network_trouble_is_named() {
             Err(NetError::Offline("dns".to_string())),
             Said::Net(NetError::Offline("dns".to_string())),
         ),
-        (
-            Err(NetError::Limited(Some(1_790_000_000))),
-            Said::Net(NetError::Limited(Some(1_790_000_000))),
-        ),
+        (Err(NetError::Status(429)), Said::Net(NetError::Status(429))),
         (Err(NetError::Status(500)), Said::Net(NetError::Status(500))),
-        (
-            Ok(b"<html>".to_vec()),
-            Said::Failed("releases".to_string(), "not JSON".to_string()),
-        ),
+        (Ok(b"<html>".to_vec()), Said::BadFeed(FEED.to_string())),
+        (Ok(Vec::new()), Said::BadFeed(FEED.to_string())),
+        (Ok(vec![0xff, 0xfe]), Said::BadFeed(FEED.to_string())),
     ] {
-        let mut setup = Setup::new("net", "1.0.0", false);
-        setup.answer("per_page=30", answer);
+        let mut setup = Setup::new("net", "1.0.0");
+        setup.answer("releases.atom", answer);
         let (got, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0", Answer::Yes);
         assert_eq!(got, said);
         assert_eq!(got.code(), 1);
+        assert!(!setup.asked_for("api.github.com"), "不走 API");
         untouched(&setup);
     }
 }
 
 #[test]
 fn nothing_newer_means_up_to_date_and_prereleases_need_pre() {
-    let setup = Setup::new("same", "1.0.0", false);
+    let setup = Setup::new("same", "1.0.0");
     let (said, _, asked) = run(&setup, plain(), "1.0.0", "miyu 1.0.0", Answer::Yes);
     assert_eq!(said, Said::UpToDate("1.0.0".to_string()));
     assert_eq!(asked, 0);
     let (said, _, _) = run(&setup, plain(), "1.1.0", "miyu 1.0.0", Answer::Yes);
     assert_eq!(said, Said::UpToDate("1.1.0".to_string()), "不降级");
 
-    let setup = Setup::new("pre", "1.0.0-rc.1", true);
+    let setup = Setup::new("pre", "1.0.0-rc.1");
     let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0-rc.1", Answer::Yes);
     assert_eq!(
         said,
@@ -336,7 +360,7 @@ fn nothing_newer_means_up_to_date_and_prereleases_need_pre() {
 
 #[test]
 fn the_answer_decides_and_yes_skips_the_question() {
-    let setup = Setup::new("answer", "1.0.0", false);
+    let setup = Setup::new("answer", "1.0.0");
     let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0", Answer::No);
     assert_eq!(said, Said::Cancelled);
     let (said, _, _) = run(&setup, plain(), "0.9.0", "miyu 1.0.0", Answer::Closed);
@@ -356,5 +380,6 @@ fn the_answer_decides_and_yes_skips_the_question() {
     assert_eq!(asked, 0);
 }
 
+mod feed;
 mod refused;
 mod words;
