@@ -136,3 +136,32 @@ fn a_join_happens_in_a_turn_and_uses_its_triggers_up() {
     // 桥只带事实并进来的（施工 O-64）。
     ledger.append(&joined(8, Some(6), "")).unwrap();
 }
+
+/// 记下的照序号排好（施工 LW-37）：后面那条先当了触发，前面那条再当，两条都记得、都只能当一次；当过触发以后旁听的照样认。
+#[test]
+fn an_earlier_trigger_used_after_a_later_one_counts_too() {
+    let mut ledger = base();
+    let ended =
+        |seq: u64, turn: u64| event(seq, Some(turn), "turn.ended", r#"{"reason":"completed"}"#);
+    ledger.append(&started(6, 3, &[3])).unwrap();
+    ledger.append(&ended(7, 6)).unwrap();
+    assert!(!ledger.answered(Seq::new(2).unwrap()));
+    ledger.append(&started(8, 2, &[2])).unwrap();
+    ledger.append(&ended(9, 8)).unwrap();
+    for n in [2, 3] {
+        assert!(ledger.answered(Seq::new(n).unwrap()), "{n}");
+        refused(
+            &mut ledger,
+            &started(10, n, &[n]),
+            &format!("trigger {n} has already opened a turn"),
+        );
+    }
+    ledger
+        .append(&event(10, None, "message.user", OVERHEARD))
+        .unwrap();
+    for (n, overheard) in [(2, true), (3, true), (4, false), (9, false), (10, true)] {
+        assert_eq!(ledger.overheard(Seq::new(n).unwrap()), overheard, "{n}");
+    }
+    ledger.append(&started(11, 10, &[10])).unwrap();
+    assert!(ledger.answered(Seq::new(10).unwrap()));
+}

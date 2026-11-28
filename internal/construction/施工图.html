@@ -1615,6 +1615,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sLW31"><span class="n">LW-31</span>分配器的测试另起进程量<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW32"><span class="n">LW-32</span>录清单的界面语言定成中文<span class="st">…</span></a></li>
         <li><a class="step review" href="#sLW36"><span class="n">LW-36</span>旁听的消息不放回历史<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sLW37"><span class="n">LW-37</span>旁听的序号记成排好的一块<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO1"><span class="n">MO-1</span>macOS 排函数：页探针进仓库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO2"><span class="n">MO-2</span>macOS 排函数：量尺带探针录清单<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO3"><span class="n">MO-3</span>macOS 排函数：发行包照起点清单排<span class="st">…</span></a></li>
@@ -63484,6 +63485,56 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/LW-36-旁听的消息不放回历史.md</code>；蓝图 <code>kernel/session.md</code>、<code>kernel/history.md</code>、<code>session/actor.md</code> 各自的「闲下来收成槽」，<code>venues.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sLW37" aria-labelledby="h-sLW37">
+  <div class="sheet-head"><h2 id="h-sLW37"><span class="no">LW-37</span>账本里旁听的序号记成排好的一块，不用 BTreeSet</h2><span class="pill done">已完成</span></div>
+  <p class="purpose">群会话都收成槽以后，核心最大的一块线程分配区还常驻 48 MB。账本记旁听序号的 BTreeSet 每五六条分配一个小节点，大群载入时和事件穿插着分配，事件放掉以后它们把内存页钉住、还不回系统。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">crates/miyu-kernel/src/ledger/triggers.rs、ledger/triggers/seqs.rs</span><span class="dir-note">LW-37</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>overheard、answered 换成从小到大排好、不重的一块 Vec</li>
+              <li>比最后一个大的接在后面，乱序的二分找位置插进去，查用二分</li>
+              <li>载入完不收多出来的容量：量过，差不出来</li>
+              <li>账本的规矩、报错、调试输出，请求和日志的字节都不变</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">旁听的、当过触发的序号各记成排好的一块</span><span class="rl">internal/blueprint/kernel/history.md「对外的样子」账本随什么长</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">LW-37</dd></div>
+        <div><dt>名称</dt><dd>账本里旁听的序号记成排好的一块</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">LW-37</dd></div>
+        <div><dt>验收</dt><dd>21.9 万条事件的大群种子：核心稳定匿名内存 80.9 → 26.9 MB</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span>账本原有 67 条测试不改断言全过，新加顺序、去重、乱序插入、和 BTreeSet 逐步对照的 5 条；两种变异各让新测试红</span></li>
+        <li><span class="ok">✓</span><span>.91 上同一份种子：稳定匿名 80.9 → 26.9 MB，最大那块线程分配区 47.8 → 5.0 MB；载入完收容量只差 0.8 MB，不采用</span></li>
+        <li><span class="ok">✓</span><span>门禁全过，三平台 CI 通过</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/LW-37-旁听的序号记成排好的一块.md</code>；蓝图 <code>kernel/history.md</code>。</li>
       </ul>
     </div>
   </div>
