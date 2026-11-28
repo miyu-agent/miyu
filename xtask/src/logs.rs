@@ -53,6 +53,11 @@ const FIELDS: &[&str] = &[
 /// 写明了为什么可以的：文件（相对仓库根，照 `/` 写）、格名、为什么。
 pub const ALLOWED: &[(&str, &str, &str)] = &[
     (
+        "crates/miyu-core/src/start.rs",
+        "preset",
+        "只会是出厂里定死的预设的编号（`full`、`none`），不是人起的名字（施工 FP-1）",
+    ),
+    (
         "crates/miyu-http/src/send.rs",
         "host",
         "模型供应商的主机：管理员配的，排查连不上要它（LG-1 主会话定）",

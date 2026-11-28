@@ -36,6 +36,33 @@ async fn opening_in_a_preset_writes_the_owner_s_override() {
     }
 }
 
+/// 定死的无功能（施工 FP-1）：不开没列出来的软件，可也不许改，装上的包不往你那一层写，记一行就算了；装照样算成。
+#[tokio::test]
+async fn opening_in_a_fixed_preset_writes_nothing() {
+    let (root, dir) = temp_root("open-in-fixed");
+    let core = Arc::new(Core::new(
+        root.clone(),
+        ResourceRoot::at(resources()),
+        Arc::new(Script::new([])),
+        Catalog::default(),
+        None,
+        "token".to_string(),
+    ));
+    let port = Port {
+        core: Arc::downgrade(&core),
+        confined: false,
+    };
+    open_in(&core, port.peer(), "none", "kit").await;
+    assert!(
+        !root.path().join("root/presets/none.toml").exists(),
+        "无功能定死了，不写同名覆盖"
+    );
+    drop(core);
+    if let Err(error) = std::fs::remove_dir_all(&dir) {
+        eprintln!("临时目录没删掉：{error}");
+    }
+}
+
 /// 会话端口上装、卸、升级、开扩展（施工 Y-5 下下）：关在沙盒里的会话（群、陌生人的私聊）一件一件拒
 /// `not_permitted`（工具先看一眼再做，只挡看一眼的话直接调做的那一件就漏了），什么都不动；只读的照旧给。
 #[tokio::test]

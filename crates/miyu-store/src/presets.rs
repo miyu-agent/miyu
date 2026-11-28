@@ -177,7 +177,8 @@ impl Presets {
         };
         let lost = hidden(&self.dirs, |dir| file_of(dir, id).is_file());
         for (at, (layer, dir)) in self.dirs.iter().enumerate() {
-            if lost.contains(&at) {
+            // 定死的（施工 FP-1）只认出厂的那一份：家目录那一层以前写的改动不再读，文件留着（[`Presets::ignored`]）。
+            if lost.contains(&at) || (found.file.fixed && *layer != Layer::Shipped) {
                 continue;
             }
             let text = match home {
@@ -193,7 +194,7 @@ impl Presets {
                     text
                 }
             };
-            let file = preset::read(&text)
+            let file = read_in(*layer, &text)
                 .map_err(|problem| PresetError::Invalid(*layer, id.to_string(), problem))?;
             found.file = file.over(std::mem::take(&mut found.file));
             found.layers.push(*layer);
@@ -204,6 +205,30 @@ impl Presets {
         found.file.groups = self.groups.clone();
         found.file.homes = self.homes.clone();
         Ok(found)
+    }
+
+    /// 预设 `id` 定死了没有（施工 FP-1，[`PresetFile::fixed`]）：出厂的那一份写了 `[preset] fixed = true`。只读出厂的那一份；
+    /// 没有、读不了、写错了的算没定死，找它的时候照旧报错。
+    pub fn fixed(&self, id: &str) -> bool {
+        valid(id)
+            && self
+                .dirs
+                .iter()
+                .filter(|(layer, _)| *layer == Layer::Shipped)
+                .filter_map(|(_, dir)| read(&file_of(dir, id)).ok().flatten())
+                .any(|text| preset::read_shipped(&text).is_ok_and(|file| file.fixed))
+    }
+
+    /// 家目录那一层里给定死的预设写的改动（施工 FP-1）：读的时候不认，照出厂的算；文件是人的数据，不删。核心起来时照它
+    /// 记一行警告。照编号排。
+    pub fn ignored(&self) -> Vec<String> {
+        let Some((_, home)) = self.dirs.iter().find(|(layer, _)| *layer == Layer::Home) else {
+            return Vec::new();
+        };
+        ids_in(home)
+            .into_iter()
+            .filter(|id| self.fixed(id))
+            .collect()
     }
 
     /// 几层里所有预设的编号，照编号排好，不重复。文件名不是 `<合写法的编号>.toml` 的、不是文件的不算；读不了的一层当没有。
@@ -304,7 +329,7 @@ impl Presets {
 /// 一层里的一份。
 fn check_one(layer: Layer, path: &Path) -> Vec<Checked> {
     let issue = match read_text(path) {
-        Ok(Some(text)) => match preset::read(&text) {
+        Ok(Some(text)) => match read_in(layer, &text) {
             Ok(_) => return Vec::new(),
             Err(problem) => Issue::Wrong(problem),
         },
@@ -316,6 +341,14 @@ fn check_one(layer: Layer, path: &Path) -> Vec<Checked> {
         path: path.to_path_buf(),
         issue,
     }]
+}
+
+/// 照哪一层读一份预设（施工 FP-1）：出厂的认 `[preset] fixed`，别的层写了它同别的不认识的键。
+fn read_in(layer: Layer, text: &str) -> Result<PresetFile, Problem> {
+    match layer {
+        Layer::Shipped => preset::read_shipped(text),
+        Layer::Package | Layer::Home => preset::read(text),
+    }
 }
 
 /// 一层的目录里编号 `id` 的那一份。

@@ -119,7 +119,7 @@ async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_t
         Some("[software]\nmemory = false\n")
     );
     let untouched = client
-        .call("g0", "preset.get", json!({"preset": "full"}))
+        .call("g0", "preset.get", json!({"preset": "minimal"}))
         .await;
     assert_eq!(
         untouched["result"]["remove"],
@@ -127,14 +127,15 @@ async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_t
         "没改过的出厂没什么可删"
     );
 
+    // 全部功能定死了（施工 FP-1）：照极简开发改。
     home.write(
-        "root/presets/full.toml",
-        "# 我自己的\n[tools]\nshell = false # 先关着\n\n[preset]\nname = { zh = \"全开\" }\n",
+        "root/presets/minimal.toml",
+        "# 我自己的\n[tools]\nshell = false # 先关着\n\n[preset]\nname = { zh = \"极简\" }\n",
     );
     let renamed = set(
         &mut client,
         "s2",
-        "full",
+        "minimal",
         json!([
             {"key": "preset.name", "value": "All"},
             {"key": "tools.trash", "value": false},
@@ -143,7 +144,7 @@ async fn changing_a_shipped_one_writes_only_what_changed_and_keeps_the_rest_of_t
     .await;
     assert_eq!(renamed["result"]["name"], "All", "{renamed}");
     assert_eq!(
-        mine(&home, "full").as_deref(),
+        mine(&home, "minimal").as_deref(),
         Some(
             "# 我自己的\n[tools]\nshell = false # 先关着\ntrash = false\n\n[preset]\nname = \"All\"\n"
         ),
@@ -312,7 +313,7 @@ async fn deleting_your_layer_goes_back_to_what_is_below() {
         .await;
     assert_eq!(reason(&got), Some("unknown_preset"), "{got}");
 
-    for (n, id) in ["dev", "full", "nobody"].into_iter().enumerate() {
+    for (n, id) in ["dev", "minimal", "nobody"].into_iter().enumerate() {
         let reply = client
             .call(&format!("n{n}"), "preset.delete", json!({"preset": id}))
             .await;

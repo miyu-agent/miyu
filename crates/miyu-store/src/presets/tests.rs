@@ -377,3 +377,5 @@ fn a_package_preset_sits_between_shipped_and_system() {
         ]
     );
 }
+
+mod fixed;

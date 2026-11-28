@@ -98,13 +98,13 @@ An editor edits the text and, when saving, sends `version` back as `expect` in `
 
 ## `preset.list`, `preset.get`
 
-**`preset.list`**: takes no params. The response is `{"presets": [...]}`, sorted by id, and each item has `preset`, `icon` (a Lucide icon name, `null` when there is none), `name`, `summary` and `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with this preset, not counting the persona, estimated locally; absent when it cannot be worked out). A broken preset has only `preset`, `problem` and `line`. The shipped "Nothing" preset (`none`) is an ordinary preset with every switch in the menu off, and you can edit it. No tools (`preset: null`) is not in the list; you can still pass `preset: null` when opening a session or switching presets.
+**`preset.list`**: takes no params. The response is `{"presets": [...]}`. The shipped "Everything" (`full`) and "Nothing" (`none`) presets come first, Everything before Nothing; the rest are sorted by id. Each item has `preset`, `icon` (a Lucide icon name, `null` when there is none), `name`, `summary` and `tokens` (how many tokens the system prompt and tool definitions take in a new session opened with this preset, not counting the persona, estimated locally; absent when it cannot be worked out). A broken preset has only `preset`, `problem` and `line`. Everything and Nothing are presets that cannot be changed: these two items have one more field, `fixed: true`, and other presets don't have it; when an interface sees `fixed: true`, it should not offer to change or delete the preset. In Nothing, every switch in the menu is off. No tools (`preset: null`) is not in the list; you can still pass `preset: null` when opening a session or switching presets.
 
 **`preset.get`**: the param is `preset`. The response has these fields:
 
 | Name | Notes |
 |---|---|
-| `preset`, `name`, `summary`, `icon` | The same as above |
+| `preset`, `name`, `summary`, `icon`, `fixed` | The same as above |
 | `unlisted` | `on` or `off` after stacking: whether features the preset doesn't list are on by default |
 | `unattended_steps` | The number that `[limits]` gives after stacking: at most how many model requests one turn makes when nobody is watching; `null` when no layer gives a number, which means the built-in 500 applies |
 | `features` | Each feature is `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`; `package` is the package the feature belongs to, used for grouping, and you look up the package's name in [`package.list`](packages.md) (your own scripts, MCP servers and command templates say `~home`; skills outside packages and features that aren't installed have none); `by` says who decided `on`, that is, whether the feature is on: `preset` (the preset says so), `global` (the preset says nothing, and the global switch of the skill, script or MCP server decides, see [`feature.set`](packages.md#featureset); this appears only in presets whose `unlisted` is `on`), `default` (it follows `unlisted`: every feature that a preset with `unlisted` `off` leaves out has this value, and stays off even when its global switch is on); `tools` lists the feature's tools as `{"name", "label", "on"}`, where `label` is the name shown to people (an MCP server's `title` when it gives one, otherwise the tool name without `mcp__<server>__`). Features the preset names that aren't installed come last, with `installed: false`. For a package that connects a platform (its manifest has `[connection]`), only what local sessions can get is listed: a feature with no tool whose `venues` include `local` is left out, and a listed feature shows only its tools with `local`; the same goes for `sections` |
@@ -127,10 +127,10 @@ An editor edits the text and, when saving, sends `version` back as `expect` in `
 
 **Response**: the same as for `preset.get`. An empty string as the summary means "no summary" (it covers the built-in one); only `unset` goes back to the built-in summary.
 
-**Errors**: `bad_params`; `preset_invalid`; `preset_conflict` (`expect` doesn't match; comes with `data.current`); `local_only`.
+**Errors**: `bad_params`; `preset_invalid`; `preset_conflict` (`expect` doesn't match; comes with `data.current`); `preset_fixed` (the preset to change has `fixed: true`; nothing is written); `local_only`.
 
 ## `preset.delete`
 
 **Params**: `preset`. **Response**: `{"remains"}`, the same as in `persona.delete`. Sessions that are already open keep using the copy they started with.
 
-**Errors**: `nothing_to_delete`; `local_only`.
+**Errors**: `nothing_to_delete`; `preset_fixed` (the preset to delete has `fixed: true`; nothing is deleted); `local_only`.

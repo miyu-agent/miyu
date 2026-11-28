@@ -44,7 +44,7 @@ async fn listed(client: &mut Client, session: &str) -> Value {
         .unwrap_or_else(|| panic!("列表里没有：{reply}"))
 }
 
-/// 列表里不再拼编号是 `null` 的一项（施工 P-17）：「无功能」是出厂的真预设 `none`，照编号排在最后。
+/// 列表里不再拼编号是 `null` 的一项（施工 P-17）：「无功能」是出厂的真预设 `none`，定死了，排在全部功能后面（施工 FP-1）。
 #[tokio::test]
 async fn the_list_has_nothing_on_instead_of_a_null_item() {
     let home = Home::new();
@@ -55,9 +55,9 @@ async fn the_list_has_nothing_on_instead_of_a_null_item() {
         .unwrap_or_else(|| panic!("{reply}"));
     assert!(all.iter().all(|one| !one["preset"].is_null()), "{reply}");
     assert_eq!(
-        all.last(),
+        all.get(1),
         Some(
-            &json!({"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off", "tokens": 0})
+            &json!({"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off", "tokens": 0, "fixed": true})
         )
     );
 }

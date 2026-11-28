@@ -134,6 +134,7 @@
 | `core` | INFO | `starting` | `version`、`pid`、`root`（数据根）、`tz`（本机和 UTC 差多少，`+09:00` 这样） | 装上日志以后，第一件事就记它（`MIYU_LOG` 读不懂的那一条 `WARN`，施工 8-2 起排在读完配置以后） |
 | `core` | WARN | `not started` | `stage`：`home`、`resources`、`runtime`、`socket`、`models`、`tools` | 起不来，原因交给头（`core.md`） |
 | `core` | WARN | `ready line not written` | `error` | 往标准输出写那一行写不了 |
+| `core` | WARN | `fixed preset override ignored` | `preset`（只会是出厂里定死的编号 `full`、`none`） | 起来时你那一层有定死的预设的同名文件：不读、不删（施工 FP-1，`presets.md`「定死的」） |
 | `core` | INFO | `stopped` | `reason`：`idle` 或 `signal`；说 `ready` 以前收到停的信号、当场退的另带 `ready=false`（施工 CS-8） | 空闲够久了，或者收到停的信号 |
 | `core` | WARN | `SIGTERM not watched`、`Ctrl+C not watched` | `error` | 装不上信号的监听 |
 | `core` | WARN | `second stop signal, exiting now`、`stopping took too long, exiting now` | | 收尾时又来一次停的信号、收尾过了 30 秒，当场退出（施工 CS-6） |

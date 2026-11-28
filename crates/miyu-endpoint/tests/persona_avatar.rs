@@ -224,11 +224,11 @@ async fn presets_carry_their_icons_and_one_can_be_changed() {
     assert_eq!(
         icons,
         [
-            ("dev".to_string(), json!("box")),
+            // 全部功能、无功能定死了，置顶（施工 FP-1）。无功能（施工 P-17）：出厂的一份真预设，原来末尾拼出来的无工具换成它。
             ("full".to_string(), json!("boxes")),
+            ("none".to_string(), json!("circle-off")),
+            ("dev".to_string(), json!("box")),
             ("minimal".to_string(), json!("square-terminal")),
-            // 无功能（施工 P-17）：出厂的一份真预设，原来末尾拼出来的无工具换成它。
-            ("none".to_string(), json!("circle-off"))
         ]
     );
     let changed = client

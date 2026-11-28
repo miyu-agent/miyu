@@ -114,6 +114,7 @@ The errors of this kind are `protocol_mismatch`, `bad_token`, `bad_code`, `bad_l
 | `unknown_persona`, `unknown_preset` | There is no such persona or preset | |
 | `persona_invalid`, `preset_invalid` | The persona's or preset's files are wrong | `problem`, `message`, `line` |
 | `persona_conflict`, `preset_conflict`, `avatar_conflict` | `expect` doesn't match (`avatar_conflict` is about your avatar) | `current` |
+| `preset_fixed` | The preset that `preset.set` or `preset.delete` would change or delete cannot be changed (it has `fixed: true` in `preset.list` and `preset.get`) | |
 | `nothing_to_delete` | Your layer has nothing to delete in the first place | |
 | `avatar_not_image`, `avatar_too_big`, `background_not_image`, `background_too_big` | The avatar or background isn't an image, or is too big | measured size and limit |
 

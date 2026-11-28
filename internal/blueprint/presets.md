@@ -101,11 +101,19 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 - 关了的只是之后不再注入，已经注入过的留在历史里。改了预设的开着的会话下一个回合换快照（第 6 条）：只关事实的 system 不变；关了 system 那几行的断一次缓存。
 - 以前造的快照里记的没开的功能没有它们、也没有 `absent`：都开着，前缀一字不变。
 
-**无功能**（施工 P-17，2026-10-26 项目主人定）：出厂一份真预设 `resources/presets/none.toml`，名字「无功能」（Nothing、機能なし），说明「不开启任何功能。」，图标 `circle-off`，`unlisted = "off"`、别的什么都不写：预设菜单里能开关的全关着（工具、环境那几块、「用户身份」、记忆、技能、脚本、MCP、命令），以后新装的也关。它就是一份普通预设：能编辑，改了写你那一层，同别的出厂预设。
+**无功能**（施工 P-17，2026-10-26 项目主人定）：出厂一份真预设 `resources/presets/none.toml`，名字「无功能」（Nothing、機能なし），说明「不开启任何功能。」，图标 `circle-off`，`unlisted = "off"`、别的什么都不写：预设菜单里能开关的全关着（工具、环境那几块、「用户身份」、记忆、技能、脚本、MCP、命令），以后新装的也关。施工 FP-1 起定死了（下面「定死的」），不能编辑。
 
-- 换掉下面的「无工具」：`preset.list` 不再拼编号是 `null` 的那一项。原来怕 `none` 和人自己写的 `none.toml` 撞，现在出厂就叫 `none`，人写的照分层盖住出厂那份，就是编辑。
+- 换掉下面的「无工具」：`preset.list` 不再拼编号是 `null` 的那一项。原来怕 `none` 和人自己写的 `none.toml` 撞，现在出厂就叫 `none`；施工 FP-1 起人写的 `none.toml` 不再读（下面「定死的」）。
 - 协议上 `preset: null`、快照的 `no_tools` 照旧认：以前的会话照旧，交 `null` 的照旧开无工具（下面四条）。
 - 项目主人在无人格、无工具的会话里问出来的八样（关于你、本机路径那一句、harness 版本、环境那一块、权限级别、会话编号、模型、记忆）每样在菜单里都有开关，选「无功能」的一样都没有（`preset_nothing.rs`）。
+
+**定死的**（施工 FP-1，2026-11-28 项目主人定：全部功能、无功能不许修改，列表里置顶）：
+
+1. **哪几个**：出厂的那一份 `[preset]` 里写了 `fixed = true` 的，现在是 `full`、`none` 两个。名单是数据，住在出厂的预设文件里，代码里不写编号。`fixed` 只有出厂那一层写得：包带的、你那一层写了它同别的不认识的键（`unknown_key`，`miyu check` 也报；`preset.set` 写它回 `preset_invalid`）；不是开关的报 `not_bool`。读法 `miyu_policy::preset::read_shipped`，存储照层挑（`miyu_store::presets` 的 `read_in`）。
+2. **只认出厂的**：找定死的预设只叠出厂那一份，你那一层的同名文件不读（包那一层同编号的本来就被出厂的盖住）。以前（施工 P-17 到 FP-1 之间）给 `none.toml` 写过的改动照出厂的算：文件是人的数据，不删；核心起来时每一份记一行 `WARN fixed preset override ignored`，带 `preset`（`Presets::ignored`，`crates/miyu-core/src/start.rs`）。开着的会话下一个回合照出厂的换快照，断一次缓存。
+3. **列出来**：`preset.list` 定死的排最前面，彼此照编号（`full` 在 `none` 前面），其余照编号；`preset.list`、`preset.get` 里这两项多一格 `fixed: true`，别的预设不带这一格。头只管照列表的先后画、看到 `fixed` 不给改、不给删；置顶和拒改都在核心。
+4. **写入一律拒**：`preset.set`（改，带 `new` 的照旧先拒 `preset_exists`）、`preset.delete` 拒 `preset_fixed`，什么都不写、不删。装包、开扩展时在会话的预设里打开装上的包（`packages/port.rs` 的 `open_in`）走 `preset.set`，同样拒，记一行 `WARN package not opened in the preset`，装照样算成。终端、网页的预设编辑都走 `preset.set`、`preset.delete`；命令行没有改预设的命令；她的工具里没有改预设的。
+5. **指纹不变**：`fixed` 不进 `PresetFile::digest`，以前造的快照照旧对得上。
 
 **无工具**（施工 P-16 下，2026-10-23 项目主人列的四种之一，主会话审过形状；施工 P-17 起不再列，协议照旧认）：不是一份预设文件，是核心给的一项。
 
@@ -129,7 +137,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 **协议**（`protocol.md`）：
 
 - `session.create`、`venue.session` 多 `preset`：不写的照默认找；`venue.session` 找回已有的会话时不看。
-- `preset.list`、`preset.get`；原因码 `unknown_preset`、`preset_invalid`。
+- `preset.list`、`preset.get`；原因码 `unknown_preset`、`preset_invalid`；`preset.set`、`preset.delete` 改定死的回 `preset_fixed`（施工 FP-1）。
 - `session.created` 多 `preset`（`kernel/events-bodies.md`）；会话列表、`sessions.changed`、`subscribe` 的回应照它写 `preset`，以前的日志没有的不写。
 
 ### 怎么走
@@ -156,9 +164,9 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
    - 记忆（施工 FX-8 改，2026-11-21 主会话定）：开会话时没开记忆的（范围是 `off`），新预设开了也照旧不开；开会话时开了的，照新预设开不开。新预设关了记忆的，从下一个回合起工具面上没有记忆的三件，回合开始不问记忆（常驻的摘要、名片、联想都不再注入，`session/actor.md`），已经注入过的照旧留在历史里；范围、回合索引、抽取不动，换回开着记忆的预设接着用。原来照开会话时的、新预设关了也开着：项目主人的群会话换到「无功能」以后技能关了，记忆却照样每轮注入（2026-11-20）。中途换预设（`recast.rs`）照快照的范围算开会话时开没开；改了预设文件（`preset.rs`）照上一份快照里的预设记忆开没开，因为无人格的会话范围是 `off`、预设里记忆却记着开，照范围算会让它们升级以后白换一次快照、断一次缓存；代价是预设文件把记忆关了又打开的，这个会话要换一次预设才回来。
    - 角色扮演、装了没开的那一行照新的重新算。
    - 找不着、写错了的照旧用原来的，记一行运行日志；P-2（中）造的快照没有指纹，不换。撤掉换快照那一轮不换回去。
-7. **`preset.list`**：几层里所有的编号，照编号排，一个一个找；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
+7. **`preset.list`**：几层里所有的编号，定死的排最前面（施工 FP-1，上面「定死的」），其余照编号排，一个一个找；定死的带 `fixed: true`；名字、说明照这个连接的语言挑（挑法同 `persona.list`）；写错了的只带 `problem`（照这个连接的语言说）和知道第几行的 `line`（施工 P-3 再补）。读得出的带 `tokens`（施工 DM-4，2026-11-09 发版前检查第 4 条：新建会话时头在右下角写选的预设占多少）：照不写会话、无人格的 `session.context` 那一份备、估，只备不造；数的是 system 里人设、场所说明、群聊格式以外的几块，加上工具的说明和参数格式，即各块估了加起来（同那一份的 `estimated_total`，不照整份估摊）。每次列都现算、不存：release 下一个预设 1～2 ms（2026-11-09 量），存了要管配置、装的包、工具架子换代以后作废。备不出来的不带。
    - 预览只备不造（施工 DM-4 顺手修）：`session.tools`、`session.context` 不写会话的、`preset.list` 备的新会话照这个会话自己的默认工作区写工作目录、不建。原来照 `workspace/` 本身挑、建好，每预览一次在 `workspace/` 下留一个空目录（主人的数据根里一天攒了 50 个）。
-8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
+8. **`preset.get {preset}`**：叠好的各格（施工 P-3 补：只给人要看的）；`sections` 是分好组的同一些功能（施工 FG-1，上面「功能分组」）；名字、说明一句字；`unlisted` 是叠好以后的（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，施工 AE-1）；`features` 是一个个功能（施工 F-3 下，原来的 `software`、`tools` 换成它）：装了的照清单读的先后，各带开不开和归它的工具（每件的显示名、开不开）；接着是登记上的脚本，一个脚本一个功能 `script-<工具名>`（施工 X-12 中）：名字、说明照脚本开头给人看的几格（`显示名称`、`Display name`、`描述`）挑这个连接的语言，没写名字的照工具名，`tools` 是它那一件；再接着是用得上的技能，一个技能一个功能 `skill-<名字>`（施工 X-11 上，`skills.md`）：名字、说明照技能写在 `metadata` 里给人看的 `display_name`、`summary`，没写名字的照技能的名字，`tools` 是空的；再接着是用得上的命令模板，一条一个功能 `command-<名字>`（施工 X-14 上，`slash.md`「找、盖住、开关」第 3 条）：名字是 `/<名字>`，说明照模板的、照连接的语言挑，`tools` 是空的；写了没装的接在后面（`installed: false`，界面写「没安装」，16 第五节）；每个功能带 `by`：`preset`（预设里写了）、`global`（照全局开关）、`default`（都没写，照 `unlisted`）（施工 X-27），格子见 `protocol.md`「`preset.get`」；`remove` 是删了会怎样（`restore`、`delete`、`null`）；定死的多一格 `fixed: true`、`remove` 是 `null`（施工 FP-1）。来自哪几层不给。头照它一个功能一个开关画，展开能逐件关（2026-10-09 项目主人定：一个开关下面还能逐件关工具）。
 9. **`miyu check`**（`cli/check.md`）：每一层里每一份预设各查各的，上面一层盖住了照样报，种类 `preset`；给人看的那一句照 `preset-problems/<code>`。写了文件的，某一层 `presets/` 下的 `<编号>.toml` 认作预设（两边换成真的路径比），还没有的报读不了。
 
 ### 改（施工 P-3 中）
@@ -167,6 +175,7 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 - 一项项在原来的字上改（`miyu_config::edit::apply`），注释、顺序照原样，P-3 上写进去的 `[preset] base` 顺手去掉（施工 P-3 再补：读的时候认出来当没写）；新开的一组在文件末尾另起一张表（`[preset.name]`）。`expect` 照 `miyu_config::plain::json_at` 读的你那一层现在的值比。
 - 写之前查：改完的一份照规矩读一遍，再照它叠一遍（`Presets::find_with`：你那一层照改完的字算，不读盘），写错的整条不收，拒绝里带照连接语言的一句（`data.message`，施工 P-3 补）。
 - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换、替换之前再读一次本体，撞上手改的从头再来，三次还不行的 `preset_conflict`。写成了记一行运行日志 `INFO preset saved`，删了 `INFO preset deleted`；不进配置的留痕日志。
+- 定死的（施工 FP-1，上面「定死的」）改、删都拒 `preset_fixed`，什么都不写、不删。
 - 只给本机的连接：扩展进程调回 `local_only`。不推 `preset.changed`：两个头都是每次打开重新读（2026-10-08 和两个头对过）。
 
 ### 图标（Y14，施工 P-5 做了，2026-10-10；网页、终端对过）
@@ -198,6 +207,9 @@ unattended_steps = 300         # 没人看着时一个回合最多请求几次�
 | `crates/miyu-policy/src/preset/tests.rs` | 每一格读对；空文件什么都没有、`unlisted` 照 `on`；逐格叠；每一种写错报对代码和行；工具名的写法；以前撤掉的 `base`、`default_persona` 是不认识的键（施工 AUD-3） |
 | `crates/miyu-store/src/presets/tests.rs` | 三层逐格叠；包那一层在出厂和你的中间、一个编号只认一份（施工 P-11 上）；一层也行、空文件也算；没有的、编号不合写法的、写错的写明哪一层；编号照文件名、不重复、照编号排；`check` 每一层各查、写了文件的认得出；出厂两份读得出、零问题、三种语言齐；每一种代码三种语言都有给人看的一句 |
 | `crates/miyu-store/src/index/tests.rs` | 索引里存得下、读得回人格和预设 |
+| `crates/miyu-store/src/presets/tests/fixed.rs`（施工 FP-1） | 定死的只叠出厂那一份、你那一层的列进 `ignored`；别的层写 `fixed` 是不认识的键、`miyu check` 也报；不是开关的 `not_bool`；出厂的只有 `full`、`none` 定死、`fixed` 不进指纹 |
+| `crates/miyu-endpoint/tests/preset_fixed.rs`（施工 FP-1） | `preset.list` 定死的置顶、只有它们带 `fixed`；`preset.get` 带 `fixed`、`remove` 是 `null`；`preset.set`、`preset.delete` 拒 `preset_fixed`、文件不动，`new` 照旧 `preset_exists`；你那一层以前的改动不读、文件留着 |
+| `crates/miyu-endpoint/src/packages/port/tests.rs` 的 `opening_in_a_fixed_preset_writes_nothing`（施工 FP-1） | 装上的包不往定死的预设里写 |
 | `crates/miyu-policy/src/preset/tests/limits.rs`、`crates/miyu-endpoint/tests/preset_set/fields.rs` 的 `the_unattended_step_limit_is_written_and_read_back`（施工 AE-1） | `[limits]` 读对、逐格盖；0、负数、小数、字、超出范围报 `bad_limit`，别的键 `unknown_key`，都带行；没写的指纹和以前一字不差（写没写 `[features]` 两条都钉住），写了才变；`preset.set` 写 `limits.unattended_steps`、`preset.get` 回它，没写的是 `null`，0 整条不收，`unset` 去掉 |
 | `crates/miyu-endpoint/tests/preset_set.rs`（施工 P-3 中、补、再补） | 不写编号新建、`remove`、改出厂的只写改了的、保留格式、删一项、`expect`、整条不收还带一句、参数不对、删你那一层、一样的值不写（`protocol.md` 测试表）；写错的一项（旧的 `base`、`default_persona` 也是，施工 AUD-3）列表里照连接的语言说、带行，改它的整条不收、文件不动 |
 | `crates/miyu-config/src/plain/tests.rs`（施工 P-3 中） | 表、行内表、点号连着的键里读一项，没写的、是表的、读不懂的是空的；只有字、开关、数换得成要写的值 |

@@ -13,14 +13,15 @@ async fn a_feature_is_switched_by_its_id() {
     let reply = set(
         &mut client,
         "f1",
-        "full",
+        // 全部功能定死了（施工 FP-1）：照常规开发改，它也开着这两件。
+        "dev",
         json!([{"key": "features.shell", "value": false}]),
     )
     .await;
     assert_eq!(on(&reply, "shell"), Some(false), "{reply}");
     assert_eq!(on(&reply, "read"), Some(true));
     assert_eq!(
-        mine(&home, "full").as_deref(),
+        mine(&home, "dev").as_deref(),
         Some("[features]\nshell = false\n")
     );
 }

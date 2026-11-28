@@ -68,6 +68,13 @@ impl Refusal {
         data: None,
     };
 
+    /// 改、删定死的预设（施工 FP-1，2026-11-28 项目主人定：全部功能、无功能不许改）。
+    pub(crate) const PRESET_FIXED: Refusal = Refusal {
+        code: REFUSED,
+        reason: "preset_fixed",
+        data: None,
+    };
+
     /// 同 [`Refusal::PRESET_EXISTS`]，人格的。
     pub(crate) const PERSONA_EXISTS: Refusal = Refusal {
         code: REFUSED,

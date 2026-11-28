@@ -359,6 +359,11 @@ pub(super) fn of(reason: &str) -> (&'static str, &'static str) {
         "unknown_provider" => ("供应商不存在。", "Provider not found."),
         "provider_exists" => ("供应商编号已存在。", "Provider ID already exists."),
         "preset_exists" => ("预设编号已存在。", "Preset ID already exists."),
+        // 施工 FP-1（`presets.md`「定死的」）。
+        "preset_fixed" => (
+            "这个预设不能修改或删除。",
+            "This preset cannot be changed or deleted.",
+        ),
         "persona_exists" => ("人格编号已存在。", "Persona ID already exists."),
         "unknown_model" => ("模型或模型池不存在。", "Model or pool not found."),
         "recap_failed" => ("生成回顾失败。", "Recap failed."),
