@@ -1,9 +1,11 @@
 //! 账本里照记下的几条开的回合（施工 O-14 上，`internal/blueprint/chat.md` 第七条第 2 条「`turn.started` 多一格 `triggers`」）：
 //! 哪些是旁听的 `message.user`，哪些已经当过触发。`turn.started` 带 `triggers` 的，每一条都要是旁听的、没当过触发的，照序号
 //! 排好，最后一条就是 `trigger`；`turn.joined`（施工 O-14 下）的也照这几条查，可以是空的（施工 O-64：桥只带事实并进来）。撤掉的
-//! 回合当过的照样算当过：账本只增不减。
+//! 回合当过的照样算当过：账本只增不减。两样都记成排好的一串序号（施工 LW-37，`triggers/seqs.rs`）。
 
-use std::collections::BTreeSet;
+mod seqs;
+
+use seqs::Seqs;
 
 use super::Ledger;
 use crate::event::{Body, Event, TurnJoined, TurnStarted};
@@ -13,9 +15,9 @@ use crate::id::Seq;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct Triggers {
     /// 旁听的 `message.user`。
-    overheard: BTreeSet<Seq>,
+    overheard: Seqs,
     /// 当过触发的旁听消息（`turn.started` 的 `triggers`）。
-    answered: BTreeSet<Seq>,
+    answered: Seqs,
 }
 
 impl Triggers {
@@ -41,10 +43,10 @@ impl Triggers {
         if triggers.windows(2).any(|pair| pair[0] >= pair[1]) {
             return Err("triggers should be in order, each once".to_string());
         }
-        if let Some(not) = triggers.iter().find(|seq| !self.overheard.contains(seq)) {
+        if let Some(not) = triggers.iter().find(|seq| !self.overheard.contains(**seq)) {
             return Err(format!("trigger {not} is not an overheard message.user"));
         }
-        if let Some(used) = triggers.iter().find(|seq| self.answered.contains(seq)) {
+        if let Some(used) = triggers.iter().find(|seq| self.answered.contains(**seq)) {
             return Err(format!("trigger {used} has already opened a turn"));
         }
         Ok(())
@@ -76,11 +78,11 @@ impl Ledger {
 
     /// 第 `seq` 条是这个会话里旁听的 `message.user`（施工 O-14 上）。
     pub fn overheard(&self, seq: Seq) -> bool {
-        self.triggers.overheard.contains(&seq)
+        self.triggers.overheard.contains(seq)
     }
 
     /// 第 `seq` 条已经当过触发（施工 O-14 上）：撤掉的回合当过的也算。
     pub fn answered(&self, seq: Seq) -> bool {
-        self.triggers.answered.contains(&seq)
+        self.triggers.answered.contains(seq)
     }
 }
