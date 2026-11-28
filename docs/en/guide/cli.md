@@ -648,7 +648,7 @@ miyu upgrade [--prerelease] [--yes]
 
 | Argument | What it does |
 |---|---|
-| `--prerelease` | Counts pre-releases too |
+| `--prerelease` | Counts pre-releases too (versions whose tag contains `-`, such as `-rc.5`) |
 | `--yes` | Upgrades directly, without asking |
 
 If Miyu was installed by the install script, the command downloads the new version, verifies the signature and checksum, and then replaces the old version; if it was installed from the AUR or Homebrew, the command tells you which package manager command to use; if the archive was unpacked by hand, the command tells you the download address. After the upgrade, the core that is already running is still the old version; you need to run `miyu core stop`, and the next time it is opened it is the new version. On Windows, a running `miyu.exe` cannot be deleted, so it stays in `.miyu-old-<old version>/` in the install directory and is deleted at the start of the next `miyu upgrade`. If your system has no release archive (for example a Mac with an Intel chip, or Windows on ARM), it reports `cannot upgrade: no release is built for this system`, with a hint saying which systems have release archives and that on other systems you need to download the source from the release page and build it yourself.

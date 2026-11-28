@@ -113,29 +113,15 @@ impl Language {
                 format!("cannot reach GitHub: {}", clean(why)),
             ))
             .hint(pick("检查网络或代理后重试".to_string(), "check the network or proxy and try again".to_string())),
-            Said::Net(NetError::Limited(reset)) => {
-                let when = reset
-                    .and_then(|reset| jiff::Timestamp::from_second(reset).ok())
-                    .map(|at| at.to_zoned(jiff::tz::TimeZone::system()).strftime("%H:%M").to_string());
-                let hint = match (&when, zh) {
-                    (Some(at), true) => format!("{at} 以后重试"),
-                    (Some(at), false) => format!("try again after {at}"),
-                    (None, true) => "稍后重试".to_string(),
-                    (None, false) => "try again later".to_string(),
-                };
-                pick_problem(
-                    zh,
-                    (
-                        "GitHub 限流：匿名访问每小时 60 次，已经用完",
-                        "GitHub rate limit: the 60 anonymous requests per hour are used up",
-                    ),
-                )
-                .hint(hint)
-            }
             Said::Net(NetError::Status(status)) => Problem::new(pick(
                 format!("GitHub 返回 HTTP {status}"),
                 format!("GitHub answered HTTP {status}"),
             )),
+            Said::BadFeed(url) => Problem::new(pick(
+                format!("无法读取发行版列表：{} 返回的不是 Atom 订阅", clean(url)),
+                format!("cannot read the release list: {} did not return an Atom feed", clean(url)),
+            ))
+            .hint(pick("检查网络或代理后重试".to_string(), "check the network or proxy and try again".to_string())),
             Said::NoRelease => pick_problem(zh, ("未找到可用的发行版", "no release found")),
             Said::OnlyPre => pick_problem(zh, ("还没有正式版", "there is no stable release yet"))
                 .hint(pick(

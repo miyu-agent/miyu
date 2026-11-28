@@ -1,6 +1,6 @@
-//! `miyu upgrade` 怎么走（`internal/blueprint/cli/upgrade.md`「怎么走」）：认谁装的，脚本装的才自己升——问 GitHub 有没有新版，
-//! 下载校验和清单和签名、照编进来的发版公钥验，下载压缩包、对 SHA-256，解开、查一遍、跑新的 `miyu --version`，再和装着的
-//! 对换。哪一步不对都停下，暂存删掉，装着的不动。数据根一个字节都不碰。
+//! `miyu upgrade` 怎么走（`internal/blueprint/cli/upgrade.md`「怎么走」）：认谁装的，脚本装的才自己升——读发行版订阅看有没有
+//! 新版（施工 UP-4：不走 GitHub API），下载校验和清单和签名、照编进来的发版公钥验，下载压缩包、对 SHA-256，解开、查一遍、跑新的
+//! `miyu --version`，再和装着的对换。哪一步不对都停下，暂存删掉，装着的不动。数据根一个字节都不碰。
 
 use std::fs;
 use std::io;
@@ -9,17 +9,23 @@ use std::path::{Path, PathBuf};
 use miyu_source::sign::PublicKey;
 use sha2::{Digest, Sha256};
 
-use super::net::Net;
-use super::plan::{self, Channel, MARKER, Version};
+use super::feed;
+use super::net::{Net, NetError};
+use super::plan::{self, Channel, MARKER, Release, Version};
 use super::swap::{self, OLD, STAGE};
 use super::{Answer, Said, Step, Upgrade};
 
 /// 发版的仓库（设计 59 第三节第 3 条：发版当天旧仓库转进来，叫这个名字）。
 pub(crate) const REPOSITORY: &str = "miyu-agent/miyu";
 
-/// 发布列表的地址：最近 30 个（预发布、草稿也在里面，[`plan::newest`] 挑）。
-fn releases_url() -> String {
-    format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=30")
+/// 发行版订阅的地址（施工 UP-4）：普通网页，不算 GitHub API 的匿名额度；草稿不在里面，预发布在（[`plan::candidates`] 挑）。
+fn feed_url() -> String {
+    format!("https://github.com/{REPOSITORY}/releases.atom")
+}
+
+/// 一个标签的一个文件的下载地址：按标签拼。
+fn download_url(tag: &str, name: &str) -> String {
+    format!("https://github.com/{REPOSITORY}/releases/download/{tag}/{name}")
 }
 
 /// 没标记的给人的下载地址。
@@ -27,7 +33,7 @@ pub(crate) fn download_page() -> String {
     format!("https://github.com/{REPOSITORY}/releases/latest")
 }
 
-/// 发布列表、清单、签名、压缩包最多多大。
+/// 订阅、清单、签名、压缩包最多多大。
 const LIST_LIMIT: usize = 8 << 20;
 const SUMS_LIMIT: usize = 1 << 20;
 const ARCHIVE_LIMIT: usize = 1 << 30;
@@ -80,49 +86,30 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
     let Some(target) = world.target else {
         return Said::UnknownSystem(download_page());
     };
-    let list = match world.net.get(&releases_url(), LIST_LIMIT, true) {
+    let feed = match world.net.get(&feed_url(), LIST_LIMIT, true) {
         Ok(bytes) => bytes,
         Err(error) => return Said::Net(error),
     };
-    let Ok(list) = serde_json::from_slice(&list) else {
-        return Said::Failed("releases".to_string(), "not JSON".to_string());
+    let Some(tags) = feed::tags(&feed) else {
+        return Said::BadFeed(feed_url());
     };
-    let Some(release) = plan::newest(&list, args.prerelease) else {
+    let candidates = plan::candidates(&tags, args.prerelease);
+    if candidates.is_empty() {
         // 没有正式版、有预发布的说一声加 --prerelease（施工 RL-4补2）。
-        return match !args.prerelease && plan::has_pre(&list) {
+        return match !args.prerelease && plan::has_pre(&tags) {
             true => Said::OnlyPre,
             false => Said::NoRelease,
         };
+    }
+    let (release, sums) = match usable(world, &candidates) {
+        Ok(Some(found)) => found,
+        Ok(None) => return Said::UpToDate(world.current.to_string()),
+        Err(said) => return said,
     };
-    if release.version <= world.current {
-        return Said::UpToDate(world.current.to_string());
-    }
-    if !args.yes {
-        match (world.ask)(&world.current, &release.version) {
-            Answer::Yes => {}
-            Answer::No => return Said::Cancelled,
-            Answer::Closed => return Said::Unconfirmed,
-        }
-    }
     let name = plan::archive_name(&release.version, target);
-    let (Some(archive), Some(sums), Some(signature)) = (
-        release.asset(&name),
-        release.asset("SHA256SUMS"),
-        release.asset("SHA256SUMS.sig"),
-    ) else {
-        let missing = [name.as_str(), "SHA256SUMS", "SHA256SUMS.sig"]
-            .into_iter()
-            .find(|wanted| release.asset(wanted).is_none())
-            .unwrap_or_default();
-        return Said::MissingAsset(missing.to_string());
-    };
-    let sums = match world.net.get(&sums.url, SUMS_LIMIT, false) {
+    let signature = match fetch(world, &release.tag, "SHA256SUMS.sig", SUMS_LIMIT) {
         Ok(bytes) => bytes,
-        Err(error) => return Said::Net(error),
-    };
-    let signature = match world.net.get(&signature.url, SUMS_LIMIT, false) {
-        Ok(bytes) => bytes,
-        Err(error) => return Said::Net(error),
+        Err(said) => return said,
     };
     if let Err(error) = miyu_source::sign::verify(&sums, &signature, &world.keys) {
         return Said::BadSignature(error.to_string());
@@ -136,6 +123,14 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
     let Some(hash) = plan::hash_of(&sums, &name) else {
         return Said::MissingAsset(format!("SHA256SUMS: {name}"));
     };
+    // 清单、签名核对过了才问（施工 UP-4）：问的是一个真能升的版本；压缩包几十 MB，答了升再下。
+    if !args.yes {
+        match (world.ask)(&world.current, &release.version) {
+            Answer::Yes => {}
+            Answer::No => return Said::Cancelled,
+            Answer::Closed => return Said::Unconfirmed,
+        }
+    }
 
     let stage = dir.join(STAGE);
     match fs::create_dir(&stage) {
@@ -149,7 +144,7 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
         world,
         &dir,
         &stage,
-        archive.url.as_str(),
+        &release.tag,
         &name,
         &hash,
         &release.version,
@@ -161,6 +156,32 @@ pub(crate) fn run(args: &Upgrade, world: &mut World<'_>) -> Said {
     said
 }
 
+/// 从新到旧找第一个比现在新、带了文件的发布，连同它的校验和清单（施工 UP-4）：`SHA256SUMS` 回 404 的（作废的、没传包的）跳过、
+/// 接着往旧的找；碰到不比现在新的就停，交回没有（只升不降）。别的没拿到的停下说。
+fn usable(world: &World<'_>, candidates: &[Release]) -> Result<Option<(Release, Vec<u8>)>, Said> {
+    for release in candidates {
+        if release.version <= world.current {
+            return Ok(None);
+        }
+        let url = download_url(&release.tag, "SHA256SUMS");
+        match world.net.get(&url, SUMS_LIMIT, false) {
+            Ok(sums) => return Ok(Some((release.clone(), sums))),
+            Err(NetError::Status(404)) => {}
+            Err(error) => return Err(Said::Net(error)),
+        }
+    }
+    Ok(None)
+}
+
+/// 下载这个标签的一个文件：404 的是发布里少了它。
+fn fetch(world: &World<'_>, tag: &str, name: &str, limit: usize) -> Result<Vec<u8>, Said> {
+    match world.net.get(&download_url(tag, name), limit, false) {
+        Ok(bytes) => Ok(bytes),
+        Err(NetError::Status(404)) => Err(Said::MissingAsset(name.to_string())),
+        Err(error) => Err(Said::Net(error)),
+    }
+}
+
 /// 有了暂存目录以后的几步：下载、对哈希、解开、查、对换。暂存由调用的一方删。
 #[allow(
     clippy::too_many_arguments,
@@ -170,16 +191,16 @@ fn staged(
     world: &mut World<'_>,
     dir: &Path,
     stage: &Path,
-    url: &str,
+    tag: &str,
     name: &str,
     hash: &str,
     version: &Version,
     target: &str,
 ) -> Said {
     (world.step)(Step::Downloading(name.to_string()));
-    let bytes = match world.net.get(url, ARCHIVE_LIMIT, false) {
+    let bytes = match fetch(world, tag, name, ARCHIVE_LIMIT) {
         Ok(bytes) => bytes,
-        Err(error) => return Said::Net(error),
+        Err(said) => return said,
     };
     let got: String = Sha256::digest(&bytes)
         .iter()

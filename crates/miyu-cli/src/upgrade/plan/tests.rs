@@ -1,6 +1,4 @@
-//! 标记、版本、挑发布、压缩包名、清单里的那一行。
-
-use serde_json::json;
+//! 标记、版本、订阅里的标签哪几个能算、压缩包名、清单里的那一行。
 
 use super::*;
 
@@ -95,54 +93,42 @@ fn year_month_versions_order_by_number() {
     for pair in ordered.windows(2) {
         assert!(v(pair[0]) < v(pair[1]), "{} < {}", pair[0], pair[1]);
     }
-    let list = json!([
-        release("v2026.11.0", false, false),
-        release("v2026.11.1", false, false),
-        release("v2026.12.0-rc.1", false, true),
-        release("v2026.9.3", false, false),
-    ]);
-    assert_eq!(newest(&list, false).unwrap().version, v("2026.11.1"));
-    assert_eq!(newest(&list, true).unwrap().version, v("2026.12.0-rc.1"));
+    let list = tags(&["v2026.11.0", "v2026.11.1", "v2026.12.0-rc.1", "v2026.9.3"]);
+    assert_eq!(candidates(&list, false)[0].version, v("2026.11.1"));
+    assert_eq!(candidates(&list, true)[0].version, v("2026.12.0-rc.1"));
 }
 
-fn release(tag: &str, draft: bool, prerelease: bool) -> Value {
-    json!({
-        "tag_name": tag,
-        "draft": draft,
-        "prerelease": prerelease,
-        "assets": [{"name": format!("{tag}.txt"), "browser_download_url": format!("https://x/{tag}.txt")}],
-    })
+fn tags(list: &[&str]) -> Vec<String> {
+    list.iter().map(|tag| (*tag).to_string()).collect()
 }
 
+/// 施工 UP-4：订阅里没有预发布的标记，照标签认，带 `-` 的是预发布；新的在前，标签原样留着。
 #[test]
-fn the_newest_release_skips_drafts_and_by_default_prereleases() {
-    let list = json!([
-        release("v1.0.0", false, false),
-        release("v1.2.0", true, false),
-        release("v1.1.0-rc.1", false, true),
-        release("v1.0.1", false, false),
-        release("nightly", false, false),
-        release("v1.1.0-rc.2", false, false),
-        release("v1.3.0", false, true),
+fn candidates_are_newest_first_and_prereleases_only_with_pre() {
+    let list = tags(&[
+        "v1.0.0",
+        "v1.1.0-rc.1",
+        "v1.0.1",
+        "nightly",
+        "1.2.0",
+        "v1.1.0-rc.2",
+        "v1.0.1",
     ]);
-    let stable = newest(&list, false).unwrap();
+    let stable: Vec<String> = candidates(&list, false)
+        .into_iter()
+        .map(|release| release.tag)
+        .collect();
     assert_eq!(
-        stable.version,
-        v("1.0.1"),
-        "草稿、预发布（标的、标签里带的）都不算"
+        stable,
+        ["v1.0.1", "v1.0.0"],
+        "预发布、认不出的、不带 v 的都不算，重的只算一次"
     );
-    assert_eq!(
-        stable.asset("v1.0.1.txt").unwrap().url,
-        "https://x/v1.0.1.txt"
-    );
-    assert!(stable.asset("nope").is_none());
-    assert_eq!(
-        newest(&list, true).unwrap().version,
-        v("1.3.0"),
-        "标成预发布的，--prerelease 才算"
-    );
-    assert!(newest(&json!([]), false).is_none());
-    assert!(newest(&json!({"message": "Not Found"}), false).is_none());
+    let all: Vec<String> = candidates(&list, true)
+        .into_iter()
+        .map(|release| release.tag)
+        .collect();
+    assert_eq!(all, ["v1.1.0-rc.2", "v1.1.0-rc.1", "v1.0.1", "v1.0.0"]);
+    assert!(candidates(&[], true).is_empty());
 }
 
 #[test]
@@ -174,23 +160,11 @@ fn the_hash_is_found_by_exact_name() {
 
 #[test]
 fn prereleases_are_noticed_for_the_hint() {
-    assert!(has_pre(&json!([release("v1.0.0-rc.1", false, true)])));
+    assert!(has_pre(&tags(&["v1.0.0-rc.1"])), "标签带 - 的");
     assert!(
-        has_pre(&json!([release("v1.0.0", false, true)])),
-        "标成预发布的"
-    );
-    assert!(
-        has_pre(&json!([release("v1.0.0-rc.1", false, false)])),
-        "标签带 - 的"
-    );
-    assert!(
-        !has_pre(&json!([release("v1.0.0-rc.1", true, true)])),
-        "草稿不算"
-    );
-    assert!(
-        !has_pre(&json!([release("models-x", false, true)])),
+        !has_pre(&tags(&["models-x-rc.1", "1.0.0-rc.1"])),
         "标签不是 v<版本> 的不算"
     );
-    assert!(!has_pre(&json!([release("v1.0.0", false, false)])));
-    assert!(!has_pre(&json!({"message": "Not Found"})));
+    assert!(!has_pre(&tags(&["v1.0.0"])));
+    assert!(!has_pre(&[]));
 }

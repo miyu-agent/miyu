@@ -1837,6 +1837,7 @@ flowchart LR
 | SH-3 | 只拒开头就睡的 `sleep`，下载即执行不再误报 | Terminal-Bench 实测撞上的两处（2026-11-27 core1 派）。项目主人 11-27 定：照顶层切段，第一段是不短于 2 秒的前台 `sleep` 才拒，`postfix start; sleep 2; postfix status` 这种 `sleep` 在后面的照跑；拒的话去掉「别的会话回话」，补一句等服务起来用带检查的循环（`no-sleep.txt` 23 → 32 token）。高危命令认下载即执行原来看整条命令里有没有解释器，`t=$(curl …); python3 a.py "$t"`、`python3 - <<'PY'` 后面另一行 `echo "$(curl …)"` 都判成 `pipe_to_shell`；改成只看装着替换的那一条简单命令（和它所在的管道）。施工单 `SH-3-sleep和下载即执行.md` |
 | IP-1 | `miyu-ipc` 单独编得过，门禁加「单独编」 | 2026-11-27 托盘钉 rc.5 编不过：`miyu-ipc` 用了 `tokio::select!`，自己的依赖没开 `macros`，工作区别的包开了才没露出来（im 会话报）。补上特性；门禁对外面拿去用的五个包各单独 `cargo check -p` 一次。施工单 `IP-1-ipc单独编得过.md`。 |
 | CRT-1 | Windows 的程序不再要 VC++ 运行库 | rc.5 的 Windows 包五个 `.exe` 都要 `VCRUNTIME140.dll`，没装过 VC++ 运行库的机器上起不来（2026-11-28 core1 派，优化会话报）。`.cargo/config.toml` 给 MSVC 目标加 `+crt-static`，`release.yml` 用 `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS` 给两个头也加上；`cargo xtask dist-check` 读每个 `.exe` 的导入表，要了 `VCRUNTIME`、`MSVCP` 的不发。施工单 `CRT-1-Windows不要VC运行库.md`。 |
+| UP-4 | `miyu upgrade` 读发行版订阅，不再撞 GitHub API 的匿名限流 | 有用户报撞上匿名每小时 60 次的限流（2026-11-28 core1 派，项目主人定做法）。版本列表改读 `github.com/miyu-agent/miyu/releases.atom`（普通网页，不算 API 额度），只认 `releases/tag/v<版本>` 的标签，带 `-` 的是预发布、`--prerelease` 才算；文件地址按标签拼；比现在新的先下 `SHA256SUMS`，404 的（作废的 rc.3 那样）跳过、往旧的找，只升不降；订阅读不了的说清楚。限流的判法和「60 次」那句一起撤，429 照状态码说。签名、校验和、对换不变。施工单见 `UP-4-升级不走API.md` |
 
 ### 四、施工单的格式
 
