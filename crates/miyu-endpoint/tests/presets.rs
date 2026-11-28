@@ -316,12 +316,13 @@ async fn presets_are_listed_and_read_by_layer() {
     }
     assert_eq!(
         listed["result"]["presets"],
+        // 定死的置顶、带 `fixed`（施工 FP-1）。
         json!([
+            {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes", "fixed": true},
+            {"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off", "fixed": true},
             {"preset": "broken", "problem": "未知的表 [colors]：预设文件中只能包含 [preset]、[features]、[software]、[tools]、[limits]", "line": 1},
             {"preset": "dev", "name": "我的开发", "summary": "在极简开发的基础上增加记忆、网络搜索、子代理、Agent间交流等开发常用工具。", "icon": "box"},
-            {"preset": "full", "name": "全部功能", "summary": "开放全部工具。", "icon": "boxes"},
             {"preset": "minimal", "name": "极简开发", "summary": "只提供运行命令和读写文件的工具。", "icon": "square-terminal"},
-            {"preset": "none", "name": "无功能", "summary": "不开启任何功能。", "icon": "circle-off"},
         ]),
         "照连接的语言挑"
     );

@@ -790,7 +790,7 @@
 
 **`preset.list`**（施工 P-2 上，`presets.md`「协议」）
 
-没有参数。回应 `{"presets": [...]}`，照编号排，一个预设一格：`preset` 编号，`icon` 图标（Lucide 名字，没写的 `null`，施工 P-5），`name`、`summary` 一句字（挑法同 `persona.list`），`tokens` 是照它开新会话、不算人格时占多少 token（施工 DM-4，`presets.md`「协议」第 7 条；备不出来的没有）。文件写错的只有 `preset`、`problem` 和知道第几行的 `line`，写法同 `persona.list`（施工 P-3 再补）。出厂的「无功能」`none` 照编号列（施工 P-17）；原来末尾拼的编号是 `null` 的「无工具」不再列。
+没有参数。回应 `{"presets": [...]}`，定死的（施工 FP-1，`presets.md`「定死的」：全部功能 `full`、无功能 `none`）排最前面、彼此照编号，其余照编号排，一个预设一格：`preset` 编号，`icon` 图标（Lucide 名字，没写的 `null`，施工 P-5），`name`、`summary` 一句字（挑法同 `persona.list`），`tokens` 是照它开新会话、不算人格时占多少 token（施工 DM-4，`presets.md`「协议」第 7 条；备不出来的没有）。文件写错的只有 `preset`、`problem` 和知道第几行的 `line`，写法同 `persona.list`（施工 P-3 再补）。定死的多一格 `fixed: true`，别的预设不带这一格（施工 FP-1）。原来末尾拼的编号是 `null` 的「无工具」不再列（施工 P-17）。
 
 **`preset.get`**（施工 P-2 上，`presets.md`「协议」）
 
@@ -798,7 +798,7 @@
 |---|---|---|
 | `preset` | 字符串，必写 | 预设的编号 |
 
-回应 `{"preset", "name", "summary", "icon", "unlisted", "unattended_steps", "features", "sections", "remove"}`（`icon` 施工 P-5；`sections` 施工 FG-1；`unattended_steps` 施工 AE-1）（施工 P-3 补：只给人要看的；`default_persona` 施工 P-4 上撤了；施工 F-3 下 `software`、`tools` 换成 `features`）：`name`、`summary` 一句字（挑法同 `persona.list`）；`unlisted` 是叠好以后的 `on`、`off`（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，`presets.md`「格式」第 7 条）；`remove` 是删了会怎样：`restore`（有你那一层、下面还有：删了回到出厂的样子）、`delete`（只有你那一层：删了就没了）、`null`（没有你那一层，没什么可删）。
+回应 `{"preset", "name", "summary", "icon", "unlisted", "unattended_steps", "features", "sections", "remove"}`，定死的多一格 `fixed: true`、别的不带（施工 FP-1）（`icon` 施工 P-5；`sections` 施工 FG-1；`unattended_steps` 施工 AE-1）（施工 P-3 补：只给人要看的；`default_persona` 施工 P-4 上撤了；施工 F-3 下 `software`、`tools` 换成 `features`）：`name`、`summary` 一句字（挑法同 `persona.list`）；`unlisted` 是叠好以后的 `on`、`off`（几层都没写的是 `on`）；`unattended_steps` 是叠好以后 `[limits]` 写的数，几层都没写的是 `null`（照出厂的 500，`presets.md`「格式」第 7 条）；`remove` 是删了会怎样：`restore`（有你那一层、下面还有：删了回到出厂的样子）、`delete`（只有你那一层：删了就没了）、`null`（没有你那一层，没什么可删）。
 - `features` 是一个个功能（施工 F-3 下，设计 `30-插件框架.md` 第三节、第四节）：装了的照清单读的先后（包照编号，包里照写的先后），每个 `{"id", "name", "summary", "package", "on", "by", "installed": true, "tools"}`：`name`、`summary` 照它的清单、照这个连接的语言挑，没说明的没有 `summary`；`package` 是它归哪个包（施工 ENV-1，头照它按包分组，包名照 `package.list` 查），同预设 `[software]` 认的编号：你自己放的脚本、MCP 服务、模板命令是 `~home`，不归包的技能没有这一格；`on` 是叠好以后开不开；`by` 是谁定的（施工 X-27，`presets.md`「全局开关」）：`preset` 预设里写了，`global` 预设没写、照技能、脚本、MCP 服务的全局开关（只在 `unlisted` 是 `on` 的预设里算，2026-10-20 项目主人定），`default` 照 `unlisted`（`unlisted = "off"` 的预设没写的都是它）；写了没装的那几项也带 `by`；`tools` 是归它的、工具目录里现在有的工具，照名字排，每件 `{"name", "label", "on"}`，`label` 是给人看的显示名：给人看的字里的，工具自己登记的（MCP 服务给的 `title`、扩展、脚本写的）照连接的语言挑，都没有的 MCP 工具去掉 `mcp__<服务名>__`（施工 X-27 再补），别的是工具名；功能关着的都是 `false`，开着的照 `[tools]` 关没关。预设的 `[features]`、`[software]` 里写了、没装的接在后面，照编号排：`{"id", "name", "on", "installed": false, "tools": []}`，名字照给人看的字 `software/<编号>`，没有的是编号；写的是装了的包的编号的不另列。`id` 是 `preset.set` 写 `features.<id>` 用的，`tools[].name` 是写 `tools.<name>` 用的，不往界面上露。头照它一个功能一个开关画，展开能逐件关。
 - `sections` 是同一些功能分好组、排好先后（施工 FG-1，设计 `52-功能分组.md` 第三节，`presets.md`「功能分组」），头照它画预设页、引导页，不翻译、不排序、不认编号；`features` 照旧一格不动。每组 `{"kind", "id", "name", "on", "total", "items"}`：`kind` 是 `group`（出厂的组，`id` 是组名，照 `resources/packages/groups.toml` 的先后）、`package`（没进组、带几个功能的扩展包，`id` 是包编号，名字是包名，照包编号排）、`extensions`（没进组、只带一个功能的扩展包合成一组，`id` 是 `extensions`，一个扩展一行、`name` 是包名；一个都没有的不列）、`skills`、`scripts`、`mcp`（`id` 同 `kind`，排在最后，没有的也列、`total` 是 0）；先后就是这样：出厂的组、带几个功能的扩展包、`extensions`、技能、脚本、MCP 服务。`name` 照连接的语言；`on`、`total` 是这一组开着的、全部的功能几个。`items` 一项一个功能 `{"kind": "feature", "id", "name", "on", "by"}`：组里照组的 `order`（包的先后），包里照清单写的先后；包带的技能、脚本、MCP 服务归末尾那三组；模板命令、扩展声明的命令归 `skills`；写了没装的不列；同一组里名字一样的后面括号带包名（包名就是这一行名字的写包编号）。`by` 比 `features[].by` 多分一种：`preset`（预设写了这个功能的编号）、`group`（写的是它所在的包或组）、`global`、`default`。带几件工具的另带 `tools: [{"id", "name", "on"}]`（`id` 是工具名，`name` 是显示名，`on` 同 `features[].tools[].on`），照清单 `[features.<编号>] tools` 写的先后、没写到的接在后面；一件工具的不带。
 - 编号不合写法的 `bad_params`，没有的 `unknown_preset`，写错的 `preset_invalid`（`data.message` 照这个连接的语言说一句、`data.line` 第几行，施工 P-3 补）。
@@ -818,8 +818,9 @@
 4. 编号不合写法、`changes` 是空的、同一个键写了两次、一项里 `value` 和 `unset` 不是正好一个、`unset` 不是 `true`、`value` 不是字开关数、`expect` 不是那两种、新建的一项都不写（只删）：`bad_params`。
 5. 新建：挑一个没用过的编号写一份新文件，写的那一瞬间别处占了这个编号的换下一个。
 6. 写盘照配置文件的规矩：顺着链接写、先写临时文件再替换。开着的会话下一个回合照新的（P-2 下）。扩展进程调回 `local_only`。
+7. 改定死的（带 `fixed: true` 的，施工 FP-1）：`preset_fixed`，什么都不写；带 `new` 的照旧先回 `preset_exists`。
 
-**`preset.delete`**（施工 P-3 中，`presets.md`「改」）：`{"preset"}` → `{"remains": <下面几层还有没有>}`。删掉你那一层的文件：下面还有出厂、包带的回到它们的样子（`true`，界面写「恢复出厂」），没有了的这个预设就没了（`false`）。你那一层本来就没有的 `nothing_to_delete`；编号不合写法的 `bad_params`；扩展进程调回 `local_only`。会话钉着的、默认指着的也能删：开着的会话照旧用快照里的，默认指着没有的照旧拒开会话（Y12）。
+**`preset.delete`**（施工 P-3 中，`presets.md`「改」）：`{"preset"}` → `{"remains": <下面几层还有没有>}`。删掉你那一层的文件：下面还有出厂、包带的回到它们的样子（`true`，界面写「恢复出厂」），没有了的这个预设就没了（`false`）。你那一层本来就没有的 `nothing_to_delete`；定死的 `preset_fixed`，你那一层以前写的文件也不删（施工 FP-1）；编号不合写法的 `bad_params`；扩展进程调回 `local_only`。会话钉着的、默认指着的也能删：开着的会话照旧用快照里的，默认指着没有的照旧拒开会话（Y12）。
 
 **`persona.set`**（施工 P-3 下，`personas.md`「改」）
 
@@ -1593,6 +1594,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_preset` | -32010 | 造会话、`preset.get` 时三层都没有这个预设，默认预设指着没有的也一样（施工 P-2 上，`presets.md`） |
 | `preset_invalid` | -32010 | 预设的文件写错了；`data.problem` 写明哪一层、哪个文件第几行（施工 P-2 上）；`preset.set` 改完的一份写错（施工 P-3 中）；`preset.*` 里另带 `data.message`、`data.line`（施工 P-3 补） |
 | `preset_conflict` | -32010 | `preset.set` 的 `expect` 对不上（`data.current`），写的那一瞬间有人手改、重来三次都不行（施工 P-3 中） |
+| `preset_fixed` | -32010 | `preset.set`、`preset.delete` 改、删定死的预设（施工 FP-1，`presets.md`「定死的」） |
 | `persona_conflict` | -32010 | `persona.set` 的 `expect` 对不上（`data.current`），写到一半撞上有人手改（施工 P-3 下） |
 | `nothing_to_delete` | -32010 | `preset.delete`、`persona.delete` 删的在你那一层本来就没有（施工 P-3 中、下） |
 | `unknown_file` | -32010 | `check` 写的文件不是 Miyu 读的那几种（施工 8-30） |
@@ -1786,6 +1788,7 @@ JSON-RPC 自己的几种照它的标准码；Miyu 的一律 `-32010`，原因写
 | `unknown_preset` | 预设不存在。 | Preset not found. |
 | `preset_invalid` | 预设文件有误。 | Invalid preset file. |
 | `preset_conflict` | 预设已被修改，请刷新后重试。 | Preset was modified. Refresh and try again. |
+| `preset_fixed` | 这个预设不能修改或删除。 | This preset cannot be changed or deleted. |
 | `persona_conflict` | 人格已被修改，请刷新后重试。 | Persona was modified. Refresh and try again. |
 | `nothing_to_delete` | 没有可删除的内容。 | Nothing to delete. |
 | `unknown_file` | 不支持检查这个文件。 | This file cannot be checked. |

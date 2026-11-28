@@ -6,6 +6,8 @@
 //! - 写盘照配置文件的规矩（`miyu_store::config_file`）：顺着链接写、先写临时文件再替换；替换之前发现这一瞬间有人手改了，
 //!   从头再来，三次还不行的 `preset_conflict`。
 //! - 删：删掉你那一层的文件，下面几层还有的回到它们的样子。
+//! - 定死的（全部功能、无功能，施工 FP-1，2026-11-28 项目主人定）改、删都拒 `preset_fixed`，什么都不写、不删。在会话的
+//!   预设里打开装上的包（`packages/port.rs` 的 `open_in`）也走 [`set`]，一样拒。
 
 use std::io;
 
@@ -41,7 +43,7 @@ pub(crate) struct SetParams {
 }
 
 /// `preset.set`：照 `changes` 改你那一层，交回改完叠好的样子（同 `preset.get`）。不写 `preset` 的是新建（施工 P-3 补）：
-/// 编号由核心起，至少要写一项。
+/// 编号由核心起，至少要写一项。定死的拒 `preset_fixed`（施工 FP-1）；带 `new` 的照旧先拒 `preset_exists`。
 pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Json, Refusal> {
     if params.changes.is_empty()
         || params.preset.as_deref().is_some_and(|id| !valid(id))
@@ -58,6 +60,7 @@ pub(crate) async fn set(core: &Core, peer: Peer, params: SetParams) -> Result<Js
     let new = params.new;
     let found = tokio::task::spawn_blocking(move || match params.preset {
         Some(id) if new && presets.ids().contains(&id) => Err(Refusal::PRESET_EXISTS),
+        Some(id) if presets.fixed(&id) => Err(Refusal::PRESET_FIXED),
         Some(id) => write(&presets, &id, &wanted, said.as_ref()),
         None => create(&presets, &wanted, said.as_ref()),
     })
@@ -99,7 +102,7 @@ pub(crate) struct DeleteParams {
 }
 
 /// `preset.delete`：删掉你那一层的文件，交回 `{"remains"}`：下面几层还有没有。你那一层本来就没有的
-/// `nothing_to_delete`。
+/// `nothing_to_delete`；定死的拒 `preset_fixed`（施工 FP-1）。
 pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Refusal> {
     if !valid(&params.preset) {
         return Err(Refusal::BAD_PARAMS);
@@ -107,6 +110,10 @@ pub(crate) async fn delete(core: &Core, params: DeleteParams) -> Result<Json, Re
     let presets = presets(core);
     let id = params.preset;
     tokio::task::spawn_blocking(move || {
+        // 定死的（施工 FP-1）：你那一层以前写的改动也不删，那是人的数据，读的时候本来就不认。
+        if presets.fixed(&id) {
+            return Err(Refusal::PRESET_FIXED);
+        }
         match std::fs::remove_file(presets.home_file(&id)) {
             Ok(()) => {}
             Err(error) if error.kind() == io::ErrorKind::NotFound => {

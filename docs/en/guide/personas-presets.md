@@ -22,9 +22,13 @@ Miyu ships with the following four presets:
 | Everything | `full` | Everything installed is on, and anything installed later is turned on too | It is the one used by default |
 | Development | `dev` | The three groups Base system, Injected environment, and Tasks and schedules; web search, persona memory, and the two skills for writing skills and packages. Nothing else is on, and nothing installed later is turned on | Writing code, when you do not need extras such as extensions and MCP servers |
 | Minimal | `minimal` | Only four tools, for reading files, creating files, editing files and running commands, plus the eight environment items | You want the AI to work the way the model itself is good at, with as few tools as possible |
-| Nothing | `none` | Nothing is on, and nothing installed later is turned on | Chat only; or use it as a base and turn on a few things yourself |
+| Nothing | `none` | Nothing is on, and nothing installed later is turned on | Chat only |
 
 The shipped default preset is `full`.
+
+The two presets Everything and Nothing cannot be changed or deleted, and they always come first in the preset list, Everything first and then Nothing. If you want to change a little on top of them, create a new preset, or change Development or Minimal; see [Writing your own preset](#writing-your-own-preset) and [Creating and changing in the interface](#creating-and-changing-in-the-interface) below.
+
+> If your `~/.miyu/root/presets/` already has `full.toml` or `none.toml`, Miyu no longer reads them: the two presets are still used as shipped, and the core writes a warning to the run log when it starts. The two files are not deleted; if you don't need them, you can delete them yourself.
 
 ## Shipped persona
 
@@ -202,10 +206,10 @@ The groups you can write in `[software]`:
 | `persona` | Persona | Persona memory, Persona reminders |
 | `research` | Research | Web search, Knowledge base |
 
-If you only want to change a little on top of a shipped preset, write only the part you changed. For example, to turn off web search in Everything, the file is named `full.toml`:
+If you only want to change a little on top of a shipped preset, write only the part you changed. For example, to turn off web search in Development, the file is named `dev.toml`:
 
 ```toml
-# ~/.miyu/root/presets/full.toml
+# ~/.miyu/root/presets/dev.toml
 [features]
 web-search = false
 ```
@@ -223,7 +227,7 @@ You can also create and change personas and presets in the interface:
 - Terminal interface: use the `Personas` and `Presets` items of the main menu of the settings page (`/settings`). In the list, press `a` to create a new one and fill in a name; the id can be left empty, and Miyu generates one; press `Enter` to open one and change it. For a persona you can change the name, short description, whether subagents can pick it, avatar, the detailed persona prompt, example dialogs and persona reminders; to change the prompts, press `Enter` to write in an editing window, or press `Ctrl+G` to hand them to an external editor (`$VISUAL` is used, or `$EDITOR` if that is not set, or `vi` if neither is set); on Windows there is no external editor option, so you need to write in the editing window or paste into it. For a preset you can change the name, the description, and the switch of every feature and every tool, toggling with `Space`, `Tab` or `Enter`, and `Ctrl+A` toggles all; each change is saved as soon as you make it. In the window, `d` deletes; for a shipped one or one that came with a package that you have changed, `d` restores the shipped version. In the picker for a new session, pressing `e` or `a` opens the same windows.
 - Web interface: use the `Personas` and `Presets` pages in settings, where you can create, change and delete. In an open session, click the session title at the top left; the pencil icon on the `Persona` row is `Edit this persona`.
 
-When you change a shipped persona or preset, or one that came with a package, in the interface, the change is saved in your own layer, recording only what you changed. A deleted persona goes to the trash and is kept for 7 days; a deleted preset cannot be recovered.
+When you change a shipped persona or preset, or one that came with a package, in the interface, the change is saved in your own layer, recording only what you changed. Everything and Nothing cannot be changed or deleted. A deleted persona goes to the trash and is kept for 7 days; a deleted preset cannot be recovered.
 
 ## How the three layers stack
 
@@ -233,7 +237,7 @@ Personas and presets both have three layers, from the bottom up:
 2. Package-provided: the `personas/` and `presets/` in installed packages.
 3. Yours: `~/.miyu/root/personas/` and `~/.miyu/root/presets/`.
 
-If the same id exists in several layers, the upper layer overrides the lower one: a persona's `persona.toml` and a preset's `[preset]` are overridden field by field, so a field you wrote replaces the one below and a field you did not write keeps the value from below; files in a persona's `prompts/`, the avatar and the background image are replaced whole when the name is the same; a preset's `[features]` and `[software]` are overridden entry by entry. If you delete your own layer, you are back to what the layer below has. If a package-provided one has the same id as a shipped one, the shipped one is used; if several packages provide the same id, only one of them is used, and `miyu check` reports the ones that were overridden.
+If the same id exists in several layers, the upper layer overrides the lower one: a persona's `persona.toml` and a preset's `[preset]` are overridden field by field, so a field you wrote replaces the one below and a field you did not write keeps the value from below; files in a persona's `prompts/`, the avatar and the background image are replaced whole when the name is the same; a preset's `[features]` and `[software]` are overridden entry by entry. If you delete your own layer, you are back to what the layer below has. Everything and Nothing only use the shipped copy, and a file with the same name in your own layer has no effect. If a package-provided one has the same id as a shipped one, the shipped one is used; if several packages provide the same id, only one of them is used, and `miyu check` reports the ones that were overridden.
 
 Packages can also provide personas and presets; for how to make them, see [Things that work as files](../dev/scripts-skills.md).
 
@@ -244,3 +248,4 @@ Packages can also provide personas and presets; for how to make them, see [Thing
 | You cannot start a new session, and `miyu ask` reports `preset not found`; `miyu check` warns `preset.default names preset …, which doesn't exist yet; it works once the preset is created` | The default preset was deleted or renamed. Change `preset.default` to a preset that exists, or choose a preset when you start the session |
 | A persona or preset is marked with an error in the list and cannot be chosen | Use `miyu check` to see which line of which file is wrong |
 | When switching persona or preset, it shows `A reply is in progress: stop it or wait for it to finish` | Wait for this turn to finish, or stop it first |
+| Changing or deleting Everything or Nothing shows `This preset cannot be changed or deleted.` | These two presets cannot be changed. Create a new preset, or change Development or Minimal |

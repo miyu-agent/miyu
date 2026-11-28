@@ -1836,6 +1836,7 @@ flowchart LR
 | CS-11 | 在终端前台跑 `miyu core` 时只当前台壳，核心另开会话，命令照样抢不到终端 | 接 CS-10「要拍板的」。第一版照 C 放下控制终端（`TIOCNOTTY`），macOS 上 Ctrl+C 停不下核心（终端按键的信号只发给带控制终端的进程）；项目主人 2026-11-27 改定前台壳：有控制终端的 `miyu core` 只把真正的核心照 `new_session` 拉起到新会话里，转发 INT、TERM、HUP、QUIT，照核心的退出码退出，不开库不拿锁。V-48 一条不动，两个平台一个写法。施工单 `CS-11-前台核心放下终端.md` |
 | SH-3 | 只拒开头就睡的 `sleep`，下载即执行不再误报 | Terminal-Bench 实测撞上的两处（2026-11-27 core1 派）。项目主人 11-27 定：照顶层切段，第一段是不短于 2 秒的前台 `sleep` 才拒，`postfix start; sleep 2; postfix status` 这种 `sleep` 在后面的照跑；拒的话去掉「别的会话回话」，补一句等服务起来用带检查的循环（`no-sleep.txt` 23 → 32 token）。高危命令认下载即执行原来看整条命令里有没有解释器，`t=$(curl …); python3 a.py "$t"`、`python3 - <<'PY'` 后面另一行 `echo "$(curl …)"` 都判成 `pipe_to_shell`；改成只看装着替换的那一条简单命令（和它所在的管道）。施工单 `SH-3-sleep和下载即执行.md` |
 | IP-1 | `miyu-ipc` 单独编得过，门禁加「单独编」 | 2026-11-27 托盘钉 rc.5 编不过：`miyu-ipc` 用了 `tokio::select!`，自己的依赖没开 `macros`，工作区别的包开了才没露出来（im 会话报）。补上特性；门禁对外面拿去用的五个包各单独 `cargo check -p` 一次。施工单 `IP-1-ipc单独编得过.md`。 |
+| FP-1 | 全部功能和无功能定死、置顶 | 2026-11-28 项目主人定：这两个预设不许修改，列表里置顶。名单写在出厂的预设文件里（`[preset] fixed = true`，别的层写不得）；`preset.list` 定死的排最前面、带 `fixed: true`，`preset.get` 也带；`preset.set`、`preset.delete`、装包时在预设里打开都拒 `preset_fixed`；你那一层以前的改动不读、不删，起来时记一行 WARN。施工单 `FP-1-全部功能和无功能定死.md`。 |
 
 ### 四、施工单的格式
 

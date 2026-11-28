@@ -13,7 +13,7 @@ use crate::features::Features;
 mod read;
 mod switches;
 
-pub use read::{Code, Problem, read};
+pub use read::{Code, Problem, read, read_shipped};
 pub use switches::{By, switchable};
 
 /// 工具名最多几个字符。
@@ -69,6 +69,9 @@ pub struct PresetFile {
     pub unattended_steps: Option<u32>,
     /// 图标（施工 P-5）：Lucide 的名字，只查过写法。界面上的事，不进 [`PresetFile::digest`]。
     pub icon: Option<String>,
+    /// 定死了（施工 FP-1，2026-11-28 项目主人定：全部功能、无功能不许改）：出厂的那一份写了 `[preset] fixed = true`
+    /// （[`read_shipped`]），别的层写不得。定死的预设不叠别的层，改、删都拒。不进 [`PresetFile::digest`]：以前造的快照照旧对得上。
+    pub fixed: bool,
     /// 这个会话里扣下的包（施工 X-25）：场所显示不了图片，要图的包整包当没开。不是文件里写的：会话照场所算好放进来
     /// （[`Chosen::situated`]），不进 [`PresetFile::digest`]、不叠层。
     pub withheld: BTreeSet<String>,
@@ -101,6 +104,7 @@ impl PresetFile {
         lower.name = self.name.or(lower.name);
         lower.summary = self.summary.or(lower.summary);
         lower.icon = self.icon.or(lower.icon);
+        lower.fixed |= self.fixed;
         lower.unlisted = self.unlisted.or(lower.unlisted);
         lower.features.extend(self.features);
         lower.software.extend(self.software);

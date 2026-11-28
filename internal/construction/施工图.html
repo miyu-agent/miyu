@@ -1681,6 +1681,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sFP1"><span class="n">FP-1</span>全部功能和无功能定死、置顶<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66952,6 +66953,70 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/SH-3-sleep和下载即执行.md</code>；蓝图 <code>tools/shell.md</code>「怎么走」第 4 条、「高危命令」第 5 条，<code>session/guard.md</code>；设计 26 登记簿。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sFP1" aria-labelledby="h-sFP1">
+  <div class="sheet-head"><h2 id="h-sFP1"><span class="no">FP-1</span>全部功能和无功能定死、置顶</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">全部功能、无功能两个预设不许修改，列表里排最前面；置顶和拒改都在核心，头照 <code>preset.list</code> 的先后和 <code>fixed</code> 画。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">resources/presets · full.toml · none.toml</span><span class="dir-note">FP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>[preset] fixed = true</code>：名单是数据</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · preset/read.rs ／ miyu-store · presets.rs</span><span class="dir-note">FP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>只有出厂那一层认 <code>fixed</code>，别的层是不认识的键</li>
+              <li>定死的只叠出厂那一份；<code>fixed</code>、<code>ignored</code></li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-endpoint · presets.rs · presets/write.rs ／ miyu-core · start.rs</span><span class="dir-note">FP-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li><code>preset.list</code> 定死的置顶，列表、<code>preset.get</code> 带 <code>fixed: true</code></li>
+              <li><code>preset.set</code>、<code>preset.delete</code>、装包时打开都拒 <code>preset_fixed</code></li>
+              <li>起来时你那一层不再读的每一份记一行 WARN</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">两个预设不许改、置顶</span><span class="rl">项目主人 2026-11-28 定</span></div>
+          <div class="tile new"><span class="nm">以前的改动不读、不删、记一行</span><span class="rl">主会话 2026-11-28 定</span></div>
+          <div class="tile new"><span class="nm">名单写在出厂的预设文件里</span><span class="rl">技术题：无硬编码</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">FP-1</dd></div>
+        <div><dt>名称</dt><dd>全部功能和无功能定死、置顶</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">FP-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>tests/preset_fixed.rs</code>：顺序和 <code>fixed</code>、改删都拒、以前的改动不读；改前红</span></li>
+        <li><span class="ok">✓</span><span><code>packages/port/tests.rs</code>：装上的包不往无功能里写；改前红</span></li>
+        <li><span class="ok">✓</span><span><code>presets/tests/fixed.rs</code>：只叠出厂那一份、别的层写不得、出厂只有两个定死</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/FP-1-全部功能和无功能定死.md</code>；蓝图 <code>presets.md</code>「定死的」、<code>protocol.md</code>「<code>preset.list</code>」到「<code>preset.delete</code>」和出错表。</li>
       </ul>
     </div>
   </div>

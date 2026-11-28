@@ -114,6 +114,7 @@
 | `unknown_persona`、`unknown_preset` | 没有这个人格或者预设 | |
 | `persona_invalid`、`preset_invalid` | 人格或者预设的文件写错了 | `problem`、`message`、`line` |
 | `persona_conflict`、`preset_conflict`、`avatar_conflict` | `expect` 对不上（`avatar_conflict` 指的是你的头像） | `current` |
+| `preset_fixed` | `preset.set`、`preset.delete` 要修改或删除的预设不能修改（`preset.list`、`preset.get` 里带 `fixed: true` 的） | |
 | `nothing_to_delete` | 你那一层本来就没有内容可以删除 | |
 | `avatar_not_image`、`avatar_too_big`、`background_not_image`、`background_too_big` | 头像或者背景图不是图片，或者太大 | 量到的和上限 |
 

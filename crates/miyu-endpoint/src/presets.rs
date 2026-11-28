@@ -183,13 +183,14 @@ fn listed_problem(id: &str, error: &PresetError, words: Option<&Human>) -> Value
     item
 }
 
-/// `preset.list`：几层里所有的预设，照编号排。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
+/// `preset.list`：几层里所有的预设，定死的（全部功能、无功能，施工 FP-1）排在最前面，其余照编号排；定死的之间也照编号，
+/// `full` 在 `none` 前面。每个带名字、说明（照这个连接的语言挑）；写错了的带 `problem`（照这个连接的
 /// 语言说，知道第几行的带 `line`，施工 P-3 再补）、不带名字和说明。来自哪几层不往外给（施工 P-3 补）。读得出的带 `tokens`
 /// （施工 DM-4，[`tokens`]），备不出来的不带。
 pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal> {
     let said = words(core, peer.language).ok();
     let presets = presets(core);
-    let read = tokio::task::spawn_blocking(move || {
+    let mut read = tokio::task::spawn_blocking(move || {
         presets
             .ids()
             .into_iter()
@@ -201,6 +202,8 @@ pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal>
     })
     .await
     .map_err(|_| Refusal::INTERNAL)?;
+    // 排序是稳的：定死的挪到前面，各自照原来的编号先后。
+    read.sort_by_key(|(_, found)| !found.as_ref().is_ok_and(|found| found.file.fixed));
     let mut listed = Vec::with_capacity(read.len());
     for (id, found) in read {
         listed.push(match found {
@@ -211,6 +214,7 @@ pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal>
                     "summary": label(found.file.summary.as_ref(), peer.language),
                     "icon": found.file.icon,
                 });
+                fixed(&mut item, &found);
                 if let Some(tokens) = tokens::of(core, peer, &id).await {
                     item["tokens"] = json!(tokens);
                 }
@@ -220,6 +224,13 @@ pub(crate) async fn list(core: &Arc<Core>, peer: Peer) -> Result<Value, Refusal>
         });
     }
     Ok(json!({"presets": listed}))
+}
+
+/// 定死的预设多一格 `fixed: true`（施工 FP-1，`preset.list`、`preset.get`）：头照它不给改、不给删；别的不带这一格。
+fn fixed(item: &mut Value, found: &Found) {
+    if found.file.fixed {
+        item["fixed"] = json!(true);
+    }
 }
 
 /// 开会话的 `preset`（施工 P-16 下）：没写的照默认（没有），写 `null` 的是无工具，内部记成空的编号（同换预设时内核记的）。
@@ -296,7 +307,7 @@ fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Va
     let entries = features::listed(core, found, language, carried);
     let sections = sections::sections(&entries, &sections::Shelf::of(core, language));
     let features: Vec<Value> = entries.iter().map(entry::Entry::listed).collect();
-    json!({
+    let mut described = json!({
         "preset": found.id,
         "name": label(found.file.name.as_ref(), language),
         "summary": label(found.file.summary.as_ref(), language),
@@ -307,5 +318,7 @@ fn describe(core: &Core, found: &Found, language: &str, carried: &Carried) -> Va
         "sections": sections,
         // 包带的预设删不掉，卸包才没了（只有人格有连包卸掉的，施工 PE-1）。
         "remove": remove(&found.layers, false),
-    })
+    });
+    fixed(&mut described, found);
+    described
 }

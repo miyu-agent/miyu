@@ -98,13 +98,13 @@
 
 ## `preset.list`、`preset.get`
 
-**`preset.list`**：没有参数。回应是 `{"presets": [...]}`，按编号排序，每一项有 `preset`、`icon`（Lucide 图标名，没有时是 `null`）、`name`、`summary`、`tokens`（用这个预设开新会话时，不算人格，system 和工具说明占多少 token，这个数在本地估算；算不出来时没有这一项）。写错了的预设只有 `preset`、`problem`、`line`。出厂的「无功能」（`none`）是一份普通的预设：菜单里能开关的功能全都关着，可以编辑。「无工具」（`preset: null`）不在列表里；开会话、换预设时仍然可以交 `preset: null`。
+**`preset.list`**：没有参数。回应是 `{"presets": [...]}`。出厂的「全部功能」（`full`）和「无功能」（`none`）排在最前面，先是全部功能，再是无功能；其余的按编号排序。每一项有 `preset`、`icon`（Lucide 图标名，没有时是 `null`）、`name`、`summary`、`tokens`（用这个预设开新会话时，不算人格，system 和工具说明占多少 token，这个数在本地估算；算不出来时没有这一项）。写错了的预设只有 `preset`、`problem`、`line`。全部功能和无功能是不能修改的预设，这两项多一个 `fixed: true`，其他预设没有这一项；界面看到 `fixed: true` 时，不应该提供修改和删除。无功能里菜单能开关的功能全都关着。「无工具」（`preset: null`）不在列表里；开会话、换预设时仍然可以交 `preset: null`。
 
 **`preset.get`**：参数是 `preset`。回应的字段如下：
 
 | 名字 | 说明 |
 |---|---|
-| `preset`、`name`、`summary`、`icon` | 和上面相同 |
+| `preset`、`name`、`summary`、`icon`、`fixed` | 和上面相同 |
 | `unlisted` | 叠好以后的 `on` 或 `off`：表示没有列出来的功能默认是否打开 |
 | `unattended_steps` | 叠好以后 `[limits]` 里写的数：没有人看着时，一个回合最多请求几次模型；几层都没有写时是 `null`，按出厂的 500 计算 |
 | `features` | 每一个功能是 `{"id", "name", "summary", "package", "on", "by", "installed", "tools"}`；`package` 是这个功能归属的软件包，用来按软件包分组，软件包的名字用 [`package.list`](packages.md) 查询（你自己放的脚本、MCP 服务、模板命令是 `~home`，不归属软件包的技能和没有安装的功能没有这一项）；`by` 表示功能是否打开是由谁决定的：`preset`（预设里写了）、`global`（预设没有写，按技能、脚本、MCP 服务的全局开关决定，见 [`feature.set`](packages.md#featureset)；只出现在 `unlisted` 是 `on` 的预设里）、`default`（按 `unlisted` 决定：`unlisted` 是 `off` 的预设里没有写的功能都是这个值，即使全局开关打开了也不打开）；`tools` 是归属这个功能的工具 `{"name", "label", "on"}`，`label` 是给人看的名字（MCP 服务给了 `title` 时使用它，没有给时是去掉 `mcp__<服务名>__` 的工具名）。预设里写了、但是没有安装的功能接在后面，带 `installed: false`。接入平台的软件包（清单里写了 `[connection]`）只列出本机会话拿得到的内容：一件 `venues` 里带 `local` 的工具都没有的功能不会列出，列出来的功能也只列出带 `local` 的工具；`sections` 也是这样 |
@@ -127,10 +127,10 @@
 
 **回应**：和 `preset.get` 相同。说明写成空字符串就表示没有说明（会盖住出厂的那一句），只有 `unset` 才会回到出厂的说明。
 
-**出错**：`bad_params`；`preset_invalid`；`preset_conflict`（`expect` 对不上，附带 `data.current`）；`local_only`。
+**出错**：`bad_params`；`preset_invalid`；`preset_conflict`（`expect` 对不上，附带 `data.current`）；`preset_fixed`（要修改的是带 `fixed: true` 的预设，什么都不会写入）；`local_only`。
 
 ## `preset.delete`
 
 **参数**：`preset`。**回应**：`{"remains"}`，和 `persona.delete` 相同。已经开着的会话仍然使用开会话时的那一份预设。
 
-**出错**：`nothing_to_delete`；`local_only`。
+**出错**：`nothing_to_delete`；`preset_fixed`（要删除的是带 `fixed: true` 的预设，什么都不会删除）；`local_only`。

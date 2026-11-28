@@ -261,6 +261,7 @@ mod prefs;
 mod preset_background;
 mod preset_env;
 mod preset_face;
+mod preset_fixed;
 mod preset_memory;
 mod preset_minimal;
 mod preset_none;

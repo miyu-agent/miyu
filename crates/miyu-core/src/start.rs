@@ -1,4 +1,4 @@
-//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：装停的信号（施工 CS-6），开套接字，建工作区、读清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
+//! 起来的后半段，在运行时里（施工 Y-12 中上从 `main` 挪出来）：装停的信号（施工 CS-6），开套接字，建工作区、报不再读的定死预设的改动（施工 FP-1）、读清单和配置、换运行日志的级别、生成参考文件，接着 [`super::run`]。
 
 use std::process::ExitCode;
 
@@ -30,6 +30,10 @@ pub(super) async fn start(
         return failed("home", Failure::new("home_failed", error));
     }
     crate::leftovers::tidy(&root);
+    // 定死的预设（施工 FP-1）：家目录那一层以前写的同名改动不再读，照出厂的算；文件是人的数据，留着，记一行。
+    for preset in miyu_store::presets::Presets::new(&resources, &root).ignored() {
+        tracing::warn!(target: crate::TARGET, preset = %preset, "fixed preset override ignored");
+    }
     let mut found = load_packages(&resources, &root);
     let places = miyu_store::packages::Packages::new(
         &resources,

@@ -111,19 +111,35 @@ impl fmt::Display for Problem {
     }
 }
 
-/// 读一份预设文件：`[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 五张表，都可以没有。
+/// 读一份预设文件：`[preset]`、`[features]`、`[software]`、`[tools]`、`[limits]` 五张表，都可以没有。`[preset] fixed` 只有出厂的
+/// 那一份写得（[`read_shipped`]），这里同别的不认识的键。
 ///
 /// # Errors
 ///
 /// 读不成 TOML、多了别的表或者键、哪一格的值不合写法，报第一处。
 pub fn read(text: &str) -> Result<PresetFile, Problem> {
+    read_as(text, false)
+}
+
+/// 同 [`read`]，读出厂的那一份（施工 FP-1）：`[preset]` 里多认一个 `fixed`，开关，写了 `true` 的预设定死了，不许改
+/// （[`PresetFile::fixed`]）。
+///
+/// # Errors
+///
+/// 同 [`read`]；`fixed` 不是开关的报 `not_bool`。
+pub fn read_shipped(text: &str) -> Result<PresetFile, Problem> {
+    read_as(text, true)
+}
+
+/// [`read`]、[`read_shipped`] 共用：`shipped` 是读出厂的那一份。
+fn read_as(text: &str, shipped: bool) -> Result<PresetFile, Problem> {
     let document = Document::parse(text).map_err(|error| Problem {
         line: error.span().map(|span| line_of(text, span.start)),
         code: Code::Syntax,
         detail: error.message().trim().to_string(),
         message: error.message().trim().to_string(),
     })?;
-    let reader = Reader { text };
+    let reader = Reader { text, shipped };
     let mut file = PresetFile::default();
     for (key, item) in document.as_table().iter() {
         match key {
@@ -174,6 +190,8 @@ pub fn read(text: &str) -> Result<PresetFile, Problem> {
 /// 读的时候带着原文，好说第几行。
 struct Reader<'a> {
     text: &'a str,
+    /// 读的是出厂的那一份：认 `[preset] fixed`（施工 FP-1）。
+    shipped: bool,
 }
 
 impl Reader<'_> {
@@ -229,6 +247,16 @@ impl Reader<'_> {
                                 )
                             })?,
                     );
+                }
+                "fixed" if self.shipped => {
+                    file.fixed = item.as_bool().ok_or_else(|| {
+                        self.problem(
+                            item,
+                            Code::NotBool,
+                            "preset.fixed",
+                            "preset.fixed must be true or false".to_string(),
+                        )
+                    })?;
                 }
                 "unlisted" => {
                     file.unlisted = Some(match item.as_str() {
