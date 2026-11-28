@@ -65,7 +65,7 @@ AI 正在工作时也可以切换。切换到只读会立即生效，这一步�
 | `下载后直接执行` | `permission.confirm.pipe_to_shell` | 用 `curl` 或 `wget` 下载内容，再交给 shell、`python`、`python3`、`perl`、`ruby`、`node` 运行的命令，例如 `curl … \| sh`、`bash <(curl …)`、`sh -c "$(curl …)"`。 |
 | `容器使用宿主设备` | `permission.confirm.container` | `docker`、`podman`、`nerdctl` 的 `run`、`create` 命令带了 `--device`、`--device-cgroup-rule`，或者 `--pid`、`--net`、`--network`、`--ipc` 的值写成 `host`，或者挂载了 `/dev`、`/sys` 下面的某一个路径，例如 `-v /dev/snd:/dev/snd`。 |
 
-命令前面套了 `sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`、`setsid`、`pkexec`、`run0`、`busybox`、`ionice`，或者写在 `sh -c '…'`、`bash -lc '…'`、`eval`、`env -S '…'`、`su -c '…'` 里面，Miyu 照样能认出来。交给 shell 从标准输入读的脚本也一样，例如 `bash <<'EOF'` 的正文、`sh <<< '…'`、`echo '…' | sh`。命令替换嵌套得太深、Miyu 看不透的命令也会先问你，这一条没有开关。
+命令前面套了 `sudo`、`doas`、`env`、`nice`、`nohup`、`timeout`、`time`、`stdbuf`、`command`、`exec`、`xargs`、`setsid`、`pkexec`、`run0`、`busybox`、`ionice`，或者写在 `sh -c '…'`、`bash -lc '…'`、`eval`、`env -S '…'`、`su -c '…'` 里面，Miyu 照样能认出来。交给 shell 从标准输入读的脚本也一样，例如 `bash <<'EOF'` 的正文、`sh <<< '…'`、`echo '…' | sh`。命令替换嵌套得太深，或者变量展开以后长得离谱（比如一串 `x=$x$x` 每一句都把它翻倍），Miyu 看不透这样的命令，也会先问你，这一条没有开关。
 
 如果要关掉其中一类，在设置页把对应的开关关掉，或者运行：
 

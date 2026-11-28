@@ -1686,6 +1686,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sUP4"><span class="n">UP-4</span>升级读发行版订阅、不走 API<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCRT1"><span class="n">CRT-1</span>Windows 不要 VC++ 运行库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO6"><span class="n">MO-6</span>macOS 链式修正<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sAUD7"><span class="n">AUD-7</span>判高危换变量有上限、项目指令有界地读<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -67252,6 +67253,63 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/MO-6-macOS链式修正.md</code>；设计 59 第三节、设计 12 第六节平台表；<code>perf.md</code>「排函数」；<code>docs/{zh,en}/guide/install.md</code>、<code>docs/{zh,en}/dev/contributing.md</code>。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sAUD7" aria-labelledby="h-sAUD7">
+  <div class="sheet-head"><h2 id="h-sAUD7"><span class="no">AUD-7</span>判高危换变量有上限、项目指令有界地读</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">模型发一条 <code>x=$x$x…</code> 翻倍的命令、仓库里放一个指向 <code>/dev/zero</code> 的 <code>AGENTS.md</code>，都不再能把核心吃爆或卡住；正常文件下请求逐字节不变。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-policy · hazard/vars.rs · rules.rs</span><span class="dir-note">AUD-7</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>一个词换出来最多 64 KiB，超了不换、名字忘掉</li>
+              <li>整条命令补一条看不透（<code>TooDeep</code>），照问人</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-session · project_docs.rs</span><span class="dir-note">AUD-7</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>先跟着链接看是不是普通文件，不是的当没有、记 debug</li>
+              <li>最多读 32 KiB 加 4 个字节，切开的半个字丢掉</li>
+              <li>截不截、截在哪、截断那一句和整份读完再截一样</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">换出来 64 KiB 封顶</span><span class="rl">技术题：超了照看不透，不另开一种</span></div>
+          <div class="tile new"><span class="nm">只读普通文件</span><span class="rl">技术题：链接照跟，设备、FIFO 当没有</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">AUD-7</dd></div>
+        <div><dt>名称</dt><dd>判高危换变量有上限、项目指令有界地读</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">AUD-7</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI、请求形状探针</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>hazard/tests/sizes.rs</code>：翻倍赋值、一个词引一百次都判看不透，限 2G 内存马上交回；改前被系统杀掉</span></li>
+        <li><span class="ok">✓</span><span><code>project_docs/tests.rs</code>：指向 <code>/dev/zero</code>、FIFO 的当没有，十秒内交回；改前吃光内存、卡住</span></li>
+        <li><span class="ok">✓</span><span>请求形状探针：正常文件下改前改后逐字节一样</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/AUD-7-判高危和项目指令有界.md</code>；蓝图 <code>project-docs.md</code>、<code>tools/shell.md</code>「高危命令」、<code>session/guard.md</code>；用户手册 <code>guide/permissions.md</code>。</li>
       </ul>
     </div>
   </div>

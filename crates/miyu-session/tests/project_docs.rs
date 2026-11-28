@@ -179,3 +179,39 @@ async fn a_venue_session_does_not_add_a_subfolder_s_instructions() {
         "场所会话不读"
     );
 }
+
+/// 请求形状探针（施工 AUD-7）：两层分一个上限、上限处切开一个字、`CLAUDE.md` 是指向普通文件的链接、子目录那份比上限长，
+/// 整份请求写成 JSON 交到 `MIYU_DOCS_SHAPE_OUT`（家目录换成 `<HOME>`）。改读法前后各跑一次、逐字节比。
+#[tokio::test]
+#[ignore = "探针：手动跑，比改前改后的请求字节"]
+async fn request_shape_probe_project_docs() {
+    let Some(out) = std::env::var_os("MIYU_DOCS_SHAPE_OUT") else {
+        return;
+    };
+    let home = Home::new();
+    let repo = repo(&home, &format!("{}\n", "R".repeat(20_000)));
+    std::fs::create_dir_all(repo.join("sub/deep")).expect("建得了");
+    let rules = format!("{}{}tail\n", "s".repeat(12_765), "😀".repeat(2));
+    std::fs::write(repo.join("rules.md"), rules).expect("写得进");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(repo.join("rules.md"), repo.join("sub/CLAUDE.md")).expect("建得了");
+    let deep = format!("{}{}\n", "d".repeat(32_767), "é".repeat(4000));
+    std::fs::write(repo.join("sub/deep/AGENTS.md"), deep).expect("写得进");
+    std::fs::write(repo.join("sub/deep/a.txt"), "x\n").expect("写得进");
+    let cwd = repo.join("sub");
+    let script = Script::new([
+        Play::calls(&[("read", &read("deep/a.txt"))]),
+        Play::Says("好。"),
+    ]);
+    let handle = session_with(&home, &script, &cwd, "local", basesystem(&home)).await;
+    turn(&handle, "cmd-1").await;
+    let requests: Vec<Request> = script.requests().into_iter().map(|(_, r)| r).collect();
+    let json = serde_json::to_string_pretty(&requests).expect("写得成 JSON");
+    let home_text = home
+        .home
+        .canonicalize()
+        .expect("在")
+        .to_string_lossy()
+        .into_owned();
+    std::fs::write(out, json.replace(&home_text, "<HOME>")).expect("写得进");
+}
