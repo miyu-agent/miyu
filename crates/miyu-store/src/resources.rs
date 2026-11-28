@@ -20,6 +20,7 @@ use miyu_policy::{
 
 use crate::env::Env;
 use crate::human::Shelf;
+use texts::Texts;
 
 /// 一个资源目录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +30,8 @@ pub struct ResourceRoot {
     overlays: Vec<PathBuf>,
     /// 读好的给人看的字（施工 V-30，[`crate::human::Shelf`]）：拷出来的几份共用。
     pub(crate) shelf: Shelf,
+    /// 读好的给模型看的字（施工 PERF-5，`texts.rs`）：拷出来的几份共用。
+    texts: Texts,
 }
 
 /// 找不到资源目录。
@@ -134,6 +137,7 @@ impl ResourceRoot {
             path: path.into(),
             overlays: Vec::new(),
             shelf: Shelf::default(),
+            texts: Texts::default(),
         }
     }
 
@@ -429,13 +433,19 @@ impl ResourceRoot {
     }
 
     /// 读资源目录下的一份文件，路径一段一段地接上（三个平台一样）。
+    /// 读好放着、文件都没变的不再读（施工 PERF-5，`texts.rs`）。
     fn read(&self, parts: &[&str]) -> Result<String, SourceError> {
         let path = parts
             .iter()
             .fold(self.path.clone(), |path, part| path.join(part));
-        let shipped =
-            std::fs::read_to_string(&path).map_err(|error| SourceError::Read { path, error })?;
-        Ok(self.overlaid_text(parts, shipped))
+        let overlays = self.overlay_paths(parts);
+        self.texts.get(&path, &overlays, || {
+            let shipped = std::fs::read_to_string(&path).map_err(|error| SourceError::Read {
+                path: path.clone(),
+                error,
+            })?;
+            Ok(Self::overlaid_text(&overlays, shipped))
+        })
     }
 }
 
@@ -451,6 +461,7 @@ mod overlay;
 mod project_docs;
 mod schedules;
 mod skills;
+mod texts;
 mod tool_texts;
 mod venues;
 

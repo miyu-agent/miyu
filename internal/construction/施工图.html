@@ -1681,6 +1681,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sPERF5"><span class="n">PERF-5</span>停下和预演少读<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66952,6 +66953,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/SH-3-sleep和下载即执行.md</code>；蓝图 <code>tools/shell.md</code>「怎么走」第 4 条、「高危命令」第 5 条，<code>session/guard.md</code>；设计 26 登记簿。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sPERF5" aria-labelledby="h-sPERF5">
+  <div class="sheet-head"><h2 id="h-sPERF5"><span class="no">PERF-5</span>停下和预演少读</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">核心停下时，收着的会话不再把整份历史读回来；预演新会话的上下文时，没变的给模型看的字不再重读，改了下一次就是新的。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-kernel · session/shelve.rs</span><span class="dir-note">PERF-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>「要重启了」只在有回合时要历史，同 <code>restart</code> 碰历史的条件</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">miyu-store · resources/texts.rs</span><span class="dir-note">PERF-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>给模型看的字照「出厂的位置、几层覆盖」放在资源目录的架子上</li>
+              <li>再要时 <code>stat</code> 出厂的和每层覆盖：长短、修改时刻都没变才认</li>
+              <li>核心安静下来同给人看的字一起放掉</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">照文件作废</span><span class="rl">不放整份预演：要的东西太多，漏一样就是旧的</span></div>
+          <div class="tile new"><span class="nm">不照改动的版本</span><span class="rl">另一条线程收的通知，改完马上要的那一下可能还没到</span></div>
+          <div class="tile new"><span class="nm">字节不变</span><span class="rl">放着的就是照原来的读法读出来的那一份</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">PERF-5</dd></div>
+        <div><dt>名称</dt><dd>停下和预演少读</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">PERF-5</dd></div>
+        <div><dt>验收</dt><dd>.91 上前后量；门禁、三平台 CI</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>scenario::shelved</code>：收着的会话停下不放回，改前红；收的和不收的停下再起来逐字节一样</span></li>
+        <li><span class="ok">✓</span><span><code>resources/texts/tests.rs</code>、<code>preset_tokens.rs</code>：没变的不再读，改前红；改了覆盖、预设下一次就跟着变</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/PERF-5-停下和预演少读.md</code>；蓝图 <code>kernel/session.md</code>「闲下来收成槽」第 5 条、<code>session/actor.md</code>「闲下来收成槽」第 3 条、<code>store/resources.md</code>「怎么走」第 2 节第 4 条、<code>heap.md</code>。</li>
       </ul>
     </div>
   </div>

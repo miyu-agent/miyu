@@ -25,13 +25,15 @@ impl ResourceRoot {
             overlays: layers,
             // 覆盖不碰给人看的字：读好的字照旧共用（施工 V-30）。
             shelf: self.shelf.clone(),
+            // 给模型看的字照「出厂的位置、几层覆盖」放（施工 PERF-5）：压法不同的各放各的，共用一个架子。
+            texts: self.texts.clone(),
         }
     }
 
-    /// `parts` 那一份字：几层覆盖里第一份合规矩的，都没有的是出厂的 `shipped`。
-    pub(super) fn overlaid_text(&self, parts: &[&str], shipped: String) -> String {
+    /// `parts` 那一份字在几层覆盖里的位置，从上往下；盖不了的（[`overridable`]）没有。
+    pub(super) fn overlay_paths(&self, parts: &[&str]) -> Vec<PathBuf> {
         if !overridable(parts) {
-            return shipped;
+            return Vec::new();
         }
         self.overlays
             .iter()
@@ -40,6 +42,13 @@ impl ResourceRoot {
                     .iter()
                     .fold(layer.clone(), |path, part| path.join(part))
             })
+            .collect()
+    }
+
+    /// 那一份字：几层覆盖 `overlays`（[`Self::overlay_paths`]）里第一份合规矩的，都没有的是出厂的 `shipped`。
+    pub(super) fn overlaid_text(overlays: &[PathBuf], shipped: String) -> String {
+        overlays
+            .iter()
             .filter_map(|path| std::fs::read_to_string(path).ok())
             .find(|text| why_bad(text, &shipped).is_none())
             .unwrap_or(shipped)
