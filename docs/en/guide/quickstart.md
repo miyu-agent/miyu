@@ -12,7 +12,7 @@ The installer differs by operating system, so pick the one you use
 
 - Windows: download the `.msi` installer from the [releases page](https://github.com/miyu-agent/miyu-applet/releases).
 - Linux: download the `.deb` or `.rpm` from the same releases page; or use one install command: `curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/install.sh | sh`.
-- MacOS: with Homebrew, run `brew tap miyu-agent/miyu`, `brew install miyu-agent` and `brew install --cask miyu-applet` in turn; or download the `.dmg` from the same releases page.
+- MacOS: with Homebrew, run `brew tap miyu-agent/tap`, `brew install miyu-agent/tap/miyu-agent` and `brew install --cask miyu-agent/tap/miyu-applet` in turn; or download the `.dmg` from the same releases page.
 - Arch Linux can install from the AUR: `paru -S miyu-agent`.
 
 For the details of each way, upgrading and uninstalling, see [Installing, upgrading and uninstalling](install.md).

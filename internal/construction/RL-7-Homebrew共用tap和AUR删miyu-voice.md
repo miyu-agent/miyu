@@ -19,6 +19,9 @@
 | `internal/designs/60-系统源分包.md` | 第五节第 2 条写上 tap 名 |
 | `internal/发版手册.md` | 第二节的表填上 tap；第十一节第 2 项（发版说明）加 Homebrew 装法和「先卸掉 `miyu-voice`」两条；第 4 项第 5 步写成可照做的命令；加第 6 步「给 `miyu-voice` 提删除请求」；第十五节待核实第 1、3 条改成已定 |
 | `internal/construction/RL-5-系统源打包.md` | 「发版那天」里的 tap 名、装法跟着改，标明 2026-11-28 改 |
+| `docs/zh/guide/quickstart.md`、`docs/en/guide/quickstart.md` | 主人 2026-11-28 点头后只改第 15 行：`brew tap miyu-agent/tap`，两条安装命令带上 tap 前缀，和安装文档一致。这两页是主人手写的，别的字没有动 |
+
+同一天主人又定：旧 tap `SHORiN-KiWATA/homebrew-miyu` 直接归档，不改配方、不留提示。手册第十一节第 4 项第 5 步写了 `gh repo archive SHORiN-KiWATA/homebrew-miyu`（主人点头后执行），待核实第 2 条改成已定；设计 59 第九节、RL-5 跟着改。
 
 删除请求为什么只能在网页上提：AUR 的 SSH 接口没有提请求的命令。2026-11-28 查了 aurweb 源码（GitHub 镜像 `archlinux/aurweb`，提交 `ed420d4`）：`aurweb/git/serve.py` 的命令只有 `adopt`、`disown`、`flag`、`unflag`、`vote`、`unvote`、`set-comaintainers`、`set-keywords`、`list-repos`、`restore`、`help` 和 git 的两个；请求在 `aurweb/routers/pkgbase.py` 的网页表单 `/pkgbase/<名字>/request`，类型有 deletion、merge、orphan、adoption，留言必填；只有建了不到 24 小时（`auto_delete_age = 86400`）、维护者自己提的删除请求自动通过。AUR 的接口 2026-11-28 回 `miyu-voice` 是 `0.7.4-1`，依赖 `miyu=0.7.4-1`，维护者 `shorin`。
 
@@ -26,8 +29,7 @@
 
 - 不动 `miyu-agent/homebrew-tap` 仓库，正式版那天照手册第十一节第 4 项第 5 步加文件。
 - 不提 AUR 请求，正式版那天照第 6 步由主人提。
-- 快速上手（`docs/zh/guide/quickstart.md`、`docs/en/guide/quickstart.md`）第 15 行还写着 `brew tap miyu-agent/miyu`。这两页是主人手写的，没有改，留给主人定。
-- 旧 tap `SHORiN-KiWATA/homebrew-miyu` 的 `miyu` 配方改成什么样，还是待核实（手册第十五节第 2 条）。
+- 不归档旧 tap，正式版以后照手册第十一节第 4 项第 5 步由主人点头后运行 `gh repo archive`。
 
 ### 验收
 

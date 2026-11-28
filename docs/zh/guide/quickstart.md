@@ -12,7 +12,7 @@
 
 - Windows：到[发行版页面](https://github.com/miyu-agent/miyu-applet/releases)下载 `.msi` 安装包。
 - Linux：到同一个发行版页面下载 `.deb` 或 `.rpm`；或者用一条安装命令：`curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/install.sh | sh`。
-- MacOS：用 Homebrew，依次运行 `brew tap miyu-agent/miyu`、`brew install miyu-agent`、`brew install --cask miyu-applet`；或者到同一个发行版页面下载 `.dmg`。
+- MacOS：用 Homebrew，依次运行 `brew tap miyu-agent/tap`、`brew install miyu-agent/tap/miyu-agent`、`brew install --cask miyu-agent/tap/miyu-applet`；或者到同一个发行版页面下载 `.dmg`。
 - Arch Linux 可以从 AUR 安装：`paru -S miyu-agent`。
 
 每种装法的细节、升级和卸载见[安装、升级、卸载](install.md)。
