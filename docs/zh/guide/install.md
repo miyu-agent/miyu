@@ -53,6 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/inst
 
 不加 `--version` 和 `--prerelease` 时，脚本安装最新的正式版。如果还没有正式版，脚本会停下并提示 `还没有正式版；如果要安装预发布版，加上 --prerelease`，不会安装任何东西。
 
+脚本和 `miyu upgrade` 一样，读取 GitHub 发行版页面的订阅 `https://github.com/miyu-agent/miyu/releases.atom` 来挑选版本。这个订阅是普通网页，不受 GitHub 接口匿名访问每小时 60 次的限制，所以几个人共用一个出口的网络也能正常安装。标签带 `-` 的版本（例如 `v2026.11.0-rc.5`）是预发布版，只有加上 `--prerelease` 时才会算进去。如果某一版没有上传安装包，脚本会跳过它，接着看更旧的一版。如果读回来的不是订阅（例如网络门户或者代理把它换成了网页），脚本会提示 `无法读取发行版列表：… 返回的不是 Atom 订阅，检查网络或代理后重试`。加了 `--version` 时，脚本不读取订阅，直接下载那一版。
+
 例如安装 2026.11.0 这一版：
 
 ```sh
@@ -104,8 +106,6 @@ curl -fsSL https://raw.githubusercontent.com/miyu-agent/miyu/main/packaging/inst
 | Windows 上没有 `openssl` | `这台没有 openssl（Windows 自带的工具不认 Ed25519），签名没核（不是签名坏了）；只核 SHA-256。…` |
 
 如果想自己校验签名，可以使用提示里给出的 `gh attestation verify <文件> -R miyu-agent/miyu`。
-
-如果设置了 `GITHUB_TOKEN`，脚本访问 GitHub 接口时会带上它（下载文件时不带）。由于匿名访问每小时只有 60 次，几个人共用一个出口的网络容易触发限流，此时脚本会提示 `GitHub 限流：匿名访问每小时 60 次，已经用完，稍后重试`。
 
 ## 从 AUR 安装（Arch Linux）
 

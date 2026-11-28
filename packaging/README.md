@@ -29,7 +29,7 @@ Linux 两种和 macOS 上 `cargo xtask dist` 另打三份给系统源（AUR、Ho
 
 `dist-check` 也认这三种：头那一份要同一目录里有核心那一份，照系统加装层放好问核心认不认得出。
 
-安装脚本：`install.sh`（Linux、macOS）、`install.ps1`（Windows）从 GitHub Releases 下载这一种的压缩包，核签名（openssl 认
+安装脚本：`install.sh`（Linux、macOS）、`install.ps1`（Windows）照发行版订阅 `releases.atom` 挑版本（不问 GitHub API，施工 UP-5），从 GitHub Releases 下载这一种的压缩包，核签名（openssl 认
 Ed25519 的才核得了，不认的说一句）、核 SHA-256、跑一次新的 `miyu --version`，装进 `~/.local/lib/miyu/`（链到 `~/.local/bin/miyu`）或者
 `%LOCALAPPDATA%\Programs\Miyu\`（加进用户的 PATH），旁边写 `install.toml`（`channel = "script"`，`miyu upgrade` 照它自己升级）。参数：
 `--prerelease`、`--version <版本>`、`--uninstall`（Windows 是 `-Prerelease`、`-Version`、`-Uninstall`）。`test-install.sh`、`test-install.ps1`

@@ -53,6 +53,8 @@ You can add arguments after `sh -s --`:
 
 Without `--version` or `--prerelease`, the script installs the latest stable release. If there is no stable release yet, the script stops and says `no stable release yet; add --prerelease to install a pre-release`, and installs nothing.
 
+Like `miyu upgrade`, the script reads the feed of the GitHub release page, `https://github.com/miyu-agent/miyu/releases.atom`, to pick a version. The feed is an ordinary web page, so it does not count against the GitHub API limit of 60 anonymous requests an hour, and installing works even when several people share one network exit. A version whose tag contains `-` (for example `v2026.11.0-rc.5`) is a pre-release, and it counts only when you add `--prerelease`. If a release has no archives uploaded, the script skips it and looks at the next older one. If what comes back is not a feed (for example, a captive portal or a proxy replaced it with a web page), the script says `can't read the release list: … isn't an Atom feed; check your network or proxy and try again`. With `--version`, the script does not read the feed and downloads that version directly.
+
 For example, to install version 2026.11.0:
 
 ```sh
@@ -104,8 +106,6 @@ If any step fails, the script stops and installs nothing. Verifying the signatur
 | No `openssl` on Windows | `No openssl here (Windows' own tools don't support Ed25519), so the signature wasn't checked (it isn't broken); checking SHA-256 only. …` |
 
 If you want to verify the signature yourself, use the `gh attestation verify <file> -R miyu-agent/miyu` that the note suggests.
-
-If `GITHUB_TOKEN` is set, the script sends it when it calls the GitHub API (but not when downloading files). Because anonymous access is limited to 60 requests an hour, networks where several people share one exit can easily hit the limit, and the script then says `GitHub rate limit reached`.
 
 ## Installing from the AUR (Arch Linux)
 

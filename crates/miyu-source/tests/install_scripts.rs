@@ -1,5 +1,6 @@
 //! 安装脚本（施工 RL-3，`packaging/install.sh`、`install.ps1`）里抄的两样和真相源一样：发版公钥照 [`miyu_source::sign::RELEASE`]
-//! 的最后一把（换了钥匙忘了改脚本的会红），`install.sh` 写的 `.miyu` 文件类型和 `packaging/mime/miyu.xml` 挂的类型、glob 一样。
+//! 的最后一把（换了钥匙忘了改脚本的会红），`install.sh` 写的 `.miyu` 文件类型和 `packaging/mime/miyu.xml` 挂的类型、glob 一样；
+//! 两份脚本挑版本读发行版订阅、不问 GitHub API（施工 UP-5）。
 
 use std::path::{Path, PathBuf};
 
@@ -86,5 +87,23 @@ fn install_ps1_is_plain_ascii_outside_comments() {
             continue;
         }
         assert!(line.is_ascii(), "第 {} 行不是 ASCII：{line}", number + 1);
+    }
+}
+
+/// 两份安装脚本挑版本都读发行版订阅，不问 GitHub API（施工 UP-5，同 `miyu upgrade` 的 UP-4）：API 匿名每个 IP 每小时只给 60 次，
+/// 共用出口的机器会撞上限流；订阅是普通网页，不算这个额度。
+#[test]
+fn both_scripts_read_the_release_feed_not_the_api() {
+    for file in ["install.sh", "install.ps1"] {
+        let script = packaging(file);
+        assert!(
+            !script.contains("api.github.com"),
+            "{file} 还在问 GitHub API"
+        );
+        assert!(
+            script.contains("https://github.com/${REPO}/releases.atom")
+                || script.contains("https://github.com/$Repo/releases.atom"),
+            "{file} 没读发行版订阅"
+        );
     }
 }

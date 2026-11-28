@@ -54,7 +54,8 @@ $ErrorActionPreference = 'Continue'
 $up = (& $miyu upgrade --prerelease 2>&1 | Out-String)
 $upCode = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
-# miyu upgrade 匿名问 GitHub：共用出口的 CI 机器上撞了限流的，记一句没验成，别的照查。
+# 装上的是公开的预发布，它自己的 miyu upgrade 还在问 GitHub API（读订阅的 UP-4 在它以后，还没发版）：共用出口的 CI 机器上撞了
+# 限流的，记一句没验成，别的照查。装上的预发布带了 UP-4 以后这一条连同 test-install.sh 那边的一起撤掉。
 if ($upCode -eq 0) {
     if ($up -notmatch 'already up to date') { Fail "装完 miyu upgrade 该说已是最新：$up" }
 } elseif ($up -match 'rate limit') {
@@ -69,7 +70,8 @@ $data = Join-Path $env:USERPROFILE '.miyu'
 New-Item -ItemType Directory -Force -Path $data | Out-Null
 Set-Content -Path (Join-Path $data 'keep') -Value 'keep'
 
-# 压缩包被改过：本机起一个下载处，停在 SHA-256、什么都不装。
+# 本机起一个下载处和订阅（施工 UP-5，同 test-install.sh）：照版本号从新到旧试、SHA256SUMS 回 404 的跳过，正文里的链接不算，旧版的
+# v0.7.x 不试；没有正式版的提示加 -Prerelease，一个都没有的说没找到，订阅是网页的说读不了；压缩包被改过的停在 SHA-256、什么都不装。
 $python = Get-Command python -ErrorAction SilentlyContinue
 if ($python) {
     $ver = $version -replace '^miyu ', ''
@@ -80,18 +82,76 @@ if ($python) {
     foreach ($f in @('SHA256SUMS', 'SHA256SUMS.sig', $archive)) {
         Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/miyu-agent/miyu/releases/download/$tag/$f" -OutFile (Join-Path (Join-Path $srv $tag) $f)
     }
-    [IO.File]::AppendAllText((Join-Path (Join-Path $srv $tag) $archive), 'x')
-    $server = Start-Process -PassThru -WindowStyle Hidden -FilePath $python.Source -ArgumentList @('-m', 'http.server', '18731', '--bind', '127.0.0.1', '--directory', $srv)
+    # 下载处每收到一个请求往标准错误记一行（"GET /<路径> HTTP/1.1" 404 这样），照它查试了哪几个、先后。
+    $log = Join-Path $env:RUNNER_TEMP ('srv-log-' + [IO.Path]::GetRandomFileName())
+    $server = Start-Process -PassThru -NoNewWindow -FilePath $python.Source -ArgumentList @('-m', 'http.server', '18731', '--bind', '127.0.0.1', '--directory', $srv) `
+        -RedirectStandardError $log -RedirectStandardOutput "$log.out"
     Start-Sleep -Seconds 2
     Invoke-Install 'powershell' @('-Uninstall') | Out-Null
-    $bad = Invoke-Install 'powershell' @('-Version', $ver) @{ MIYU_INSTALL_BASE = 'http://127.0.0.1:18731' }
+    $here = 'http://127.0.0.1:18731'
+    $served = @{ MIYU_INSTALL_FEED = "$here/releases.atom"; MIYU_INSTALL_BASE = $here }
+    $feedFile = Join-Path $srv 'releases.atom'
+    $utf8 = New-Object Text.UTF8Encoding $false
+    # 照 GitHub 的 releases.atom 的样子写一份订阅。每个 entry 的正文里都有一个转义过的、指向 v2099.2.0 的链接，不该被认成标签。
+    function Write-Feed([string[]]$tags) {
+        $text = "<?xml version=`"1.0`" encoding=`"UTF-8`"?>`n<feed xmlns=`"http://www.w3.org/2005/Atom`" xml:lang=`"en-US`">`n"
+        $text += "  <link type=`"application/atom+xml`" rel=`"self`" href=`"https://github.com/miyu-agent/miyu/releases.atom`"/>`n"
+        foreach ($each in $tags) {
+            $text += "  <entry>`n    <id>tag:github.com,2008:Repository/1/$each</id>`n"
+            $text += "    <link rel=`"alternate`" type=`"text/html`" href=`"https://github.com/miyu-agent/miyu/releases/tag/$each`"/>`n"
+            $text += "    <title>$each</title>`n"
+            $text += "    <content type=`"html`">&lt;a href=&quot;https://github.com/miyu-agent/miyu/releases/tag/v2099.2.0&quot;&gt;v2099.2.0&lt;/a&gt;</content>`n  </entry>`n"
+        }
+        [IO.File]::WriteAllText($feedFile, $text + "</feed>`n", $utf8)
+    }
+    # 下载处的记录里第一次请求 $path 是第几行；没有的 0。
+    function Get-Asked([string]$path) {
+        $lines = @(Get-Content $log)
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i].Contains("GET $path ")) { return $i + 1 }
+        }
+        return 0
+    }
+
+    # 订阅的先后是乱的：照版本号从新到旧试，rc.10 在 rc.9 前面；它们都没传包（SHA256SUMS 回 404），跳过以后装上真的那一版。
+    Write-Feed @($tag, 'v2099.1.0-rc.9', 'v2099.1.0-rc.10', 'v0.7.4')
+    $picked = Invoke-Install 'powershell' @('-Prerelease') $served
+    if ($picked.Code -ne 0 -or $picked.Out -notmatch [regex]::Escape("Installed Miyu $ver")) { Fail "跳过没传包的以后该装上 ${tag}：$($picked.Out)" }
+    Invoke-Install 'powershell' @('-Uninstall') | Out-Null
+    # 只有预发布：不加 -Prerelease 的提示加上。
+    Write-Feed @('v2099.1.0-rc.1', 'v0.7.4')
+    $bad = Invoke-Install 'powershell' @() $served
+    if ($bad.Code -eq 0 -or $bad.Out -notmatch 'no stable release yet') { Fail "没有正式版时该说加 -Prerelease：$($bad.Out)" }
+    # 有正式版、没传包，也没有预发布：说没找到。
+    Write-Feed @('v2099.1.0')
+    $bad = Invoke-Install 'powershell' @() $served
+    if ($bad.Code -eq 0 -or $bad.Out -notmatch 'no release found') { Fail "一个都不成的该说没找到：$($bad.Out)" }
+    # 订阅是网页（门户、代理换掉的）：说读不了。
+    [IO.File]::WriteAllText($feedFile, "<html><body>sign in</body></html>`n", $utf8)
+    $bad = Invoke-Install 'powershell' @('-Prerelease') $served
+    if ($bad.Code -eq 0 -or $bad.Out -notmatch "isn't an Atom feed") { Fail "订阅是网页的该说读不了：$($bad.Out)" }
+    if (Test-Path $Lib) { Fail '停下的不该留东西' }
+
+    # 压缩包被改过：停在 SHA-256、什么都不装。
+    [IO.File]::AppendAllText((Join-Path (Join-Path $srv $tag) $archive), 'x')
+    $bad = Invoke-Install 'powershell' @('-Version', $ver) @{ MIYU_INSTALL_BASE = $here }
     Stop-Process -Id $server.Id
     if ($bad.Code -eq 0 -or $bad.Out -notmatch 'SHA-256 of') { Fail "压缩包改过的该停在 SHA-256：$($bad.Out)" }
     if (Test-Path $Lib) { Fail '停下的不该留东西' }
-    Remove-Item -Recurse -Force $srv
+    Start-Sleep -Seconds 1
+    # 下载处停了再读它的记录（开着的时候 Windows 上不一定读得了）。第一趟（装上真的那一版）最先请求这三个，后面几趟不改它们的
+    # 先后；正文里的链接、旧版的 v0.7.4 哪一趟都不该请求。
+    $ten = Get-Asked '/v2099.1.0-rc.10/SHA256SUMS'
+    $nine = Get-Asked '/v2099.1.0-rc.9/SHA256SUMS'
+    $real = Get-Asked "/$tag/SHA256SUMS"
+    $seen = Get-Content -Raw $log
+    if (-not ($ten -gt 0 -and $ten -lt $nine -and $nine -lt $real)) { Fail "该照 rc.10、rc.9、$tag 的先后试：$seen" }
+    if ($seen.Contains('GET /v2099.2.0/')) { Fail "正文里的链接被认成了标签：$seen" }
+    if ($seen.Contains('GET /v0.7.4/')) { Fail "旧版的 v0.7.4 不该试：$seen" }
+    Remove-Item -Recurse -Force $srv, $log, "$log.out"
     Invoke-Install 'powershell' @('-Prerelease') | Out-Null
 } else {
-    Write-Host 'no python: skipping the tampered download'
+    Write-Host 'no python: skipping the local feed and the tampered download'
 }
 
 $gone = Invoke-Install 'powershell' @('-Uninstall')

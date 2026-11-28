@@ -17,8 +17,9 @@ Windows 带的就行），Windows 自带的工具不认。再核压缩包的 SHA
   - 带了 BOM，irm 交回的字符串开头留着 BOM 字符，[scriptblock]::Create 又认不出开头的注释块。
   - 所以给人看的中文写成 \uXXXX，照 [regex]::Unescape 解出来再用 {0} 填值（路径里的反斜杠不经过 Unescape）；注释里的中文读乱了也无妨。
 
-设了 GITHUB_TOKEN 的，问 GitHub API 时带上它（只发给 API，下载不带），免得共用出口的机器撞上匿名每小时 60 次的限流。
-测试用的两个环境变量：MIYU_INSTALL_API（GitHub 的 API 地址）、MIYU_INSTALL_BASE（下载地址的前半）。
+挑哪一版照发行版订阅（releases.atom，施工 UP-5，同 `miyu upgrade` 的 UP-4）：它是普通网页，不算 GitHub API 的匿名额度，
+共用出口的机器也不会因为限流装不上。不问 GitHub API。
+测试用的两个环境变量：MIYU_INSTALL_FEED（订阅的地址）、MIYU_INSTALL_BASE（下载地址的前半）。
 #>
 [CmdletBinding()]
 param(
@@ -32,7 +33,7 @@ $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 $Repo = 'miyu-agent/miyu'
-$Api = if ($env:MIYU_INSTALL_API) { $env:MIYU_INSTALL_API } else { "https://api.github.com/repos/$Repo" }
+$Feed = if ($env:MIYU_INSTALL_FEED) { $env:MIYU_INSTALL_FEED } else { "https://github.com/$Repo/releases.atom" }
 $Base = if ($env:MIYU_INSTALL_BASE) { $env:MIYU_INSTALL_BASE } else { "https://github.com/$Repo/releases/download" }
 $Programs = Join-Path $env:LOCALAPPDATA 'Programs'
 $Lib = Join-Path $Programs 'Miyu'
@@ -103,32 +104,126 @@ function Uninstall-Miyu {
     Say '\u5df2\u5378\u8f7d Miyu\u3002\u6570\u636e\u4ecd\u7136\u4fdd\u7559\u5728 {0}\uff0c\u5982\u679c\u4e0d\u518d\u9700\u8981\uff0c\u53ef\u4ee5\u81ea\u884c\u5220\u9664\u3002' "Miyu is uninstalled. Your data is still in {0}; delete it yourself if you don't need it." @($data)
 }
 
-# 照 API 找标签；没有的空字符串。只认现在的版本号 v<年>.<月>.<第几版>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和
-# 早先演练的 v0.0.0，它们的包不是这个脚本装得了的，一律跳过（施工 WD-8：原来问 releases/latest，拿到的是旧版的 v0.7.4）。
-function Find-Tag([bool]$pre) {
-    $url = "$Api/releases?per_page=100"
-    try {
-        $headers = @{ Accept = 'application/vnd.github+json' }
-        if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "Bearer $($env:GITHUB_TOKEN)" }
-        $answer = Invoke-RestMethod -Uri $url -Headers $headers -UseBasicParsing
-    } catch {
-        $code = 0
-        if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-        if ($code -eq 404) { return '' }
-        if ($code -eq 403 -or $code -eq 429) {
-            Die 'GitHub \u9650\u6d41\uff1a\u533f\u540d\u8bbf\u95ee\u6bcf\u5c0f\u65f6 60 \u6b21\uff0c\u5df2\u7ecf\u7528\u5b8c\uff0c\u7a0d\u540e\u91cd\u8bd5' 'GitHub rate limit reached (60 an hour without signing in); try again later'
+# 订阅里每个 entry 的标签，照订阅的先后（同 crates/miyu-cli/src/upgrade/feed.rs、install.sh 的 feed_tags）：只认每个 <entry> 里
+# 第一个 href 带 /releases/tag/ 的 <link>。正文 <content> 是转义过的网页，里面的 <、" 写成了 &lt;、&quot;，不会被认成链接。
+# 没有 <feed、没有 </feed> 的（网页、空的、读到一半的）不是订阅，交回 $null；是订阅、一个 entry 都没有的交回空的列表。
+function Get-FeedTags([string]$text) {
+    $ordinal = [StringComparison]::Ordinal
+    if ($text.IndexOf('<feed', $ordinal) -lt 0 -or $text.IndexOf('</feed>', $ordinal) -lt 0) { return $null }
+    $tags = New-Object 'System.Collections.Generic.List[string]'
+    $rest = $text
+    while (($at = $rest.IndexOf('<entry', $ordinal)) -ge 0) {
+        $rest = $rest.Substring($at + 6)
+        # <entries 这样的别的元素不算。
+        if ($rest.Length -eq 0 -or ">`t`r`n ".IndexOf($rest[0]) -lt 0) { continue }
+        $stop = $rest.IndexOf('</entry>', $ordinal)
+        if ($stop -lt 0) { $stop = $rest.Length }
+        $entry = $rest.Substring(0, $stop)
+        $rest = $rest.Substring($stop)
+        while (($at = $entry.IndexOf('<link', $ordinal)) -ge 0) {
+            $entry = $entry.Substring($at)
+            $gt = $entry.IndexOf([char]'>')
+            if ($gt -lt 0) { $gt = $entry.Length }
+            $link = $entry.Substring(0, $gt)
+            $entry = $entry.Substring($gt)
+            $start = $link.IndexOf('href="', $ordinal)
+            if ($start -lt 0) { continue }
+            $href = $link.Substring($start + 6)
+            $quote = $href.IndexOf([char]'"')
+            if ($quote -lt 0) { continue }
+            $href = $href.Substring(0, $quote)
+            $start = $href.IndexOf('/releases/tag/', $ordinal)
+            if ($start -lt 0) { continue }
+            $tag = $href.Substring($start + 14)
+            if ($tag -and -not $tag.Contains('/')) {
+                $tags.Add($tag)
+                break
+            }
         }
-        Die '\u65e0\u6cd5\u8fde\u63a5 GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($url, $_.Exception.Message)
     }
-    # 列表照新到旧排：第一个合格的就是最新的。草稿不要；只要正式版时，标成预发布的、标签带 - 的（v2026.11.0-rc.1）都不要。
-    foreach ($release in @($answer)) {
-        $tag = [string]$release.tag_name
-        if ($tag -notmatch '^v\d{4}\.\d+\.\d+') { continue }
-        if ($release.draft) { continue }
-        if (-not $pre -and ($release.prerelease -or $tag.Contains('-'))) { continue }
-        return $tag
+    return , $tags
+}
+
+# 能算的标签，新的在前（同 crates/miyu-cli/src/upgrade/plan.rs 的 candidates、install.sh 的 candidates）：
+#   - 只认现在的版本号 v<年>.<月>.<第几版>，可以接 -<预发布>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和早先演练的
+#     v0.0.0，它们的包不是这个脚本装得了的，一律跳过（施工 WD-8）。
+#   - 订阅里没有「预发布」的标记，照标签认：带 - 的（v2026.11.0-rc.1）是预发布，只在 $pre 时算。
+#   - 照版本号排（semver）：给每个标签拼一个按字节排就对的键（同 install.sh），照 Ordinal 排。同一个版本只算一次。
+function Get-Candidates([string[]]$tags, [bool]$pre) {
+    $keys = New-Object 'System.Collections.Generic.List[string]'
+    $found = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($tag in $tags) {
+        if (-not ($tag -cmatch '^v([0-9]{4}\.[0-9]+\.[0-9]+)(-([0-9A-Za-z]+(\.[0-9A-Za-z]+)*))?$')) { continue }
+        $core = $Matches[1]
+        $preText = $Matches[3]
+        if ($preText -and -not $pre) { continue }
+        $key = (($core -split '\.') | ForEach-Object { $_.PadLeft(20, [char]'0') }) -join '.'
+        if ($preText) {
+            # 每段后面跟一个 !（比数字、字母都小），段少的就排在前面；都是数字的段照数字比，排在字前面。
+            $key += '-'
+            foreach ($field in ($preText -split '\.')) {
+                if ($field -cmatch '^[0-9]+$') { $key += '0' + $field.PadLeft(20, [char]'0') + '!' } else { $key += '1' + $field + '!' }
+            }
+        } else {
+            # 正式版的 ~ 排在预发布的 - 后面。
+            $key += '~'
+        }
+        $keys.Add($key)
+        $found.Add($tag)
     }
-    return ''
+    $keyArray = $keys.ToArray()
+    $tagArray = $found.ToArray()
+    [Array]::Sort($keyArray, $tagArray, [StringComparer]::Ordinal)
+    $ordered = New-Object 'System.Collections.Generic.List[string]'
+    $last = $null
+    for ($i = $keyArray.Length - 1; $i -ge 0; $i--) {
+        if ($keyArray[$i] -cne $last) { $ordered.Add($tagArray[$i]) }
+        $last = $keyArray[$i]
+    }
+    return , $ordered
+}
+
+# 没拿到的回应的 HTTP 状态码；连不上的是 0。
+function Get-Status($failure) {
+    if ($failure.Exception.Response) { return [int]$failure.Exception.Response.StatusCode }
+    return 0
+}
+
+# 挑一个能装的发布（同 miyu upgrade，crates/miyu-cli/src/upgrade/flow.rs 的 usable，施工 UP-4）：读订阅，下载地址照标签拼，从新到旧
+# 一个一个试，SHA256SUMS 回 404 的（作废的 rc.3 那样：订阅里有、没传包）跳过、接着试更旧的；回别的错的停下。交回
+# @{ Tag; Tags }：Tag 是挑中的标签（都不成的空字符串），它的 SHA256SUMS 已经下到 $sums；Tags 是订阅里全部的标签。
+function Find-Release([bool]$pre, [string]$work, [string]$sums) {
+    $feedFile = Join-Path $work 'releases.atom'
+    try {
+        Invoke-WebRequest -Uri $Feed -OutFile $feedFile -UseBasicParsing
+    } catch {
+        $code = Get-Status $_
+        if ($code) { Die 'GitHub \u8fd4\u56de HTTP {0}\uff08{1}\uff09' 'GitHub answered {0} ({1})' @($code, $Feed) }
+        Die '\u65e0\u6cd5\u8fde\u63a5 GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($Feed, $_.Exception.Message)
+    }
+    $tags = $null
+    try {
+        # 不是 UTF-8 的不是订阅（照 feed.rs）：解码器碰到坏字节就抛。
+        $tags = Get-FeedTags ([IO.File]::ReadAllText($feedFile, (New-Object Text.UTF8Encoding $false, $true)))
+    } catch {
+        $tags = $null
+    }
+    if ($null -eq $tags) {
+        Die '\u65e0\u6cd5\u8bfb\u53d6\u53d1\u884c\u7248\u5217\u8868\uff1a{0} \u8fd4\u56de\u7684\u4e0d\u662f Atom \u8ba2\u9605\uff0c\u68c0\u67e5\u7f51\u7edc\u6216\u4ee3\u7406\u540e\u91cd\u8bd5' "can't read the release list: {0} isn't an Atom feed; check your network or proxy and try again" @($Feed)
+    }
+    foreach ($tag in (Get-Candidates $tags $pre)) {
+        $url = "$Base/$tag/SHA256SUMS"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $sums -UseBasicParsing
+            return @{ Tag = $tag; Tags = $tags }
+        } catch {
+            $code = Get-Status $_
+            if ($code -eq 404) { continue }
+            if ($code) { Die 'GitHub \u8fd4\u56de HTTP {0}\uff08{1}\uff09' 'GitHub answered {0} ({1})' @($code, $url) }
+            Die '\u65e0\u6cd5\u8fde\u63a5 GitHub\uff08{0}\uff09\uff1a{1}' "can't reach GitHub ({0}): {1}" @($url, $_.Exception.Message)
+        }
+    }
+    return @{ Tag = ''; Tags = $tags }
 }
 
 function Fetch([string]$url, [string]$to) {
@@ -194,24 +289,31 @@ function Install-Miyu {
     $work = Join-Path $Programs ('.miyu-install.' + [IO.Path]::GetRandomFileName())
     New-Item -ItemType Directory -Path $work | Out-Null
     try {
+        $sums = Join-Path $work 'SHA256SUMS'
+        $sigFile = Join-Path $work 'SHA256SUMS.sig'
         $wanted = $Version.TrimStart('v')
         if ($wanted) {
+            # 指定了版本的不读订阅。
             $tag = "v$wanted"
+            Fetch "$Base/$tag/SHA256SUMS" $sums
         } elseif ($Prerelease) {
-            $tag = Find-Tag $true
+            $tag = (Find-Release $true $work $sums).Tag
             if (-not $tag) { Die '\u672a\u627e\u5230\u53ef\u7528\u7684\u53d1\u884c\u7248' 'no release found' }
         } else {
-            $tag = Find-Tag $false
-            if (-not $tag) { Die '\u8fd8\u6ca1\u6709\u6b63\u5f0f\u7248\uff1b\u5982\u679c\u8981\u5b89\u88c5\u9884\u53d1\u5e03\u7248\uff0c\u52a0\u4e0a -Prerelease' 'no stable release yet; add -Prerelease to install a pre-release' }
+            $found = Find-Release $false $work $sums
+            $tag = $found.Tag
+            if (-not $tag) {
+                # 订阅里有预发布的提示加 -Prerelease（同 plan::has_pre）。
+                $pres = @((Get-Candidates $found.Tags $true) | Where-Object { $_.Contains('-') })
+                if ($pres.Count -gt 0) { Die '\u8fd8\u6ca1\u6709\u6b63\u5f0f\u7248\uff1b\u5982\u679c\u8981\u5b89\u88c5\u9884\u53d1\u5e03\u7248\uff0c\u52a0\u4e0a -Prerelease' 'no stable release yet; add -Prerelease to install a pre-release' }
+                Die '\u672a\u627e\u5230\u53ef\u7528\u7684\u53d1\u884c\u7248' 'no release found'
+            }
         }
         $ver = $tag.Substring(1)
         $name = "miyu-$ver-$Target"
         $archive = "$name.zip"
 
         Say '\u6b63\u5728\u4e0b\u8f7d {0}' 'Downloading {0}' @($archive)
-        $sums = Join-Path $work 'SHA256SUMS'
-        $sigFile = Join-Path $work 'SHA256SUMS.sig'
-        Fetch "$Base/$tag/SHA256SUMS" $sums
         Fetch "$Base/$tag/SHA256SUMS.sig" $sigFile
         Test-Signature $sums $sigFile $work
         $want = ''

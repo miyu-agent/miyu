@@ -1684,6 +1684,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sFP1"><span class="n">FP-1</span>全部功能和无功能定死、置顶<span class="st">…</span></a></li>
         <li><a class="step review" href="#sPERF5"><span class="n">PERF-5</span>停下和预演少读<span class="st">…</span></a></li>
         <li><a class="step review" href="#sUP4"><span class="n">UP-4</span>升级读发行版订阅、不走 API<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sUP5"><span class="n">UP-5</span>安装脚本读发行版订阅、不走 API<span class="st">…</span></a></li>
         <li><a class="step review" href="#sCRT1"><span class="n">CRT-1</span>Windows 不要 VC++ 运行库<span class="st">…</span></a></li>
         <li><a class="step review" href="#sMO6"><span class="n">MO-6</span>macOS 链式修正<span class="st">…</span></a></li>
         <li><a class="step review" href="#sAUD7"><span class="n">AUD-7</span>判高危换变量有上限、项目指令有界地读<span class="st">…</span></a></li>
@@ -67135,6 +67136,64 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/UP-4-升级不走API.md</code>；蓝图 <code>cli/upgrade.md</code>「怎么走」第 4、6 条；用户手册 <code>install.md</code>、<code>cli.md</code>（中英）。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sUP5" aria-labelledby="h-sUP5">
+  <div class="sheet-head"><h2 id="h-sUP5"><span class="no">UP-5</span>安装脚本读发行版订阅、不走 API</h2><span class="pill review">待验收</span></div>
+  <p class="purpose"><code>install.sh</code>、<code>install.ps1</code> 挑版本改读 <code>releases.atom</code>，和 <code>miyu upgrade</code>（UP-4）同一套认法：不算 GitHub API 匿名每小时 60 次的额度，同一个出口后面人多也装得上。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">packaging · install.sh（feed_tags · candidates · find_release）</span><span class="dir-note">UP-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>awk 照 <code>feed.rs</code> 取每个 entry 第一个 <code>releases/tag/</code> 链接，正文里转义过的不算，不用 jq</li>
+              <li>照 semver 拼按字节排的键、<code>sort -r</code>；带 <code>-</code> 的是预发布，<code>--prerelease</code> 才算</li>
+              <li>从新到旧试 <code>SHA256SUMS</code>，404 的跳过；下好的清单直接拿去核签名</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">packaging · install.ps1（Get-FeedTags · Get-Candidates · Find-Release）</span><span class="dir-note">UP-5</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>同一套认法，<code>IndexOf</code> 照 Ordinal、<code>Array.Sort</code> 照 Ordinal；PowerShell 5.1 能跑，注释以外只有 ASCII</li>
+              <li>订阅读不了的说「返回的不是 Atom 订阅」；<code>GITHUB_TOKEN</code>、<code>MIYU_INSTALL_API</code> 和限流那句撤掉</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">安装脚本也不走 API</span><span class="rl">项目主人 2026-11-28 定</span></div>
+          <div class="tile"><span class="nm">只认四位年份的版本号</span><span class="rl">照 WD-8：旧版的 <code>v0.7.x</code> 不试</span></div>
+          <div class="tile"><span class="nm">签名、校验和不变</span><span class="rl">安全靠脚本里的发版公钥，不靠列表从哪来</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">UP-5</dd></div>
+        <div><dt>名称</dt><dd>安装脚本读发行版订阅、不走 API</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">UP-5</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI、install-test 三台实装</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>install_scripts.rs</code>：两份脚本没有 <code>api.github.com</code>、读 <code>releases.atom</code>；改前红</span></li>
+        <li><span class="ok">✓</span><span><code>test-install.*</code>：本机下载处里放打乱先后的订阅，查 rc.10、rc.9、真的那一版的先后，正文链接、<code>v0.7.4</code> 不请求；只有预发布、没传包、订阅是网页各说各的</span></li>
+        <li><span class="ok">✓</span><span><code>install-test.yml</code>：Ubuntu、macOS、Windows 照公开的 rc.5 装、核、卸</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/UP-5-安装脚本不走API.md</code>；设计 <code>59-发版.md</code> 第三节第 2 条；用户手册 <code>install.md</code>（中英）。</li>
       </ul>
     </div>
   </div>

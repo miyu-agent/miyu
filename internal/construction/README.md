@@ -1843,6 +1843,7 @@ flowchart LR
 | MO-6 | macOS 的发行包改用链式修正，最低系统提到 12.0 | rc.5 的 macOS 程序照默认的 11.0 链接、用老式修正，启动时 dyld 把核心 1024 kB、终端界面 592 kB 的 `__DATA_CONST` 写脏、一直算进占用（2026-11-28 优化会话在一台 M1 MacBook 上量的；项目主人定可以提）。`cargo xtask dist` 在 macOS 上编要发出去的程序时带 `MACOSX_DEPLOYMENT_TARGET=12.0`，打压缩包以前读每个程序的加载命令，不是链式修正、最低系统 12.0 的不打包，`dist-check` 同样查；安装脚本在 macOS 11 上停下。施工单 `MO-6-macOS链式修正.md`。 |
 | PERF-5 | 核心停下时不读回收着的会话，预演新会话不重读给模型看的字 | 优化报告第 4、8 项（2026-11-28 core1 派，项目主人点头）。停下时每个收成了槽的会话收到「要重启了」都先把整份历史读回来，可是没有回合时 `restart` 不碰历史：`needs_history` 改成有回合才要。终端界面打开一次核心预演新会话的上下文 6 遍（`preset.list` 4 遍、`session.context` 2 遍），每一遍把一百多份给模型看的字和你那一层的覆盖从头读一遍，占开文件的一半多：照文件放一阵，`stat` 看长短、修改时刻没变的不再读，改了下一次就是新的，核心安静下来放掉。施工单见 `PERF-5-停下和预演少读.md` |
 | FP-1 | 全部功能和无功能定死、置顶 | 2026-11-28 项目主人定：这两个预设不许修改，列表里置顶。名单写在出厂的预设文件里（`[preset] fixed = true`，别的层写不得）；`preset.list` 定死的排最前面、带 `fixed: true`，`preset.get` 也带；`preset.set`、`preset.delete`、装包时在预设里打开都拒 `preset_fixed`；你那一层以前的改动不读、不删，起来时记一行 WARN。施工单 `FP-1-全部功能和无功能定死.md`。 |
+| UP-5 | 安装脚本读发行版订阅，不再问 GitHub API | UP-4 只改了 `miyu upgrade`，项目主人 2026-11-28 定安装脚本也不走 API（core1 派）。`install.sh`、`install.ps1` 照 UP-4 的认法读 `releases.atom`：每个 entry 只认第一个 `releases/tag/` 链接，带 `-` 的是预发布、`--prerelease` 才算，照 semver 从新到旧试，`SHA256SUMS` 回 404 的跳过；订阅读不了的说清楚。sh 用 awk，不用 jq；ps1 照旧只有 ASCII。`GITHUB_TOKEN`、`MIYU_INSTALL_API` 和限流那句撤掉，测试换 `MIYU_INSTALL_FEED`。签名、校验和不变。施工单见 `UP-5-安装脚本不走API.md` |
 
 ### 四、施工单的格式
 

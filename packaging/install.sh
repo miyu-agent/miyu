@@ -13,12 +13,13 @@
 #   - Linux 上装 .miyu 包文件的类型（~/.local/share/mime/packages/miyu.xml）。
 # 不要管理员、不用 sudo。数据根（~/.miyu）装、卸都不碰。
 #
-# 设了 GITHUB_TOKEN 的，问 GitHub API 时带上它（只发给 API，下载不带），免得共用出口的机器撞上匿名每小时 60 次的限流。
-# 测试用的两个环境变量：MIYU_INSTALL_API（GitHub 的 API 地址）、MIYU_INSTALL_BASE（下载地址的前半）。
+# 挑哪一版照发行版订阅（releases.atom，施工 UP-5，同 `miyu upgrade` 的 UP-4）：它是普通网页，不算 GitHub API 的匿名额度，
+# 共用出口的机器也不会因为限流装不上。不问 GitHub API。
+# 测试用的两个环境变量：MIYU_INSTALL_FEED（订阅的地址）、MIYU_INSTALL_BASE（下载地址的前半）。
 set -eu
 
 REPO="miyu-agent/miyu"
-API="${MIYU_INSTALL_API:-https://api.github.com/repos/${REPO}}"
+FEED="${MIYU_INSTALL_FEED:-https://github.com/${REPO}/releases.atom}"
 BASE="${MIYU_INSTALL_BASE:-https://github.com/${REPO}/releases/download}"
 LIB="${HOME}/.local/lib/miyu"
 BIN="${HOME}/.local/bin"
@@ -139,43 +140,111 @@ uninstall() {
       "Miyu is uninstalled. Your data is still in ${MIYU_HOME:-${HOME}/.miyu}; delete it yourself if you don't need it."
 }
 
-# 照 API 地址的回应找标签；没有的空。$1 是 stable（只要正式版）或 any（预发布也算）。
-# 只认现在的版本号 v<年>.<月>.<第几版>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和早先演练的 v0.0.0，它们的包
-# 不是这个脚本装得了的，一律跳过（施工 WD-8：原来问 releases/latest，拿到的是旧版的 v0.7.4，下载它的 SHA256SUMS 得 404）。
-find_tag() {
-  answer="${WORK}/release.json"
-  url="${API}/releases?per_page=100"
-  if [ -n "${GITHUB_TOKEN:-}" ]; then
-    code=$(curl -sS -L -o "${answer}" -w '%{http_code}' -H 'Accept: application/vnd.github+json' \
-      -H "Authorization: Bearer ${GITHUB_TOKEN}" "${url}") || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
-  else
-    code=$(curl -sS -L -o "${answer}" -w '%{http_code}' -H 'Accept: application/vnd.github+json' "${url}") \
-      || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
-  fi
-  case "${code}" in
-    200) ;;
-    404) return 0 ;;
-    403 | 429) die "GitHub 限流：匿名访问每小时 60 次，已经用完，稍后重试" \
-                  "GitHub rate limit reached (60 an hour without signing in); try again later" ;;
-    *) die "GitHub 返回 HTTP ${code}（${url}）" "GitHub answered ${code} (${url})" ;;
-  esac
-  # 回应可能压成一行：照逗号拆开。列表照新到旧排，每个发行版先有 tag_name，后面是 draft、prerelease：记下标签，看到
-  # prerelease 那一格时决定要不要它。草稿不要；只要正式版时，标成预发布的、标签带 - 的（v2026.11.0-rc.1）都不要。
-  tr ',' '\n' < "${answer}" | awk -v want="$1" '
-    /"tag_name"[ \t]*:/ {
-      tag = $0
-      sub(/.*"tag_name"[ \t]*:[ \t]*"/, "", tag)
-      sub(/".*/, "", tag)
-      draft = 0
-    }
-    /"draft"[ \t]*:[ \t]*true/ { draft = 1 }
-    /"prerelease"[ \t]*:/ {
-      ok = tag ~ /^v[0-9][0-9][0-9][0-9]\.[0-9]+\.[0-9]+/ && !draft
-      if (ok && want != "any" && ($0 ~ /true/ || tag ~ /-/)) ok = 0
-      if (ok) { print tag; exit }
-      tag = ""
+# 标准输入是订阅，印出每个 entry 的标签，照订阅的先后，一行一个（同 crates/miyu-cli/src/upgrade/feed.rs）：只认每个 <entry>
+# 里第一个 href 带 /releases/tag/ 的 <link>。正文 <content> 是转义过的网页，里面的 <、" 写成了 &lt;、&quot;，不会被认成链接。
+# 没有 <feed、没有 </feed> 的（网页、空的、读到一半的）不是订阅，退出码 3。不用 jq、不用 XML 的工具：mawk、macOS 的 awk 都认。
+feed_tags() {
+  awk '
+    { text = text $0 "\n" }
+    END {
+      if (index(text, "<feed") == 0 || index(text, "</feed>") == 0) exit 3
+      rest = text
+      while ((at = index(rest, "<entry")) > 0) {
+        after = substr(rest, at + 6, 1)
+        rest = substr(rest, at + 6)
+        # <entries 这样的别的元素不算。
+        if (after != ">" && after != " " && after != "\t" && after != "\r" && after != "\n") continue
+        stop = index(rest, "</entry>")
+        if (stop == 0) stop = length(rest) + 1
+        entry = substr(rest, 1, stop - 1)
+        rest = substr(rest, stop)
+        while ((at = index(entry, "<link")) > 0) {
+          entry = substr(entry, at)
+          gt = index(entry, ">")
+          if (gt == 0) gt = length(entry) + 1
+          link = substr(entry, 1, gt - 1)
+          entry = substr(entry, gt)
+          start = index(link, "href=\"")
+          if (start == 0) continue
+          href = substr(link, start + 6)
+          quote = index(href, "\"")
+          if (quote == 0) continue
+          href = substr(href, 1, quote - 1)
+          start = index(href, "/releases/tag/")
+          if (start == 0) continue
+          tag = substr(href, start + 14)
+          if (tag != "" && index(tag, "/") == 0) { print tag; break }
+        }
+      }
     }
   '
+}
+
+# 标准输入是标签，印出能算的，新的在前，一行一个（同 crates/miyu-cli/src/upgrade/plan.rs 的 candidates）。$1 是 stable（只要
+# 正式版）或 any（预发布也算）。
+#   - 只认现在的版本号 v<年>.<月>.<第几版>，可以接 -<预发布>（设计 59）：仓库里还留着旧版 Miyu 的发行版（v0.7.x）和早先演练的
+#     v0.0.0，它们的包不是这个脚本装得了的，一律跳过（施工 WD-8）。
+#   - 订阅里没有「预发布」的标记，照标签认：带 - 的（v2026.11.0-rc.1）是预发布。
+#   - 照版本号排（semver）：数字逐段比；带预发布的排在同号正式版前面；预发布逐段比，都是数字的照数字（rc.10 在 rc.9 后面），
+#     数字排在字前面，前面都一样的段少的在前。办法是给每个标签拼一个按字节排就对的键，再 sort。同一个版本只算一次。
+candidates() {
+  awk -v want="$1" '
+    function pad(digits) {
+      while (length(digits) < 20) digits = "0" digits
+      return digits
+    }
+    /^v[0-9][0-9][0-9][0-9]\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$/ {
+      version = substr($0, 2)
+      dash = index(version, "-")
+      if (dash > 0) {
+        core = substr(version, 1, dash - 1)
+        pre = substr(version, dash + 1)
+      } else {
+        core = version
+        pre = ""
+      }
+      if (pre != "" && want != "any") next
+      split(core, number, ".")
+      key = pad(number[1]) "." pad(number[2]) "." pad(number[3])
+      if (pre == "") {
+        # 正式版的 ~ 排在预发布的 - 后面。
+        key = key "~"
+      } else {
+        key = key "-"
+        count = split(pre, field, ".")
+        # 每段后面跟一个 !（比数字、字母都小），段少的就排在前面。
+        for (i = 1; i <= count; i++) {
+          if (field[i] ~ /^[0-9]+$/) key = key "0" pad(field[i]) "!"
+          else key = key "1" field[i] "!"
+        }
+      }
+      print key " " $0
+    }
+  ' | LC_ALL=C sort -r | awk '$1 != last { print $2 } { last = $1 }'
+}
+
+# 挑一个能装的发布，印出它的标签，它的 SHA256SUMS 留在 ${WORK}/SHA256SUMS；都不成的什么都不印。$1 同 candidates。
+# 同 miyu upgrade（crates/miyu-cli/src/upgrade/flow.rs 的 usable，施工 UP-4）：读订阅，下载地址照标签拼，从新到旧一个一个试，
+# SHA256SUMS 回 404 的（作废的 rc.3 那样：订阅里有、没传包）跳过、接着试更旧的；回别的错的停下。
+find_release() {
+  code=$(curl -sS -L -o "${WORK}/releases.atom" -w '%{http_code}' "${FEED}") \
+    || die "无法连接 GitHub（${FEED}）" "can't reach GitHub (${FEED})"
+  [ "${code}" = 200 ] || die "GitHub 返回 HTTP ${code}（${FEED}）" "GitHub answered ${code} (${FEED})"
+  feed_tags < "${WORK}/releases.atom" > "${WORK}/tags" \
+    || die "无法读取发行版列表：${FEED} 返回的不是 Atom 订阅，检查网络或代理后重试" \
+           "can't read the release list: ${FEED} isn't an Atom feed; check your network or proxy and try again"
+  candidates "$1" < "${WORK}/tags" > "${WORK}/candidates"
+  while read -r tag; do
+    url="${BASE}/${tag}/SHA256SUMS"
+    code=$(curl -sS -L -o "${WORK}/SHA256SUMS" -w '%{http_code}' "${url}" < /dev/null) \
+      || die "无法连接 GitHub（${url}）" "can't reach GitHub (${url})"
+    case "${code}" in
+      200) printf '%s\n' "${tag}"; return 0 ;;
+      404) ;;
+      *) die "GitHub 返回 HTTP ${code}（${url}）" "GitHub answered ${code} (${url})" ;;
+    esac
+  done < "${WORK}/candidates"
+  rm -f "${WORK}/SHA256SUMS"
 }
 
 # 下载 $1 到 $2；不成的停。
@@ -238,20 +307,27 @@ install() {
   trap 'rm -rf "${WORK}"' EXIT INT TERM
 
   if [ -n "${WANT}" ]; then
+    # 指定了版本的不读订阅。
     tag="v${WANT}"
+    fetch "${BASE}/${tag}/SHA256SUMS" "${WORK}/SHA256SUMS"
   elif [ "${PRE}" = 1 ]; then
-    tag=$(find_tag any) || exit 1
+    tag=$(find_release any) || exit 1
     [ -n "${tag}" ] || die "未找到可用的发行版" "no release found"
   else
-    tag=$(find_tag stable) || exit 1
-    [ -n "${tag}" ] || die "还没有正式版；如果要安装预发布版，加上 --prerelease" "no stable release yet; add --prerelease to install a pre-release"
+    tag=$(find_release stable) || exit 1
+    if [ -z "${tag}" ]; then
+      # 订阅里有预发布的提示加 --prerelease（同 plan::has_pre）。
+      if candidates any < "${WORK}/tags" | grep -q -- '-'; then
+        die "还没有正式版；如果要安装预发布版，加上 --prerelease" "no stable release yet; add --prerelease to install a pre-release"
+      fi
+      die "未找到可用的发行版" "no release found"
+    fi
   fi
   version="${tag#v}"
   name="miyu-${version}-${t}"
   archive="${name}.tar.gz"
 
   say "正在下载 ${archive}" "Downloading ${archive}"
-  fetch "${BASE}/${tag}/SHA256SUMS" "${WORK}/SHA256SUMS"
   fetch "${BASE}/${tag}/SHA256SUMS.sig" "${WORK}/SHA256SUMS.sig"
   verify_signature "${WORK}/SHA256SUMS" "${WORK}/SHA256SUMS.sig"
   want=$(awk -v f="${archive}" '$2 == f || $2 == "*" f { print $1 }' "${WORK}/SHA256SUMS")

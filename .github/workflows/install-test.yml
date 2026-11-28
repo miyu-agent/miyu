@@ -1,5 +1,6 @@
 # 安装脚本的实测（施工 RL-3）：Linux、macOS、Windows 各在一台干净的机器上照 packaging/test-install.* 装、核、卸一遍，资产用
-# 公开的预发布（--prerelease）。只测，不发东西；改了安装脚本、这两个实测脚本、这个文件才跑，也能手动跑。
+# 公开的预发布（--prerelease）。挑版本读发行版订阅、不问 GitHub API（施工 UP-5），不用令牌。只测，不发东西；改了安装脚本、
+# 这两个实测脚本、这个文件才跑，也能手动跑。
 name: install-test
 
 on:
@@ -28,8 +29,6 @@ jobs:
       - uses: actions/checkout@v7
       - name: 装、核、卸
         run: sh packaging/test-install.sh packaging/install.sh
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
 
   windows:
     timeout-minutes: 15
@@ -39,5 +38,3 @@ jobs:
       - name: 装、核、卸
         shell: pwsh
         run: ./packaging/test-install.ps1 -Script packaging/install.ps1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
