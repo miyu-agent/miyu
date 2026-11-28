@@ -2,6 +2,13 @@
 # cargo xtask check：跑完全部门禁，见 xtask/src/main.rs。
 xtask = "run --quiet --package xtask --"
 
+# Windows 的程序把 C 运行库静态链进去（施工 CRT-1）：不加的时候每个 `.exe` 都要 `VCRUNTIME140.dll`，它是 VC++ 2015–2022
+# 运行库装进系统的，Windows 自己不带，没装过的机器上报「找不到 VCRUNTIME140.dll」、起不来。`api-ms-win-crt-*`（通用 C 运行库）
+# Windows 10 起系统自带，不受影响。cc 编的 C 代码（SQLite、zstd、ring）看到这个特性也换成静态的运行库。两个头在各自的检出里编，
+# 发版时 `release.yml` 用环境变量给它们加上同一条；`cargo xtask dist-check` 查包时读每个 `.exe` 的导入表，漏了就不发。
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
 [env]
 # 经 cargo 起的进程（测试、`cargo run`、`cargo xtask`）不看这台机器上系统包管理装的 Miyu 包（施工 DM-T）：系统加装那一层照
 # MIYU_DISTRO_PACKAGES 只看它，这里指到 target 下一个不存在的目录。装了 AUR、Homebrew 的 miyu-tui、miyu-webui 的机器上，

@@ -33,6 +33,11 @@ jobs:
           - os: windows-latest
             target: windows-x86_64
     runs-on: ${{ matrix.os }}
+    # Windows 的程序把 C 运行库静态链进去（施工 CRT-1）：核心照仓库的 `.cargo/config.toml` 加，两个头在各自的检出里编、那边的
+    # 配置没有这一条，所以在这里给这台机器上的每一次 cargo 都加上。用只管 MSVC 目标的这个变量，不用 RUSTFLAGS：RUSTFLAGS
+    # 会盖掉各个仓库配置里写的全部 rustflags。别的三台不编 MSVC 目标，这一条不起作用。
+    env:
+      CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: -C target-feature=+crt-static
     defaults:
       run:
         shell: bash
@@ -88,6 +93,7 @@ jobs:
       - name: 打包
         run: cargo xtask dist --target "${{ matrix.target }}"
       # Windows 只有一体的一份；别的系统一体的加系统源的三份（施工 SD-2）。头那一份查的时候要用旁边核心那一份，都在 target/dist/。
+      # Windows 的包另查每个 `.exe` 的导入表：要了 VCRUNTIME、MSVCP 开头的 DLL（VC++ 运行库）就不发（施工 CRT-1）。
       - name: 查包
         run: |
           set -euo pipefail

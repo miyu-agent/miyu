@@ -1681,6 +1681,7 @@ a.step:hover{border-color:var(--primary)}
         <li><a class="step review" href="#sCS11"><span class="n">CS-11</span>前台壳<span class="st">…</span></a></li>
         <li><a class="step review" href="#sED3"><span class="n">ED-3</span>edit 参数写法和找旧串的内存<span class="st">…</span></a></li>
         <li><a class="step review" href="#sSH3"><span class="n">SH-3</span>开头就睡才拒、下载即执行不误报<span class="st">…</span></a></li>
+        <li><a class="step review" href="#sCRT1"><span class="n">CRT-1</span>Windows 不要 VC++ 运行库<span class="st">…</span></a></li>
       </ol>
     </li>
   </ol>
@@ -66952,6 +66953,62 @@ section class="sheet" id="sM-1" aria-labelledby="h-sM1">
       <h3>图纸</h3>
       <ul>
         <li>施工单 <code>internal/construction/SH-3-sleep和下载即执行.md</code>；蓝图 <code>tools/shell.md</code>「怎么走」第 4 条、「高危命令」第 5 条，<code>session/guard.md</code>；设计 26 登记簿。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<section class="sheet" id="sCRT1" aria-labelledby="h-sCRT1">
+  <div class="sheet-head"><h2 id="h-sCRT1"><span class="no">CRT-1</span>Windows 不要 VC++ 运行库</h2><span class="pill review">待验收</span></div>
+  <p class="purpose">没装过 VC++ 运行库的 Windows 机器上，包里的五个程序照样起得来；哪一个又要了运行库，查包当场拦下、这一趟不发。</p>
+  <figure class="frame">
+    <div class="drawing">
+      <div class="d01">
+        <div class="d01-left">
+          <div class="dir">
+            <div class="dir-label"><span class="path">.cargo/config.toml · .github/workflows/release.yml</span><span class="dir-note">CRT-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>MSVC 目标加 <code>-C target-feature=+crt-static</code>，C 运行库静态链进程序</li>
+              <li>发版那台用 <code>CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS</code> 给两个头也加上</li>
+            </ol>
+          </div>
+          <div class="dir">
+            <div class="dir-label"><span class="path">xtask · dist/check/crt.rs</span><span class="dir-note">CRT-1</span></div>
+            <ol class="pipe" aria-label="做了什么">
+              <li>照 PE 格式读每个 <code>.exe</code> 的导入表</li>
+              <li>要了 <code>VCRUNTIME</code>、<code>MSVCP</code> 开头的 DLL 就报，这一趟不发</li>
+            </ol>
+          </div>
+        </div>
+        <div class="rules">
+          <p class="rules-title">这一步定下的</p>
+          <div class="tile new"><span class="nm">MSVC 目标一律 +crt-static</span><span class="rl">主会话 2026-11-28 定</span></div>
+          <div class="tile new"><span class="nm">头用只管 MSVC 的变量、不用 RUSTFLAGS</span><span class="rl">技术题：RUSTFLAGS 会盖掉各仓库配置里的 rustflags</span></div>
+          <div class="tile new"><span class="nm">导入表自己读</span><span class="rl">技术题：不靠机器上的 dumpbin、llvm-readobj</span></div>
+        </div>
+      </div>
+    </div>
+    <figcaption class="titleblock">
+      <dl>
+        <div><dt>图号</dt><dd class="mono">CRT-1</dd></div>
+        <div><dt>名称</dt><dd>Windows 不要 VC++ 运行库</dd></div>
+        <div><dt>日期</dt><dd class="mono">2026-11-28</dd></div>
+        <div><dt>提交</dt><dd class="mono">CRT-1</dd></div>
+        <div><dt>验收</dt><dd>门禁、三平台 CI、Windows 机器上打一次包</dd></div>
+      </dl>
+    </figcaption>
+  </figure>
+  <div class="notes">
+    <div>
+      <h3>验收</h3>
+      <ul class="checks">
+        <li><span class="ok">✓</span><span><code>crt/tests.rs</code>：现搭的 PE 文件、认哪些 DLL、Windows 的包五个程序都查；MSVC 上读测试程序自己，不加 <code>+crt-static</code> 时红</span></li>
+        <li><span class="ok">✓</span><span>Windows 机器上照发版的办法打包，<code>dumpbin -dependents</code> 改前五个都有 <code>VCRUNTIME140.dll</code>、改后一个都没有</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>图纸</h3>
+      <ul>
+        <li>施工单 <code>internal/construction/CRT-1-Windows不要VC运行库.md</code>；设计 12 第六节平台表；<code>docs/{zh,en}/dev/contributing.md</code>。</li>
       </ul>
     </div>
   </div>
